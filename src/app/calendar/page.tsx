@@ -320,7 +320,7 @@ export default function CalendarPage() {
                     <span className="px-3 py-1 rounded-full text-[11px] font-black bg-orange-100 text-orange-700">
                       {draft.mode === "new" ? "新增" : "編輯"}
                     </span>
-                    <span className="text-[12px] font-bold text-slate-500 tabular-nums">
+                    <span className="text-[12px] font-bold text-slate-900 tabular-nums">
                       {draft.date_from ?? ""}
                       {draft.date_to && draft.date_to !== draft.date_from ? ` ～ ${draft.date_to}` : ""}
                     </span>
@@ -345,8 +345,9 @@ export default function CalendarPage() {
                 </div>
               </div>
 
+              {/* ✅ 明確加上 text-slate-900 防止深色模式反白 */}
               <input
-                className="w-full h-12 px-4 rounded-2xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 outline-none text-[16px] font-black transition-all placeholder:text-slate-400"
+                className="w-full h-12 px-4 rounded-2xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 outline-none text-slate-900 text-[16px] font-black transition-all placeholder:text-slate-400"
                 value={draft.title}
                 onChange={(e) => setDraft({ ...draft, title: e.target.value })}
                 placeholder="輸入標題..."
@@ -356,9 +357,10 @@ export default function CalendarPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <div className="text-[11px] text-slate-500 font-bold ml-1">開始日期</div>
+                  {/* ✅ 明確加上 text-slate-900 防止深色模式反白 */}
                   <input
                     type="date"
-                    className="w-full h-11 px-3 rounded-2xl border border-slate-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 outline-none text-sm font-medium transition-all bg-white"
+                    className="w-full h-11 px-3 rounded-2xl border border-slate-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 outline-none text-slate-900 text-sm font-medium transition-all bg-white"
                     value={draft.date_from ?? ""}
                     onChange={(e) => {
                       const v = e.target.value || null;
@@ -368,9 +370,10 @@ export default function CalendarPage() {
                 </div>
                 <div className="space-y-1">
                   <div className="text-[11px] text-slate-500 font-bold ml-1">結束日期</div>
+                  {/* ✅ 明確加上 text-slate-900 防止深色模式反白 */}
                   <input
                     type="date"
-                    className="w-full h-11 px-3 rounded-2xl border border-slate-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 outline-none text-sm font-medium transition-all bg-white"
+                    className="w-full h-11 px-3 rounded-2xl border border-slate-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 outline-none text-slate-900 text-sm font-medium transition-all bg-white"
                     value={draft.date_to ?? ""}
                     onChange={(e) => setDraft({ ...draft, date_to: e.target.value || null })}
                   />
@@ -402,8 +405,9 @@ export default function CalendarPage() {
                   </div>
               </div>
 
+              {/* ✅ 明確加上 text-slate-900 防止深色模式反白 */}
               <textarea
-                className="w-full min-h-[160px] rounded-2xl border border-slate-200 p-4 text-sm leading-relaxed outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 resize-none transition-all placeholder:text-slate-300 bg-slate-50 focus:bg-white"
+                className="w-full min-h-[160px] rounded-2xl border border-slate-200 p-4 text-slate-900 text-sm leading-relaxed outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 resize-none transition-all placeholder:text-slate-300 bg-slate-50 focus:bg-white"
                 value={draft.content}
                 onChange={(e) => setDraft({ ...draft, content: e.target.value })}
                 placeholder="點此輸入詳細內容..."
@@ -415,7 +419,7 @@ export default function CalendarPage() {
         </div>
       )}
 
-      {/* Mobile FAB */}
+      {/* ===== Mobile FAB ===== */}
       <button
         type="button"
         className="md:hidden fixed right-5 bottom-[calc(16px+env(safe-area-inset-bottom)+72px)] z-30 h-14 w-14 rounded-full bg-orange-600 hover:bg-orange-700 text-white shadow-xl shadow-orange-600/40 grid place-items-center transition-transform active:scale-95"
