@@ -20,8 +20,32 @@ import { StatCard } from "@/components/ui/StatCard";
 import { useLedgerMonth } from "@/hooks/useLedgerMonth";
 import { useMasterData } from "@/hooks/useMasterData";
 
-// Type 定義
+// ===== Types =====
 type SplitRow = { payer_id: string; amount: number };
+
+type Cat = {
+  id: string;
+  name: string;
+  group_name?: string | null;
+  sort_order?: number | null;
+};
+
+type Payer = { id: string; name: string };
+type PayMethod = { id: string; name: string };
+
+type LedgerRow = {
+  id: string;
+  entry_date: string;
+  type: "expense" | "income";
+  amount: number;
+  category_id?: string | null;
+  pay_method?: string | null;
+  payer_id?: string | null;
+  merchant?: string | null;
+  note?: string | null;
+  ledger_splits?: Array<{ payer_id: string; amount: number }>;
+  bill_instance_id?: string | null;
+};
 
 function ymNow() {
   const d = new Date();
@@ -41,16 +65,30 @@ function n(v: any) {
 export default function LedgerPage() {
   const [ym, setYm] = useState(ymNow());
 
-  // Hooks
-  const { from, to, rows, loading: rowsLoading, refresh } = useLedgerMonth(WORKSPACE_ID, ym);
-  const { catsExpense, catsIncome, payMethods, payers } = useMasterData();
+  // ✅ 這裡一定要 string，避免 Vercel build 看到 string|null 報錯
+  const workspaceId: string = WORKSPACE_ID ?? "";
+
+  // Hooks（不改 API）
+  const { from, to, rows, loading: rowsLoading, refresh } = useLedgerMonth(
+    workspaceId,
+    ym
+  );
+
+  // ✅ 重點：useMasterData 可能初始是 undefined/null，全部先用 [] 保護
+  const master = useMasterData() as any;
+  const catsExpense: Cat[] = Array.isArray(master?.catsExpense) ? master.catsExpense : [];
+  const catsIncome: Cat[] = Array.isArray(master?.catsIncome) ? master.catsIncome : [];
+  const payMethods: PayMethod[] = Array.isArray(master?.payMethods) ? master.payMethods : [];
+  const payers: Payer[] = Array.isArray(master?.payers) ? master.payers : [];
+
+  const safeRows: LedgerRow[] = Array.isArray(rows) ? (rows as any) : [];
 
   // --- 新增表單 State ---
   const [type, setType] = useState<"expense" | "income">("expense");
   const [entryDate, setEntryDate] = useState(todayStr());
   const [amount, setAmount] = useState<number>(0);
   const [groupName, setGroupName] = useState<string>("");
-  const [lastExpenseGroup, setLastExpenseGroup] = useState<string>(""); // 記憶上次選的大分類
+  const [lastExpenseGroup, setLastExpenseGroup] = useState<string>("");
   const [categoryId, setCategoryId] = useState<string>("");
   const [payMethod, setPayMethod] = useState<string>("");
   const [merchant, setMerchant] = useState<string>("");
@@ -60,7 +98,7 @@ export default function LedgerPage() {
   const [splits, setSplits] = useState<SplitRow[]>([]);
 
   // --- 編輯表單 State ---
-  const [editing, setEditing] = useState<any | null>(null);
+  const [editing, setEditing] = useState<LedgerRow | null>(null);
   const [editForm, setEditForm] = useState({
     entry_date: todayStr(),
     type: "expense" as "expense" | "income",
@@ -76,7 +114,7 @@ export default function LedgerPage() {
   });
 
   // --- 計算邏輯 ---
-  const cats = type === "expense" ? catsExpense : catsIncome;
+  const cats: Cat[] = type === "expense" ? catsExpense : catsIncome;
 
   const groups = useMemo(() => {
     const map = new Map<string, number>();
@@ -94,27 +132,27 @@ export default function LedgerPage() {
   const subcats = useMemo(() => {
     if (!groupName) return [];
     return cats
-      .filter((c: any) => (c.group_name || "").trim() === groupName)
-      .sort((a: any, b: any) => n(a.sort_order) - n(b.sort_order));
+      .filter((c) => (c.group_name || "").trim() === groupName)
+      .sort((a, b) => n(a.sort_order) - n(b.sort_order));
   }, [cats, groupName]);
 
   const totalExpense = useMemo(
-    () => rows.filter((r) => r.type === "expense").reduce((a, r) => a + Number(r.amount || 0), 0),
-    [rows]
+    () => safeRows.filter((r) => r.type === "expense").reduce((a, r) => a + Number(r.amount || 0), 0),
+    [safeRows]
   );
   const totalIncome = useMemo(
-    () => rows.filter((r) => r.type === "income").reduce((a, r) => a + Number(r.amount || 0), 0),
-    [rows]
+    () => safeRows.filter((r) => r.type === "income").reduce((a, r) => a + Number(r.amount || 0), 0),
+    [safeRows]
   );
 
   function payerName(id?: string | null) {
-    return payers.find((p: any) => p.id === id)?.name ?? id;
+    return payers.find((p) => p.id === id)?.name ?? (id || "");
   }
 
   // ✅ 顯示 大分類 / 小分類
   function catName(id?: string | null) {
     const all = [...catsExpense, ...catsIncome];
-    const c = all.find((x: any) => x.id === id);
+    const c = all.find((x) => x.id === id);
     if (!c) return "";
     const g = (c.group_name || "").trim();
     return g ? `${g} / ${c.name}` : c.name;
@@ -125,7 +163,7 @@ export default function LedgerPage() {
     if (type !== "expense") return;
     if (groupName) return;
     if (groups.length > 0) setGroupName(groups[0]);
-  }, [groups, type]);
+  }, [groups, type, groupName]);
 
   // Effect: 記憶支出大分類
   useEffect(() => {
@@ -136,7 +174,7 @@ export default function LedgerPage() {
   useEffect(() => {
     if (!useSplit) return;
     if (!payerId) return;
-    const other = payers.find((p: any) => p.id !== payerId)?.id || "";
+    const other = payers.find((p) => p.id !== payerId)?.id || "";
     if (!other) return;
     setSplits((prev) => {
       if (!prev || prev.length === 0) return [{ payer_id: other, amount: 0 }];
@@ -207,12 +245,12 @@ export default function LedgerPage() {
       } else {
         alert("新增失敗");
       }
-    } catch (e) {
+    } catch {
       alert("新增錯誤");
     }
   }
 
-  async function deleteRow(r: any) {
+  async function deleteRow(r: LedgerRow) {
     if (
       !confirm(
         `確定刪除這筆記帳？\n${r.entry_date} ${r.type === "expense" ? "支出" : "收入"} $${r.amount}`
@@ -227,22 +265,22 @@ export default function LedgerPage() {
   }
 
   // 開啟編輯 Modal
-  function openEdit(r: any) {
+  function openEdit(r: LedgerRow) {
     setEditing(r);
     const all = [...catsExpense, ...catsIncome];
-    const c = all.find((x: any) => x.id === r.category_id);
-    const sp = r.ledger_splits || [];
+    const c = all.find((x) => x.id === (r.category_id || ""));
+    const sp = Array.isArray((r as any).ledger_splits) ? (r as any).ledger_splits : [];
 
     setEditForm({
       entry_date: r.entry_date,
       type: r.type,
       amount: Number(r.amount),
       group_name: c?.group_name || "",
-      category_id: r.category_id || "",
-      pay_method: r.pay_method || "",
+      category_id: (r.category_id as any) || "",
+      pay_method: (r.pay_method as any) || "",
       merchant: r.merchant || "",
       note: r.note || "",
-      payer_id: r.payer_id || "",
+      payer_id: (r.payer_id as any) || "",
       useSplit: sp.length > 0,
       splits: sp.map((s: any) => ({ payer_id: s.payer_id, amount: Number(s.amount) })),
     });
@@ -250,6 +288,7 @@ export default function LedgerPage() {
 
   async function submitEdit() {
     if (!editing) return;
+
     if (editForm.useSplit) {
       const check = validateSplitLocal({
         type: editForm.type,
@@ -270,6 +309,7 @@ export default function LedgerPage() {
         ...editForm,
       }),
     });
+
     if (res.ok) {
       setEditing(null);
       refresh();
@@ -279,7 +319,8 @@ export default function LedgerPage() {
   }
 
   // 編輯模式的分類計算
-  const editCats = editForm.type === "expense" ? catsExpense : catsIncome;
+  const editCats: Cat[] = editForm.type === "expense" ? catsExpense : catsIncome;
+
   const editGroups = useMemo(() => {
     const map = new Map<string, number>();
     for (const c of editCats) {
@@ -296,8 +337,8 @@ export default function LedgerPage() {
   const editSubcats = useMemo(() => {
     if (!editForm.group_name) return [];
     return editCats
-      .filter((c: any) => (c.group_name || "").trim() === editForm.group_name)
-      .sort((a: any, b: any) => n(a.sort_order) - n(b.sort_order));
+      .filter((c) => (c.group_name || "").trim() === editForm.group_name)
+      .sort((a, b) => n(a.sort_order) - n(b.sort_order));
   }, [editCats, editForm.group_name]);
 
   return (
@@ -318,10 +359,7 @@ export default function LedgerPage() {
               </div>
             </div>
             <div className="flex gap-2">
-              <Link
-                href="/ledger/dashboard"
-                className="btn btn-outline btn-sm h-9 min-h-0 rounded-xl font-bold"
-              >
+              <Link href="/ledger/dashboard" className="btn btn-outline btn-sm h-9 min-h-0 rounded-xl font-bold">
                 財務儀表板
               </Link>
               <Link
@@ -353,6 +391,7 @@ export default function LedgerPage() {
               </div>
             </div>
           </div>
+
           <StatCard
             title="本月支出"
             value={`$${totalExpense.toLocaleString()}`}
@@ -369,7 +408,7 @@ export default function LedgerPage() {
           />
         </div>
 
-        {/* New Entry Form */}
+        {/* ===== New Entry Form ===== */}
         <div className="card bg-white shadow-md border border-slate-200 rounded-3xl overflow-hidden">
           <div className="bg-slate-50/50 px-6 py-4 border-b border-slate-200 flex items-center justify-between">
             <h2 className="font-black text-lg text-slate-800 flex items-center gap-2">
@@ -382,6 +421,7 @@ export default function LedgerPage() {
 
           <div className="card-body p-6 space-y-6">
             <div className="grid grid-cols-1 gap-5 md:grid-cols-4">
+              {/* 日期 */}
               <div className="md:col-span-1">
                 <label className="label py-1">
                   <span className="label-text font-bold text-slate-400 text-xs uppercase">日期</span>
@@ -394,13 +434,15 @@ export default function LedgerPage() {
                 />
               </div>
 
+              {/* 類型 */}
               <div className="md:col-span-1">
                 <label className="label py-1">
                   <span className="label-text font-bold text-slate-400 text-xs uppercase">類型</span>
                 </label>
                 <select
-                  className={`select select-bordered w-full rounded-xl font-bold ${type === "expense" ? "text-rose-500" : "text-emerald-500"
-                    }`}
+                  className={`select select-bordered w-full rounded-xl font-bold ${
+                    type === "expense" ? "text-rose-500" : "text-emerald-500"
+                  }`}
                   value={type}
                   onChange={(e: any) => {
                     setType(e.target.value);
@@ -422,6 +464,7 @@ export default function LedgerPage() {
                 </select>
               </div>
 
+              {/* 金額 */}
               <div className="md:col-span-2">
                 <label className="label py-1">
                   <span className="label-text font-bold text-slate-400 text-xs uppercase">金額</span>
@@ -439,6 +482,7 @@ export default function LedgerPage() {
                 </div>
               </div>
 
+              {/* 大分類 */}
               <div className="md:col-span-2">
                 <label className="label py-1">
                   <span className="label-text font-bold text-slate-400 text-xs uppercase">大分類</span>
@@ -460,6 +504,7 @@ export default function LedgerPage() {
                 </select>
               </div>
 
+              {/* 小分類 */}
               <div className="md:col-span-2">
                 <label className="label py-1">
                   <span className="label-text font-bold text-slate-400 text-xs uppercase">小分類</span>
@@ -471,15 +516,18 @@ export default function LedgerPage() {
                   disabled={!groupName}
                 >
                   <option value="">（不選）</option>
-                  {subcats.map((c: any) => (
+                  {subcats.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name}
                     </option>
                   ))}
                 </select>
-                {!groupName && <div className="mt-1 text-[10px] text-slate-400 ml-1">※ 先選大分類才會顯示小分類</div>}
+                {!groupName && (
+                  <div className="mt-1 text-[10px] text-slate-400 ml-1">※ 先選大分類才會顯示小分類</div>
+                )}
               </div>
 
+              {/* 付款方式 */}
               <div className="md:col-span-2">
                 <label className="label py-1">
                   <span className="label-text font-bold text-slate-400 text-xs uppercase">付款方式</span>
@@ -490,7 +538,7 @@ export default function LedgerPage() {
                   onChange={(e) => setPayMethod(e.target.value)}
                 >
                   <option value="">（不選）</option>
-                  {payMethods.map((m: any) => (
+                  {payMethods.map((m) => (
                     <option key={m.id} value={m.name}>
                       {m.name}
                     </option>
@@ -498,6 +546,7 @@ export default function LedgerPage() {
                 </select>
               </div>
 
+              {/* 付款人 */}
               <div className="md:col-span-2">
                 <label className="label py-1">
                   <span className="label-text font-bold text-slate-400 text-xs uppercase">誰先付錢</span>
@@ -508,7 +557,7 @@ export default function LedgerPage() {
                   onChange={(e) => setPayerId(e.target.value)}
                 >
                   <option value="">（不選）</option>
-                  {payers.map((p: any) => (
+                  {payers.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.name}
                     </option>
@@ -516,6 +565,7 @@ export default function LedgerPage() {
                 </select>
               </div>
 
+              {/* 店家 */}
               <div className="md:col-span-2">
                 <label className="label py-1">
                   <span className="label-text font-bold text-slate-400 text-xs uppercase">店家 / 對象</span>
@@ -528,6 +578,7 @@ export default function LedgerPage() {
                 />
               </div>
 
+              {/* 備註 */}
               <div className="md:col-span-2">
                 <label className="label py-1">
                   <span className="label-text font-bold text-slate-400 text-xs uppercase">備註</span>
@@ -543,8 +594,9 @@ export default function LedgerPage() {
               {/* Split Bill */}
               <div className="md:col-span-4">
                 <div
-                  className={`p-5 rounded-3xl border transition-all duration-300 ${useSplit ? "bg-sky-50 border-sky-200" : "bg-slate-50 border-slate-100 opacity-60"
-                    }`}
+                  className={`p-5 rounded-3xl border transition-all duration-300 ${
+                    useSplit ? "bg-sky-50 border-sky-200" : "bg-slate-50 border-slate-100 opacity-60"
+                  }`}
                 >
                   <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                     <label className="flex items-center gap-4 cursor-pointer">
@@ -560,7 +612,7 @@ export default function LedgerPage() {
                           setUseSplit(e.target.checked);
                           if (!e.target.checked) setSplits([]);
                           else {
-                            const other = payerId ? payers.find((p: any) => p.id !== payerId)?.id || "" : "";
+                            const other = payerId ? payers.find((p) => p.id !== payerId)?.id || "" : "";
                             setSplits([{ payer_id: other, amount: 0 }]);
                           }
                         }}
@@ -589,8 +641,8 @@ export default function LedgerPage() {
                             >
                               <option value="">（選擇應付者）</option>
                               {payers
-                                .filter((p: any) => p.id !== payerId)
-                                .map((p: any) => (
+                                .filter((p) => p.id !== payerId)
+                                .map((p) => (
                                   <option key={p.id} value={p.id}>
                                     {p.name}
                                   </option>
@@ -626,7 +678,7 @@ export default function LedgerPage() {
                       <button
                         className="btn btn-ghost btn-xs text-sky-600 font-bold"
                         onClick={() => {
-                          const other = payerId ? payers.find((p: any) => p.id !== payerId)?.id || "" : "";
+                          const other = payerId ? payers.find((p) => p.id !== payerId)?.id || "" : "";
                           setSplits((prev) => [...prev, { payer_id: other, amount: 0 }]);
                         }}
                       >
@@ -636,6 +688,7 @@ export default function LedgerPage() {
                   )}
                 </div>
               </div>
+
               <div className="md:col-span-4 flex justify-end md:static sticky bottom-[72px] z-30 mt-6 mb-2">
                 <button
                   className="btn bg-sky-600 hover:bg-sky-700 text-white rounded-2xl px-10 font-black shadow-md shadow-sky-200/30 w-full md:w-auto"
@@ -648,7 +701,7 @@ export default function LedgerPage() {
           </div>
         </div>
 
-        {/* List */}
+        {/* ===== List ===== */}
         <div className="card bg-white shadow-sm border border-slate-200 rounded-3xl overflow-hidden">
           <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -657,15 +710,15 @@ export default function LedgerPage() {
             </div>
             <div className="flex items-center gap-2">
               {rowsLoading && <span className="loading loading-spinner loading-xs text-sky-500"></span>}
-              <span className="text-[10px] font-black opacity-30 tracking-widest uppercase">{rows.length} 筆記錄</span>
+              <span className="text-[10px] font-black opacity-30 tracking-widest uppercase">{safeRows.length} 筆記錄</span>
             </div>
           </div>
 
           <div className="divide-y divide-slate-100">
-            {rows.length === 0 ? (
+            {safeRows.length === 0 ? (
               <div className="p-20 text-center opacity-30 font-black italic text-lg">本月尚無任何記帳資料。</div>
             ) : (
-              rows.map((r) => {
+              safeRows.map((r) => {
                 const sp = Array.isArray(r.ledger_splits) ? r.ledger_splits : [];
                 const isExp = r.type === "expense";
 
@@ -674,7 +727,6 @@ export default function LedgerPage() {
                     key={r.id}
                     className="group relative px-4 py-3 md:px-8 md:py-5 hover:bg-slate-50 transition-colors"
                   >
-                    {/* ✅ 右上角：手機固定顯示；桌機維持 hover 顯示（縮掉手機底部空白） */}
                     <div className="absolute right-3 top-3 flex gap-1.5 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                       <button
                         className="btn btn-ghost btn-xs h-8 min-h-0 w-8 p-0 rounded-lg text-slate-400 hover:text-sky-600 hover:bg-sky-50"
@@ -693,23 +745,22 @@ export default function LedgerPage() {
                     </div>
 
                     <div className="flex items-start gap-3 min-w-0">
-                      {/* 左側標記 */}
                       <div
-                        className={`w-12 h-12 md:w-14 md:h-14 rounded-2xl flex items-center justify-center font-black shrink-0 border-2 ${isExp
-                          ? "bg-rose-50 text-rose-500 border-rose-100"
-                          : "bg-emerald-50 text-emerald-500 border-emerald-100"
-                          }`}
+                        className={`w-12 h-12 md:w-14 md:h-14 rounded-2xl flex items-center justify-center font-black shrink-0 border-2 ${
+                          isExp
+                            ? "bg-rose-50 text-rose-500 border-rose-100"
+                            : "bg-emerald-50 text-emerald-500 border-emerald-100"
+                        }`}
                       >
                         {isExp ? "支" : "收"}
                       </div>
 
-                      {/* 內容 */}
                       <div className="min-w-0 flex-1 pr-16 md:pr-0">
-                        {/* 第一行：金額 + 日期 + badges */}
                         <div className="flex flex-wrap items-center gap-2">
                           <span
-                            className={`text-xl font-black tabular-nums tracking-tighter ${isExp ? "text-rose-500" : "text-emerald-500"
-                              }`}
+                            className={`text-xl font-black tabular-nums tracking-tighter ${
+                              isExp ? "text-rose-500" : "text-emerald-500"
+                            }`}
                           >
                             ${Number(r.amount).toLocaleString()}
                           </span>
@@ -730,7 +781,6 @@ export default function LedgerPage() {
                           )}
                         </div>
 
-                        {/* 第二行：分類/標籤（縮短上下距離） */}
                         <div className="mt-1.5 flex flex-wrap items-center gap-2 text-sm font-medium text-slate-500">
                           <span className="text-slate-700 font-extrabold border-b-2 border-slate-100 pb-0.5 mr-1">
                             {catName(r.category_id) || "未分類"}
@@ -764,10 +814,9 @@ export default function LedgerPage() {
                           )}
                         </div>
 
-                        {/* 第三行：splits（緊湊） */}
                         {sp.length > 0 && (
                           <div className="mt-2 flex flex-wrap gap-1">
-                            {sp.map((x: any, i: number) => (
+                            {sp.map((x, i) => (
                               <div
                                 key={i}
                                 className="px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-[10px] font-black text-slate-500"
@@ -787,7 +836,7 @@ export default function LedgerPage() {
         </div>
       </div>
 
-      {/* ✅ Edit Modal (完整表單還原) */}
+      {/* ===== Edit Modal ===== */}
       {editing && (
         <div className="modal modal-open bg-slate-900/40 backdrop-blur-sm">
           <div className="modal-box max-w-2xl rounded-3xl p-0 shadow-2xl border border-white/20">
@@ -825,7 +874,7 @@ export default function LedgerPage() {
                     className="select select-bordered w-full rounded-xl font-bold"
                     value={editForm.type}
                     onChange={(e) => {
-                      const t = e.target.value as any;
+                      const t = e.target.value as "expense" | "income";
                       setEditForm({
                         ...editForm,
                         type: t,
@@ -882,7 +931,7 @@ export default function LedgerPage() {
                     disabled={!editForm.group_name}
                   >
                     <option value="">（不選）</option>
-                    {editSubcats.map((c: any) => (
+                    {editSubcats.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.name}
                       </option>
@@ -900,7 +949,7 @@ export default function LedgerPage() {
                     onChange={(e) => setEditForm({ ...editForm, pay_method: e.target.value })}
                   >
                     <option value="">（不選）</option>
-                    {payMethods.map((m: any) => (
+                    {payMethods.map((m) => (
                       <option key={m.id} value={m.name}>
                         {m.name}
                       </option>
@@ -917,7 +966,7 @@ export default function LedgerPage() {
                     value={editForm.payer_id}
                     onChange={(e) => {
                       const nextPayer = e.target.value;
-                      const other = nextPayer ? payers.find((p: any) => p.id !== nextPayer)?.id || "" : "";
+                      const other = nextPayer ? payers.find((p) => p.id !== nextPayer)?.id || "" : "";
                       const nextSplits = (editForm.splits || []).map((s) => ({
                         ...s,
                         payer_id: s.payer_id === nextPayer ? other : s.payer_id,
@@ -926,7 +975,7 @@ export default function LedgerPage() {
                     }}
                   >
                     <option value="">（不選）</option>
-                    {payers.map((p: any) => (
+                    {payers.map((p) => (
                       <option key={p.id} value={p.id}>
                         {p.name}
                       </option>
@@ -957,7 +1006,6 @@ export default function LedgerPage() {
                 </div>
               </div>
 
-              {/* Edit Split Bill */}
               <div className="bg-sky-50 p-6 rounded-2xl border border-sky-200">
                 <label className="flex items-center gap-3 cursor-pointer mb-4">
                   <input
@@ -974,7 +1022,7 @@ export default function LedgerPage() {
                         return;
                       }
                       const payer = editForm.payer_id || "";
-                      const other = payer ? payers.find((p: any) => p.id !== payer)?.id || "" : "";
+                      const other = payer ? payers.find((p) => p.id !== payer)?.id || "" : "";
                       setEditForm({
                         ...editForm,
                         useSplit: true,
@@ -1002,8 +1050,8 @@ export default function LedgerPage() {
                           >
                             <option value="">（選擇應付者）</option>
                             {payers
-                              .filter((p: any) => p.id !== editForm.payer_id)
-                              .map((p: any) => (
+                              .filter((p) => p.id !== editForm.payer_id)
+                              .map((p) => (
                                 <option key={p.id} value={p.id}>
                                   {p.name}
                                 </option>
@@ -1044,7 +1092,7 @@ export default function LedgerPage() {
                       className="btn btn-ghost btn-xs text-sky-600 font-bold"
                       onClick={() => {
                         const payer = editForm.payer_id || "";
-                        const other = payer ? payers.find((p: any) => p.id !== payer)?.id || "" : "";
+                        const other = payer ? payers.find((p) => p.id !== payer)?.id || "" : "";
                         const next = [...(editForm.splits || []), { payer_id: other, amount: 0 }];
                         setEditForm({ ...editForm, splits: next });
                       }}
@@ -1071,9 +1119,17 @@ export default function LedgerPage() {
               </button>
             </div>
           </div>
+
           <div className="modal-backdrop" onClick={() => setEditing(null)}></div>
         </div>
       )}
+
+      {/* ✅ 若 workspaceId 空值，給提示（不影響 hooks 執行） */}
+      {!WORKSPACE_ID ? (
+        <div className="fixed bottom-3 left-1/2 -translate-x-1/2 px-4 py-2 rounded-xl bg-red-600 text-white text-xs font-bold shadow-lg">
+          缺少 NEXT_PUBLIC_WORKSPACE_ID（Vercel / .env.local 尚未設定）
+        </div>
+      ) : null}
     </main>
   );
 }
