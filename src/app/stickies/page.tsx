@@ -1,3 +1,4 @@
+// src/app/stickies/page.tsx
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -197,7 +198,7 @@ export default function StickiesPage() {
 
   const countText = useMemo(() => `共 ${list.length} 張`, [list]);
 
-  // ✅ 產生固定的隨機旋轉角度 (避免 Hydration 錯誤)
+  // 產生固定的隨機旋轉角度
   function getRotation(id: string) {
     const hash = id.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
     const rotations = ["rotate-1", "-rotate-1", "rotate-2", "-rotate-2", "rotate-0"];
@@ -205,20 +206,21 @@ export default function StickiesPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 p-4 md:p-6 lg:p-8 pb-24 md:pb-8">
-      <div className="mx-auto max-w-7xl space-y-6">
+    // ✅ 手機版 px-0 滿版，電腦版 md:p-6 lg:p-8
+    <main className="min-h-screen bg-slate-50 px-0 py-4 md:p-6 lg:p-8 pb-24 md:pb-8">
+      <div className="mx-auto max-w-7xl space-y-4 md:space-y-6">
         
-        {/* ✅ Header：黏住頂部 + 縮小 - Yellow Theme */}
-        <div className="card bg-white/90 backdrop-blur-md shadow-sm border border-slate-200 rounded-2xl sticky top-0 z-40">
-          <div className="card-body p-3 flex flex-row items-center justify-between gap-3">
+        {/* ✅ Header：手機滿版無外框，電腦版圓角外框 */}
+        <div className="bg-white/90 backdrop-blur-md shadow-none md:shadow-sm border-b md:border border-slate-200 md:rounded-3xl sticky top-0 z-40">
+          <div className="p-3 px-4 md:p-4 flex flex-row items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="bg-amber-50 text-amber-700 p-2 rounded-lg border border-amber-100">
+              <div className="bg-amber-50 text-amber-700 p-1.5 md:p-2 rounded-lg border border-amber-100">
                 <StickyNote className="w-5 h-5" />
               </div>
 
               <div className="flex items-center gap-2">
-                <h1 className="text-lg font-black tracking-tight text-slate-800">便條紙</h1>
-                <div className="badge badge-sm bg-amber-100 text-amber-700 border-none font-bold hidden sm:inline-flex">
+                <h1 className="text-lg md:text-xl font-black tracking-tight text-slate-800">便條紙</h1>
+                <div className="badge badge-sm bg-amber-100 text-amber-700 border-none font-bold hidden md:inline-flex">
                   Stickies
                 </div>
               </div>
@@ -226,13 +228,12 @@ export default function StickiesPage() {
 
             <div className="flex gap-2">
               <button
-                className="btn btn-ghost btn-sm h-9 min-h-0 rounded-xl font-bold text-slate-500 hover:bg-slate-100"
+                className="btn btn-ghost btn-sm h-8 md:h-9 min-h-0 rounded-xl font-bold text-slate-500 hover:bg-slate-100 hidden sm:inline-flex"
                 onClick={() => router.push("/")}
               >
                 回首頁
               </button>
 
-              {/* ✅ 桌機保留新增；手機改用 FAB */}
               <button
                 className="hidden md:inline-flex btn h-9 min-h-0 bg-amber-500 hover:bg-amber-600 text-white border-none rounded-xl px-4 font-black shadow-md shadow-amber-200/30 gap-2"
                 onClick={createNew}
@@ -242,7 +243,7 @@ export default function StickiesPage() {
             </div>
           </div>
 
-          <div className="px-4 pb-3 -mt-1">
+          <div className="px-4 pb-3 -mt-1 hidden md:block">
             <p className="text-[11px] font-medium text-slate-400">
               隨手紀錄、清單備忘，像牆上的便利貼一樣直觀。
             </p>
@@ -257,24 +258,24 @@ export default function StickiesPage() {
           )}
         </div>
 
-        {/* Controls */}
-        <div className="card bg-white shadow-sm border border-slate-200 rounded-3xl">
-          <div className="card-body p-5">
+        {/* Controls：手機版滿版無外框 */}
+        <div className="bg-white shadow-none md:shadow-sm border-y md:border border-slate-200 md:rounded-3xl">
+          <div className="p-4 md:p-5">
             <div className="flex flex-col gap-4">
               {/* Search Bar */}
               <div className="flex items-center gap-2">
                 <div className="relative flex-1">
                   <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
-                    className="input input-bordered w-full pl-10 rounded-xl focus:border-amber-400 bg-slate-50 border-slate-200 focus:bg-white transition-all"
-                    placeholder="搜尋便條標題或內容..."
+                    className="input input-sm md:input-md input-bordered w-full pl-10 rounded-xl focus:border-amber-400 bg-slate-50 border-slate-200 focus:bg-white transition-all text-slate-900"
+                    placeholder="搜尋標題或內容..."
                     value={q}
                     onChange={(e) => setQ(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && load()}
                   />
                 </div>
                 <button
-                  className="btn btn-outline border-slate-200 text-slate-600 hover:text-amber-600 hover:border-amber-200 hover:bg-yellow-50 rounded-xl px-6"
+                  className="btn btn-outline btn-sm md:btn-md border-slate-200 text-slate-600 hover:text-amber-600 hover:border-amber-200 hover:bg-yellow-50 rounded-xl px-4 md:px-6"
                   onClick={load}
                   disabled={loading}
                 >
@@ -295,7 +296,7 @@ export default function StickiesPage() {
                       <button
                         key={o}
                         className={[
-                          "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-bold transition-all whitespace-nowrap border",
+                          "flex items-center gap-1.5 md:gap-2 px-2.5 py-1.5 md:px-3 md:py-1.5 rounded-lg text-xs md:text-sm font-bold transition-all whitespace-nowrap border",
                           active
                             ? `${st.chip} ${st.ring} border-transparent shadow-sm`
                             : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50 hover:text-slate-700",
@@ -308,7 +309,7 @@ export default function StickiesPage() {
                     );
                   })}
                 </div>
-                <div className="text-xs font-medium text-slate-400 text-right shrink-0">
+                <div className="text-[10px] md:text-xs font-medium text-slate-400 text-right shrink-0">
                   {loading ? <span className="loading loading-spinner loading-xs text-amber-500"></span> : countText}
                 </div>
               </div>
@@ -323,12 +324,13 @@ export default function StickiesPage() {
               <StickyNote className="w-12 h-12 text-amber-400" />
             </div>
             <div className="font-bold text-slate-400 text-lg">目前沒有便條紙</div>
-            <p className="text-slate-400 text-sm mt-1">點擊右下角「＋」建立第一張便利貼吧！</p>
+            <p className="text-slate-400 text-sm mt-1">點擊新增建立第一張便利貼吧！</p>
           </div>
         )}
 
         {!loading && list.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-start px-2">
+          // ✅ 手機版 px-3 避免卡片直接貼緊螢幕邊緣
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 items-start px-3 md:px-0">
             {list.map((s) => {
               const st = OWNER_STYLE[s.owner] || OWNER_STYLE["家庭"];
               const isEditing = editingId === s.id;
@@ -338,7 +340,7 @@ export default function StickiesPage() {
                 <div
                   key={s.id}
                   className={`
-                    relative transition-all duration-300 group flex flex-col min-h-[220px]
+                    relative transition-all duration-300 group flex flex-col min-h-[200px] md:min-h-[220px]
                     ${rotationClass}
                     ${isEditing
                       ? "bg-white border-2 border-amber-400 shadow-xl"
@@ -349,10 +351,10 @@ export default function StickiesPage() {
                 >
                   {/* Tape Effect */}
                   {!isEditing && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-24 h-8 bg-white/40 rotate-1 backdrop-blur-[1px] shadow-sm pointer-events-none z-10"></div>
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-20 md:w-24 h-6 md:h-8 bg-white/40 rotate-1 backdrop-blur-[1px] shadow-sm pointer-events-none z-10"></div>
                   )}
 
-                  <div className="card-body p-5 flex flex-col h-full">
+                  <div className="p-4 md:p-5 flex flex-col h-full">
                     {/* Header: Owner & Actions */}
                     <div className="flex items-center justify-between mb-3 relative z-10">
                       {!isEditing ? (
@@ -360,7 +362,7 @@ export default function StickiesPage() {
                           {s.owner}
                         </span>
                       ) : (
-                        <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-hide max-w-[200px]">
+                        <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide max-w-[200px]">
                           {(["家庭", "雅惠", "昱元", "子逸", "英茵"] as const).map((o) => {
                             const active = draftOwner === o;
                             const st2 = OWNER_STYLE[o];
@@ -368,7 +370,7 @@ export default function StickiesPage() {
                               <button
                                 key={o}
                                 onClick={() => setDraftOwner(o)}
-                                className={`w-4 h-4 rounded-full border ${active ? "ring-2 ring-offset-1 ring-slate-400" : "opacity-40 hover:opacity-100"
+                                className={`w-5 h-5 rounded-full border ${active ? "ring-2 ring-offset-1 ring-slate-400" : "opacity-40 hover:opacity-100"
                                   } ${st2.dot.replace("text-", "bg-")}`}
                                 title={o}
                               />
@@ -377,7 +379,7 @@ export default function StickiesPage() {
                         </div>
                       )}
 
-                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                         {!isEditing ? (
                           <>
                             <button className="btn btn-ghost btn-xs btn-square rounded-md hover:bg-black/10" onClick={() => beginEdit(s)}>
@@ -406,12 +408,13 @@ export default function StickiesPage() {
 
                     {/* Title */}
                     {!isEditing ? (
-                      <h3 className={`font-black text-xl text-slate-800 mb-2 leading-tight ${s.content ? "" : "flex-1 flex items-center"}`}>
+                      <h3 className={`font-black text-lg md:text-xl text-slate-800 mb-2 leading-tight ${s.content ? "" : "flex-1 flex items-center"}`}>
                         {s.title?.trim() ? s.title : <span className="opacity-40 italic">（未命名）</span>}
                       </h3>
                     ) : (
+                      // ✅ 確保文字為深色
                       <input
-                        className="input input-sm w-full font-black text-xl bg-transparent border-b border-amber-300 rounded-none px-0 focus:outline-none focus:border-amber-500 mb-2 placeholder:text-slate-300"
+                        className="input input-sm w-full font-black text-lg md:text-xl text-slate-900 bg-transparent border-b border-amber-300 rounded-none px-0 focus:outline-none focus:border-amber-500 mb-2 placeholder:text-slate-400"
                         value={draftTitle}
                         onChange={(e) => setDraftTitle(e.target.value)}
                         placeholder="標題"
@@ -428,8 +431,9 @@ export default function StickiesPage() {
                           )}
                         </div>
                       ) : (
+                        // ✅ 確保文字為深色
                         <textarea
-                          className="textarea textarea-ghost w-full p-0 text-sm leading-relaxed focus:bg-transparent focus:outline-none resize-none h-full min-h-[120px]"
+                          className="textarea textarea-ghost w-full p-0 text-sm leading-relaxed text-slate-900 focus:bg-transparent focus:outline-none resize-none h-full min-h-[120px] placeholder:text-slate-400"
                           value={draftContent}
                           onChange={(e) => setDraftContent(e.target.value)}
                           placeholder="輸入內容..."
@@ -454,7 +458,7 @@ export default function StickiesPage() {
       {/* ✅ Mobile FAB：新增便條 */}
       <button
         type="button"
-        className="md:hidden fixed right-6 bottom-24 z-50 btn btn-circle btn-lg bg-amber-500 hover:bg-amber-600 border-none text-white shadow-xl shadow-amber-500/30"
+        className="md:hidden fixed right-5 bottom-[calc(16px+env(safe-area-inset-bottom)+72px)] z-40 h-14 w-14 rounded-full bg-amber-500 hover:bg-amber-600 text-white shadow-xl shadow-amber-500/40 grid place-items-center transition-transform active:scale-95"
         onClick={createNew}
         aria-label="新增便條"
       >
