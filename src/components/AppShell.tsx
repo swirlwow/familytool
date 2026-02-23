@@ -23,13 +23,11 @@ const NAV_GROUPS = [
   {
     title: "帳務工具",
     items: [
-      { name: "記帳", href: "/ledger", icon: LayoutDashboard, theme: "sky" },       // 天藍
-      { name: "拆帳結算", href: "/settlement", icon: Calculator, theme: "amber" },   // 琥珀
-      { name: "結清紀錄", href: "/settlement/history", icon: History, theme: "violet" }, // ✅ 改為紫羅蘭 (區隔藍/紫)
-      { name: "帳單管理", href: "/bills", icon: Receipt, theme: "rose" },            // ✅ 改為玫瑰紅 (醒目/支出)
-      { name: "帳戶總覽", href: "/accounts", icon: Wallet, theme: "emerald" },       // ✅ 改為翠綠 (資產/金錢)
-      
-      // ✅ 設定類統一使用 Slate (岩灰)，讓視覺更整潔，不搶主功能
+      { name: "記帳", href: "/ledger", icon: LayoutDashboard, theme: "sky" },
+      { name: "拆帳結算", href: "/settlement", icon: Calculator, theme: "amber" },
+      { name: "結清紀錄", href: "/settlement/history", icon: History, theme: "violet" }, 
+      { name: "帳單管理", href: "/bills", icon: Receipt, theme: "rose" },
+      { name: "帳戶總覽", href: "/accounts", icon: Wallet, theme: "emerald" },
       { name: "分類管理", href: "/settings/categories", icon: Tags, theme: "slate" },
       { name: "付款方式", href: "/settings/payment-methods", icon: CreditCard, theme: "slate" },
     ],
@@ -37,9 +35,9 @@ const NAV_GROUPS = [
   {
     title: "生活工具",
     items: [
-      { name: "記事", href: "/notes", icon: NotebookPen, theme: "pink" },            // 粉紅
-      { name: "行事曆", href: "/calendar", icon: CalendarDays, theme: "orange" },    // ✅ 改為橘色 (活力/時間)
-      { name: "便條紙", href: "/stickies", icon: StickyNote, theme: "yellow" },      // 黃色
+      { name: "記事", href: "/notes", icon: NotebookPen, theme: "pink" },
+      { name: "行事曆", href: "/calendar", icon: CalendarDays, theme: "orange" },
+      { name: "便條紙", href: "/stickies", icon: StickyNote, theme: "yellow" },
     ],
   },
 ];
@@ -47,7 +45,6 @@ const NAV_GROUPS = [
 function getThemeStyles(theme: string, active: boolean) {
   if (!active) return "text-slate-600 hover:bg-slate-100 hover:text-slate-900";
   
-  // ✅ 新增了 rose, emerald, orange, violet 的樣式支援
   switch (theme) {
     case "sky": return "bg-sky-50 text-sky-700 shadow-sm ring-1 ring-sky-200";
     case "amber": return "bg-amber-50 text-amber-700 shadow-sm ring-1 ring-amber-200";
@@ -60,7 +57,7 @@ function getThemeStyles(theme: string, active: boolean) {
     case "violet": return "bg-violet-50 text-violet-700 shadow-sm ring-1 ring-violet-200";
     case "orange": return "bg-orange-50 text-orange-700 shadow-sm ring-1 ring-orange-200";
     case "yellow": return "bg-yellow-100 text-yellow-800 shadow-sm ring-1 ring-yellow-300";
-    case "slate": return "bg-slate-100 text-slate-700 shadow-sm ring-1 ring-slate-300"; // 設定類專用
+    case "slate": return "bg-slate-100 text-slate-700 shadow-sm ring-1 ring-slate-300";
     default: return "bg-slate-100 text-slate-900 shadow-sm ring-1 ring-slate-200";
   }
 }
@@ -68,7 +65,6 @@ function getThemeStyles(theme: string, active: boolean) {
 function getIconStyles(theme: string, active: boolean) {
   if (!active) return "text-slate-400 group-hover:text-slate-600";
   
-  // ✅ 新增對應的 Icon 顏色
   switch (theme) {
     case "sky": return "text-sky-600";
     case "amber": return "text-amber-600";
@@ -102,13 +98,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       
       <div className="drawer-content flex flex-col min-h-screen">
         
-        {/* 手機版 Header：Sticky + Backdrop Blur + Compact */}
-        <div className="lg:hidden px-4 py-2 bg-white/90 backdrop-blur-md border-b border-slate-200 flex items-center justify-between sticky top-0 z-40 shadow-sm transition-all">
-            <div className="font-black text-slate-800 flex items-center gap-2 text-lg">
-                <div className="w-8 h-8 bg-slate-900 rounded-lg text-white flex items-center justify-center text-sm font-bold shadow-md shadow-slate-300">N</div>
-                <span className="tracking-tight">NextBook</span>
-            </div>
-        </div>
+        {/* ✅ 已移除手機版最上方的 NextBook Header，讓各頁面專屬的 Header 能夠直接貼齊頂部 */}
 
         {/* 頁面內容：增加 pb-24 防止被底部導航遮擋 */}
         <div className="flex-1 p-4 lg:p-8 pb-24 lg:pb-8">
