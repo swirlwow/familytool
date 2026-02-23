@@ -146,8 +146,28 @@ function weekRangeByAnchor(anchorYmd: string) {
   end.setDate(end.getDate() + 6);
   return { from: ymd(start), to: ymd(end) };
 }
-function weekLabel(from: string, to: string) {
-  return `${from} ~ ${to}`;
+
+/** ✅ 自動短化（手機顯示 MM/DD–MM/DD，跨年才顯示 YY/..；桌機顯示 YYYY/MM/DD–MM/DD 或跨年顯示 YYYY/MM/DD–YYYY/MM/DD） */
+function weekLabelAuto(from: string, to: string, compact: boolean) {
+  // from/to: YYYY-MM-DD
+  const fy = from.slice(0, 4);
+  const fm = from.slice(5, 7);
+  const fd = from.slice(8, 10);
+  const ty = to.slice(0, 4);
+  const tm = to.slice(5, 7);
+  const td = to.slice(8, 10);
+
+  const sameYear = fy === ty;
+
+  if (compact) {
+    // 手機：一般只顯示 MM/DD–MM/DD；跨年顯示 YY/MM/DD–YY/MM/DD
+    if (sameYear) return `${fm}/${fd}–${tm}/${td}`;
+    return `${fy.slice(2)}/${fm}/${fd}–${ty.slice(2)}/${tm}/${td}`;
+  }
+
+  // 桌機：同年顯示 YYYY/MM/DD–MM/DD；跨年顯示 YYYY/MM/DD–YYYY/MM/DD
+  if (sameYear) return `${fy}/${fm}/${fd}–${tm}/${td}`;
+  return `${fy}/${fm}/${fd}–${ty}/${tm}/${td}`;
 }
 
 // Month view segments within a week
@@ -252,6 +272,16 @@ export default function CalendarPage() {
   const swipeStartY = useRef<number | null>(null);
   const isSwiping = useRef(false);
   const swipeCooldownRef = useRef(false);
+
+  // ✅ 用 media query 判斷 compact（手機）
+  const [compact, setCompact] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 639px)"); // < sm
+    const update = () => setCompact(mq.matches);
+    update();
+    mq.addEventListener?.("change", update);
+    return () => mq.removeEventListener?.("change", update);
+  }, []);
 
   async function load() {
     if (!WORKSPACE_ID) return;
@@ -404,7 +434,6 @@ export default function CalendarPage() {
     return days;
   }, [weekRange.from]);
 
-  // Week view: auto scroll to today when visible in this week
   useEffect(() => {
     if (mode !== "week") return;
     const today = ymd(new Date());
@@ -412,7 +441,6 @@ export default function CalendarPage() {
     el?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
   }, [mode, weekDays]);
 
-  // Swipe handlers (week view)
   function onWeekTouchStart(e: React.TouchEvent<HTMLDivElement>) {
     if (draft) return;
     const t = e.touches[0];
@@ -456,15 +484,18 @@ export default function CalendarPage() {
     swipeCooldownRef.current = true;
     window.setTimeout(() => (swipeCooldownRef.current = false), 250);
 
-    if (dx < 0) setWeekAnchor((prev) => addDays(prev, 7)); // left -> next week
-    else setWeekAnchor((prev) => addDays(prev, -7)); // right -> prev week
+    if (dx < 0) setWeekAnchor((prev) => addDays(prev, 7));
+    else setWeekAnchor((prev) => addDays(prev, -7));
   }
 
-  const countText = notes.length;
+  const headerRangeText = useMemo(() => {
+    if (mode === "month") return ym;
+    return weekLabelAuto(weekRange.from, weekRange.to, compact);
+  }, [mode, ym, weekRange.from, weekRange.to, compact]);
 
   return (
     <main className="h-dvh flex flex-col bg-white">
-      {/* ===== Header (移除 回首頁/去記事本) ===== */}
+      {/* ===== Header ===== */}
       <header className="shrink-0 border-b border-slate-200 bg-white">
         <div className="max-w-6xl mx-auto w-full px-3 sm:px-4">
           <div className="h-16 grid grid-cols-3 items-center gap-3">
@@ -481,14 +512,13 @@ export default function CalendarPage() {
                   </span>
                 </div>
                 <p className="text-[12px] font-medium text-slate-400 truncate -mt-0.5">
-                  {mode === "month"
-                    ? "月視圖：多日事件橫跨顯示（跨週切角）"
-                    : "週視圖：左右滑動切換週"}
+                  {mode === "month" ? "月視圖：多日事件橫跨顯示" : "週視圖：左右滑動切換週"}
+                  {loading ? "（載入中…）" : ""}
                 </p>
               </div>
             </div>
 
-            {/* 中：模式 + 膠囊（置中，同排） */}
+            {/* 中：模式 + 膠囊（置中） */}
             <div className="flex justify-center items-center gap-2">
               <div className="inline-flex items-center bg-slate-50 border border-slate-200 rounded-full p-1 shadow-sm">
                 <button
@@ -517,48 +547,44 @@ export default function CalendarPage() {
                 </button>
               </div>
 
-              <div className="inline-flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-full px-2 py-1 shadow-sm">
+              {/* ✅ 週標題自動短化 + 右鍵可點修正 */}
+              <div className="inline-flex items-center bg-slate-50 border border-slate-200 rounded-full px-2 py-1 shadow-sm w-[210px] sm:w-auto">
                 <button
-                  className="h-8 w-8 rounded-full hover:bg-orange-100 hover:text-orange-600 text-slate-600 grid place-items-center transition-colors"
+                  className="shrink-0 h-8 w-8 rounded-full hover:bg-orange-100 hover:text-orange-600 text-slate-600 grid place-items-center transition-colors"
                   onClick={prev}
                   aria-label={mode === "month" ? "上個月" : "上一週"}
+                  type="button"
                 >
                   <ChevronLeft className="w-5 h-5" />
                 </button>
 
-                <div className="text-[15px] sm:text-[18px] font-black tracking-tight text-slate-900 tabular-nums px-1 whitespace-nowrap">
-                  {mode === "month" ? ym : weekLabel(weekRange.from, weekRange.to)}
+                <div className="flex-1 min-w-0 px-1">
+                  <div className="text-center text-[14px] sm:text-[18px] font-black tracking-tight text-slate-900 tabular-nums truncate">
+                    {headerRangeText}
+                  </div>
                 </div>
 
                 <button
-                  className="h-8 w-8 rounded-full hover:bg-orange-100 hover:text-orange-600 text-slate-600 grid place-items-center transition-colors"
+                  className="shrink-0 h-8 w-8 rounded-full hover:bg-orange-100 hover:text-orange-600 text-slate-600 grid place-items-center transition-colors"
                   onClick={next}
                   aria-label={mode === "month" ? "下個月" : "下一週"}
+                  type="button"
                 >
                   <ChevronRight className="w-5 h-5" />
                 </button>
               </div>
             </div>
 
-            {/* 右：新增 + 計數 */}
+            {/* 右：新增 */}
             <div className="flex justify-end">
-              <div className="flex flex-col items-end gap-1.5">
-                <div className="flex items-center gap-2">
-                  <button
-                    className="h-10 w-10 rounded-full bg-orange-600 hover:bg-orange-700 text-white grid place-items-center shadow-sm"
-                    onClick={() => openNew(ymd(new Date()))}
-                    aria-label="新增記事"
-                  >
-                    <Plus className="w-4 h-4" />
-                  </button>
-                </div>
-
-                <div className="text-[12px] font-bold text-slate-600 bg-white px-3 py-1.5 rounded-full border border-slate-200 shadow-sm">
-                  {mode === "month" ? "本月記事：" : "本週記事："}
-                  <span className="text-orange-600 tabular-nums">{countText}</span>
-                  {loading ? "（載入中…）" : ""}
-                </div>
-              </div>
+              <button
+                className="h-10 w-10 rounded-full bg-orange-600 hover:bg-orange-700 text-white grid place-items-center shadow-sm"
+                onClick={() => openNew(ymd(new Date()))}
+                aria-label="新增記事"
+                type="button"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
             </div>
           </div>
 
@@ -715,7 +741,7 @@ export default function CalendarPage() {
             </div>
           )}
 
-          {/* ===== Week view (Swipe to change week) ===== */}
+          {/* ===== Week view ===== */}
           {mode === "week" && (
             <div
               className="flex-1 bg-slate-200 overflow-x-auto"
@@ -725,7 +751,7 @@ export default function CalendarPage() {
             >
               <div className="px-3 py-2 bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 flex items-center justify-between">
                 <span>左右滑動切換週</span>
-                <span className="tabular-nums">{weekLabel(weekRange.from, weekRange.to)}</span>
+                <span className="tabular-nums">{weekLabelAuto(weekRange.from, weekRange.to, true)}</span>
               </div>
 
               <div className="grid grid-cols-7 h-[calc(100%-40px)] gap-px">
@@ -849,6 +875,7 @@ export default function CalendarPage() {
             className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px]"
             onClick={closeDraft}
             aria-label="關閉"
+            type="button"
           />
 
           <div className="relative w-full sm:max-w-xl bg-white rounded-t-[32px] sm:rounded-3xl shadow-2xl max-h-[86dvh] sm:max-h-[85vh] overflow-y-auto">
@@ -875,6 +902,7 @@ export default function CalendarPage() {
                     className="h-9 w-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 grid place-items-center"
                     onClick={closeDraft}
                     aria-label="關閉"
+                    type="button"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -882,6 +910,7 @@ export default function CalendarPage() {
                     className="h-9 px-4 rounded-full bg-orange-600 hover:bg-orange-700 text-white text-sm font-bold shadow-md shadow-orange-600/20 disabled:opacity-60"
                     onClick={saveDraft}
                     disabled={saving}
+                    type="button"
                   >
                     {saving ? "儲存中" : "儲存"}
                   </button>
