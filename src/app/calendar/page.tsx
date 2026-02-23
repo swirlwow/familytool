@@ -92,63 +92,332 @@ export default function CalendarPage() {
   function dayOwnerChips(list: NoteRow[]) { const owners = Array.from(new Set(list.flatMap((n) => formatOwners(parseOwners(n.owner))).filter(Boolean))).filter((o) => (OWNER_LIST as readonly string[]).includes(o)); owners.sort((a, b) => OWNER_LIST.indexOf(a as any) - OWNER_LIST.indexOf(b as any)); return owners.slice(0, 3); }
 
   return (
-    <main className="min-h-screen bg-slate-50 p-4 md:p-6 lg:p-8 pb-24 md:pb-8">
-      <div className="mx-auto max-w-6xl space-y-6">
-        
-        {/* ✅ Header: Sticky & Compact - Orange Theme */}
-        <div className="card bg-white/90 backdrop-blur-md shadow-sm border border-slate-200 rounded-2xl sticky top-0 z-40">
-          <div className="card-body p-3 flex flex-row items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="bg-orange-50 text-orange-600 p-2 rounded-lg border border-orange-100"><CalendarDays className="w-5 h-5" /></div>
-              <div className="flex items-center gap-2"><h1 className="text-lg font-black tracking-tight text-slate-800">行事曆</h1><div className="badge badge-sm bg-orange-100 text-orange-700 border-none font-bold hidden sm:inline-flex">Calendar</div></div>
+    <main className="w-screen min-h-dvh bg-white flex flex-col">
+      {/* ===== Sticky App Bar (滿版) ===== */}
+      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur border-b border-slate-200">
+        <div className="h-14 px-3 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="bg-orange-50 text-orange-600 p-2 rounded-xl border border-orange-100 shrink-0">
+              <CalendarDays className="w-5 h-5" />
             </div>
-            <div className="flex gap-2">
-              <button className="btn btn-ghost btn-sm h-9 min-h-0 rounded-xl font-bold text-slate-500 hover:bg-slate-100" onClick={() => router.push("/")}>回首頁</button>
-              <button className="btn btn-outline btn-sm h-9 min-h-0 rounded-xl font-bold border-slate-300 hover:bg-slate-100 hover:text-slate-700 gap-2" onClick={() => router.push("/notes")}><ArrowLeft className="w-4 h-4" /> 去記事本</button>
-              <button className="hidden md:inline-flex btn h-9 min-h-0 bg-orange-600 hover:bg-orange-700 text-white border-none rounded-xl px-4 font-black shadow-md shadow-orange-200/30 gap-2" onClick={() => openNew(ymd(new Date()))}><Plus className="w-4 h-4" /> 新增</button>
+
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <h1 className="text-[17px] font-black tracking-tight text-slate-900 truncate">行事曆</h1>
+                <span className="hidden sm:inline-flex px-2 py-0.5 rounded-full text-[11px] font-black bg-orange-100 text-orange-700">
+                  Calendar
+                </span>
+              </div>
+              <p className="text-[11px] font-medium text-slate-400 truncate">
+                以月曆形式檢視行程，點擊日期可快速新增記事。
+              </p>
             </div>
           </div>
-          <div className="px-4 pb-3 -mt-1"><p className="text-[11px] font-medium text-slate-400">以月曆形式檢視行程，點擊日期可快速新增記事。</p></div>
-          {!WORKSPACE_ID && (<div className="px-4 pb-3"><div className="alert alert-warning rounded-2xl py-3 text-sm"><span>未設定 WORKSPACE_ID（請檢查 .env.local）</span></div></div>)}
+
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              className="h-9 px-3 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-100"
+              onClick={() => router.push("/")}
+            >
+              回首頁
+            </button>
+
+            <button
+              className="hidden sm:inline-flex h-9 px-3 rounded-xl text-sm font-bold border border-slate-300 text-slate-700 hover:bg-slate-100 gap-2 items-center"
+              onClick={() => router.push("/notes")}
+            >
+              <ArrowLeft className="w-4 h-4" />
+              去記事本
+            </button>
+
+            <button
+              className="hidden md:inline-flex h-9 px-3 rounded-xl text-sm font-black bg-orange-600 hover:bg-orange-700 text-white shadow-sm gap-2 items-center"
+              onClick={() => openNew(ymd(new Date()))}
+            >
+              <Plus className="w-4 h-4" />
+              新增
+            </button>
+          </div>
         </div>
 
-        {draft && (
-          <div className="card bg-white shadow-xl border border-orange-300 rounded-3xl ring-2 ring-orange-300/20 z-10 relative">
-            <div className="card-body p-6 space-y-4">
-              <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0 flex-1 space-y-3">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="px-2.5 py-1 rounded-md text-xs font-black bg-orange-100 text-orange-700">{draft.mode === "new" ? "新增草稿" : "編輯中"}</span>
-                    <input className="input input-bordered rounded-xl w-full text-lg font-black bg-slate-50 focus:bg-white focus:border-orange-500 transition-all" value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })} placeholder="標題" autoFocus={draft.mode === "new"} />
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div className="space-y-1"><div className="text-xs text-slate-400 font-bold ml-1">開始日期</div><input type="date" className="input input-bordered rounded-xl w-full focus:border-orange-500" value={draft.date_from ?? ""} onChange={(e) => { const v = e.target.value || null; setDraft({ ...draft, date_from: v, date_to: draft.date_to ?? (v ? v : null) }); }} /></div>
-                    <div className="space-y-1"><div className="text-xs text-slate-400 font-bold ml-1">結束日期</div><input type="date" className="input input-bordered rounded-xl w-full focus:border-orange-500" value={draft.date_to ?? ""} onChange={(e) => setDraft({ ...draft, date_to: e.target.value || null })} /></div>
-                  </div>
-                  <div className="flex flex-wrap gap-2 pt-1">{OWNER_LIST.map((o) => { const active = draft.owners.includes(o); const st = OWNER_STYLE[o]; return (<button key={o} type="button" className={["px-3 py-1.5 rounded-full text-sm font-bold ring-1 transition-all", active ? `${st.chip} ${st.ring} ring-2 shadow-sm` : "bg-white text-slate-500 ring-slate-200 hover:bg-slate-50"].join(" ")} onClick={() => toggleOwner(o)}>{o}</button>); })}</div>
-                  <textarea className="textarea textarea-bordered rounded-xl w-full min-h-[120px] text-sm leading-relaxed p-4 focus:border-orange-500 focus:outline-none resize-none" value={draft.content} onChange={(e) => setDraft({ ...draft, content: e.target.value })} placeholder="輸入記事內容..." />
-                </div>
-                <div className="flex flex-col gap-2 shrink-0">
-                  <button className="btn btn-primary btn-square rounded-xl bg-orange-600 hover:bg-orange-700 border-none text-white shadow-md shadow-orange-200/50 transition-all" onClick={saveDraft} disabled={saving}><Save className="w-5 h-5" /></button>
-                  <button className="btn btn-ghost btn-square rounded-xl text-slate-400 hover:bg-slate-100" onClick={closeDraft}><X className="w-5 h-5" /></button>
-                </div>
-              </div>
+        {/* 未設定 workspace 提示（滿版且貼邊） */}
+        {!WORKSPACE_ID && (
+          <div className="px-3 pb-3">
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+              未設定 WORKSPACE_ID（請檢查 .env.local）
             </div>
           </div>
         )}
 
-        <div className="card bg-white shadow-sm border border-slate-200 rounded-3xl overflow-hidden">
-          <div className="p-5 border-b border-slate-100 bg-slate-50/30 flex items-center justify-between">
-            <div className="flex items-center gap-4"><button className="btn btn-ghost btn-sm btn-circle hover:bg-orange-50 hover:text-orange-600" onClick={prevMonth}><ChevronLeft className="w-5 h-5" /></button><div className="font-black text-slate-800 text-xl tracking-tight">{ym}</div><button className="btn btn-ghost btn-sm btn-circle hover:bg-orange-50 hover:text-orange-600" onClick={nextMonth}><ChevronRight className="w-5 h-5" /></button></div>
-            <div className="text-xs font-bold text-slate-400 bg-white px-3 py-1.5 rounded-full border border-slate-100 shadow-sm">本月記事：<span className="text-orange-600">{monthNoteCount}</span>{loading ? " (載入中…)" : ""}</div>
-          </div>
-          <div className="p-5">
-            <div className="grid grid-cols-7 gap-3 mb-2">{["日", "一", "二", "三", "四", "五", "六"].map((w) => (<div key={w} className="text-center text-xs font-black text-slate-400 uppercase tracking-widest py-2">{w}</div>))}</div>
-            <div className="grid grid-cols-7 gap-3">{grid.map((c, idx) => { if (!c.date) return <div key={idx} className="h-32 rounded-2xl bg-slate-50/50" />; const list = dayMap.get(c.date) ?? []; const chips = list.length ? dayOwnerChips(list) : []; const isToday = c.date === ymd(new Date()); return (<button key={c.date} type="button" className={`h-32 rounded-2xl border p-3 text-left transition-all flex flex-col gap-2 relative group overflow-hidden ${isToday ? "bg-orange-50/30 border-orange-200 ring-2 ring-orange-100" : "bg-white border-slate-100 hover:border-orange-200 hover:shadow-md"}`} onClick={() => openNew(c.date!)}><div className="flex items-start justify-between w-full"><div className={`text-sm font-black ${isToday ? "text-orange-600" : "text-slate-700"}`}>{c.day}</div>{chips.length > 0 && (<div className="flex items-center gap-1 flex-wrap justify-end">{chips.map((o) => { const st = OWNER_STYLE[o] || OWNER_STYLE["家庭"]; return (<span key={o} className={["px-1.5 py-0.5 rounded-md text-[9px] font-black border", st.chip, st.ring.replace("ring-", "border-")].join(" ")}>{o}</span>); })}</div>)}</div><div className="flex-1 w-full space-y-1 overflow-y-auto scrollbar-hide">{list.slice(0, 3).map((n) => { const o = primaryOwner(n.owner); const st = OWNER_STYLE[o] || OWNER_STYLE["家庭"]; return (<div key={n.id} className={["w-full text-[10px] font-bold truncate rounded-md px-2 py-1 border transition-all hover:opacity-80", st.itemBg].join(" ")} onClick={(e) => { e.stopPropagation(); openEdit(n); }} title={n.title}>{n.title}</div>); })}{list.length > 3 && (<div className="text-[9px] text-slate-400 font-bold text-center mt-1">+{list.length - 3} 則</div>)}</div><div className="absolute inset-0 flex items-center justify-center bg-orange-50/50 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"><Plus className="w-6 h-6 text-orange-400" /></div></button>); })}</div>
+        {/* ===== Month Toolbar (像 Google：貼在 header 下方) ===== */}
+        <div className="px-2 pb-2">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <button
+                className="h-10 w-10 rounded-full hover:bg-orange-50 hover:text-orange-600 text-slate-700 grid place-items-center"
+                onClick={prevMonth}
+                aria-label="上個月"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+
+              <div className="text-[18px] font-black tracking-tight text-slate-900 tabular-nums">
+                {ym}
+              </div>
+
+              <button
+                className="h-10 w-10 rounded-full hover:bg-orange-50 hover:text-orange-600 text-slate-700 grid place-items-center"
+                onClick={nextMonth}
+                aria-label="下個月"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="text-[12px] font-bold text-slate-500 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-200">
+              本月記事：<span className="text-orange-600 tabular-nums">{monthNoteCount}</span>
+              {loading ? "（載入中…）" : ""}
+            </div>
           </div>
         </div>
-      </div>
-      <button type="button" className="md:hidden fixed right-6 bottom-24 z-50 btn btn-circle btn-lg bg-orange-600 hover:bg-orange-700 border-none text-white shadow-xl shadow-orange-600/30" onClick={() => { openNew(ymd(new Date())); window.scrollTo({ top: 0, behavior: "smooth" }); }} aria-label="新增記事"><Plus className="w-6 h-6" /></button>
+
+        {/* ===== Weekday Row (Sticky) ===== */}
+        <div className="grid grid-cols-7 border-t border-slate-200 bg-white">
+          {["日", "一", "二", "三", "四", "五", "六"].map((w) => (
+            <div
+              key={w}
+              className="py-2 text-center text-[11px] font-black tracking-widest text-slate-500"
+            >
+              {w}
+            </div>
+          ))}
+        </div>
+      </header>
+
+      {/* ===== Body: 可捲動月曆區（滿版） ===== */}
+      <section className="flex-1 overflow-y-auto">
+        <div className="grid grid-cols-7 w-full">
+          {grid.map((c, idx) => {
+            // 空白格：維持格線
+            if (!c.date) {
+              return (
+                <div
+                  key={`empty-${idx}`}
+                  className="min-h-[96px] md:min-h-[112px] border-r border-b border-slate-200 bg-slate-50/50"
+                />
+              );
+            }
+
+            const list = dayMap.get(c.date) ?? [];
+            const chips = list.length ? dayOwnerChips(list) : [];
+            const isToday = c.date === ymd(new Date());
+
+            return (
+              <button
+                key={c.date}
+                type="button"
+                onClick={() => openNew(c.date!)}
+                className={[
+                  "relative text-left w-full",
+                  "min-h-[96px] md:min-h-[112px]",
+                  "border-r border-b border-slate-200",
+                  "px-2 pt-2 pb-2",
+                  "transition-colors",
+                  isToday ? "bg-orange-50/40" : "bg-white hover:bg-slate-50",
+                ].join(" ")}
+              >
+                {/* 上列：日期 + owners chips（縮小到像 Google） */}
+                <div className="flex items-start justify-between gap-2">
+                  <div className={["text-[13px] font-black tabular-nums", isToday ? "text-orange-700" : "text-slate-700"].join(" ")}>
+                    {c.day}
+                  </div>
+
+                  {chips.length > 0 && (
+                    <div className="flex items-center gap-1 flex-wrap justify-end">
+                      {chips.map((o) => {
+                        const st = OWNER_STYLE[o] || OWNER_STYLE["家庭"];
+                        return (
+                          <span
+                            key={o}
+                            className={[
+                              "px-1.5 py-0.5 rounded-md text-[9px] font-black border",
+                              st.chip,
+                              st.ring.replace("ring-", "border-"),
+                            ].join(" ")}
+                          >
+                            {o}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* 事件列表：最多 3 條，超過顯示 +N（維持你原規則） */}
+                <div className="mt-1 space-y-1">
+                  {list.slice(0, 3).map((n) => {
+                    const o = primaryOwner(n.owner);
+                    const st = OWNER_STYLE[o] || OWNER_STYLE["家庭"];
+                    return (
+                      <div
+                        key={n.id}
+                        className={[
+                          "w-full text-[11px] font-bold truncate",
+                          "rounded-md px-2 py-1 border",
+                          "active:opacity-80",
+                          st.itemBg,
+                        ].join(" ")}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openEdit(n);
+                        }}
+                        title={n.title}
+                      >
+                        {n.title}
+                      </div>
+                    );
+                  })}
+
+                  {list.length > 3 && (
+                    <div className="text-[11px] font-bold text-slate-400 pl-1">
+                      +{list.length - 3} 則
+                    </div>
+                  )}
+                </div>
+
+                {/* hover + icon（桌機才明顯） */}
+                <div className="pointer-events-none absolute inset-0 opacity-0 hover:opacity-100 transition-opacity hidden md:flex items-center justify-center">
+                  <div className="h-9 w-9 rounded-full bg-orange-50 border border-orange-100 grid place-items-center">
+                    <Plus className="w-5 h-5 text-orange-500" />
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* 底部留白避免 FAB/底部工具列遮到 */}
+        <div className="h-28" />
+      </section>
+
+      {/* ===== Draft：保持你原本卡片，但改成「手機底部抽屜」更像 Google（純 UI） ===== */}
+      {draft && (
+        <div className="fixed inset-0 z-50">
+          <button
+            className="absolute inset-0 bg-black/25"
+            onClick={closeDraft}
+            aria-label="關閉"
+          />
+          <div className="absolute left-0 right-0 bottom-0 bg-white rounded-t-3xl shadow-2xl border-t border-slate-200 max-h-[86dvh] overflow-y-auto">
+            <div className="p-4 space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-1 rounded-full text-[11px] font-black bg-orange-100 text-orange-700">
+                      {draft.mode === "new" ? "新增" : "編輯"}
+                    </span>
+                    <span className="text-[12px] font-bold text-slate-500 tabular-nums">
+                      {draft.date_from ?? ""}
+                      {draft.date_to && draft.date_to !== draft.date_from ? ` ～ ${draft.date_to}` : ""}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    className="h-10 w-10 rounded-xl bg-orange-600 hover:bg-orange-700 text-white grid place-items-center disabled:opacity-60"
+                    onClick={saveDraft}
+                    disabled={saving}
+                    aria-label="儲存"
+                  >
+                    <Save className="w-5 h-5" />
+                  </button>
+                  <button
+                    className="h-10 w-10 rounded-xl hover:bg-slate-100 text-slate-500 grid place-items-center"
+                    onClick={closeDraft}
+                    aria-label="關閉"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              <input
+                className="w-full h-11 px-4 rounded-2xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-orange-500 outline-none text-[15px] font-black"
+                value={draft.title}
+                onChange={(e) => setDraft({ ...draft, title: e.target.value })}
+                placeholder="標題"
+                autoFocus={draft.mode === "new"}
+              />
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <div className="text-[11px] text-slate-500 font-bold ml-1">開始日期</div>
+                  <input
+                    type="date"
+                    className="w-full h-11 px-3 rounded-2xl border border-slate-200 focus:border-orange-500 outline-none"
+                    value={draft.date_from ?? ""}
+                    onChange={(e) => {
+                      const v = e.target.value || null;
+                      setDraft({ ...draft, date_from: v, date_to: draft.date_to ?? (v ? v : null) });
+                    }}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <div className="text-[11px] text-slate-500 font-bold ml-1">結束日期</div>
+                  <input
+                    type="date"
+                    className="w-full h-11 px-3 rounded-2xl border border-slate-200 focus:border-orange-500 outline-none"
+                    value={draft.date_to ?? ""}
+                    onChange={(e) => setDraft({ ...draft, date_to: e.target.value || null })}
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2 pt-1">
+                {OWNER_LIST.map((o) => {
+                  const active = draft.owners.includes(o);
+                  const st = OWNER_STYLE[o];
+                  return (
+                    <button
+                      key={o}
+                      type="button"
+                      className={[
+                        "px-3 py-1.5 rounded-full text-sm font-bold ring-1 transition-all",
+                        active
+                          ? `${st.chip} ${st.ring} ring-2 shadow-sm`
+                          : "bg-white text-slate-500 ring-slate-200 hover:bg-slate-50",
+                      ].join(" ")}
+                      onClick={() => toggleOwner(o)}
+                    >
+                      {o}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <textarea
+                className="w-full min-h-[140px] rounded-2xl border border-slate-200 p-4 text-sm leading-relaxed outline-none focus:border-orange-500 resize-none"
+                value={draft.content}
+                onChange={(e) => setDraft({ ...draft, content: e.target.value })}
+                placeholder="輸入記事內容..."
+              />
+
+              <div className="h-[env(safe-area-inset-bottom)]" />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== Mobile FAB（避開底部 + safe-area） ===== */}
+      <button
+        type="button"
+        className="md:hidden fixed right-4 bottom-[calc(16px+env(safe-area-inset-bottom)+72px)] z-40 h-14 w-14 rounded-full bg-orange-600 hover:bg-orange-700 text-white shadow-xl shadow-orange-600/30 grid place-items-center"
+        onClick={() => openNew(ymd(new Date()))}
+        aria-label="新增記事"
+      >
+        <Plus className="w-7 h-7" />
+      </button>
     </main>
   );
 }
