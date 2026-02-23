@@ -18,11 +18,9 @@ const OWNER_STYLE: Record<string, { chip: string; ring: string; itemBg: string }
   英茵: { chip: "bg-amber-100 text-amber-800", ring: "ring-amber-200", itemBg: "bg-amber-50 text-amber-800 border-amber-100" },
 };
 
-// ✅ 補上缺少的 cn 工具函式
 function cn(...xs: Array<string | false | null | undefined>) {
   return xs.filter(Boolean).join(" ");
 }
-
 function pad(n: number) { return String(n).padStart(2, "0"); }
 function ymd(d: Date) { return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; }
 function monthKey(d: Date) { return `${d.getFullYear()}-${pad(d.getMonth() + 1)}`; }
@@ -39,6 +37,7 @@ export default function CalendarPage() {
   const router = useRouter();
   const { toast } = useToast();
   const today = new Date();
+  
   const [ym, setYm] = useState(monthKey(today));
   const { from, to } = useMemo(() => monthRange(ym), [ym]);
   const [notes, setNotes] = useState<NoteRow[]>([]);
@@ -57,6 +56,7 @@ export default function CalendarPage() {
       setNotes(rows.filter((x) => String(x?.id || "").trim()));
     } catch (e: any) { toast({ variant: "destructive", title: "讀取行事曆資料失敗", description: e.message }); setNotes([]); } finally { setLoading(false); }
   }
+  
   useEffect(() => { load(); }, [ym]);
 
   const dayMap = useMemo(() => expandNotesToDayMap(notes), [notes]);
@@ -114,7 +114,7 @@ export default function CalendarPage() {
                 </span>
               </div>
               <p className="text-[11px] font-medium text-slate-400 truncate">
-                以月曆形式檢視行程，點擊日期可快速新增記事。
+                以月曆形式檢視行程，點擊加號可新增。
               </p>
             </div>
           </div>
@@ -145,7 +145,7 @@ export default function CalendarPage() {
           </div>
         </div>
 
-        {/* 未設定 workspace 提示（滿版且貼邊） */}
+        {/* 未設定 workspace 提示 */}
         {!WORKSPACE_ID && (
           <div className="px-3 pb-3 max-w-6xl mx-auto w-full">
             <div className="rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
@@ -199,8 +199,8 @@ export default function CalendarPage() {
         </div>
       </header>
 
-      {/* ===== Body: 可捲動月曆區（滿版且無邊界） ===== */}
-      <section className="flex-1 overflow-y-auto">
+      {/* ===== Body: 可捲動月曆區（滿版無邊距） ===== */}
+      <section className="flex-1 overflow-y-auto bg-white">
         <div className="max-w-6xl mx-auto w-full border-x border-slate-200 bg-slate-100/50">
           <div className="grid grid-cols-7 w-full bg-slate-200 gap-px border-b border-slate-200">
             {grid.map((c, idx) => {
@@ -209,7 +209,7 @@ export default function CalendarPage() {
                 return (
                   <div
                     key={`empty-${idx}`}
-                    className="min-h-[100px] md:min-h-[120px] bg-slate-50/50"
+                    className="min-h-[120px] sm:min-h-[140px] bg-slate-50/60"
                   />
                 );
               }
@@ -219,16 +219,13 @@ export default function CalendarPage() {
               const isToday = c.date === ymd(new Date());
 
               return (
-                <button
+                <div
                   key={c.date}
-                  type="button"
-                  onClick={() => openNew(c.date!)}
                   className={[
-                    "relative text-left w-full",
-                    "min-h-[100px] md:min-h-[120px]",
-                    "px-1.5 pt-1.5 pb-2",
-                    "transition-colors",
-                    isToday ? "bg-orange-50/70" : "bg-white hover:bg-slate-50/80",
+                    "relative flex flex-col w-full text-left overflow-hidden",
+                    "min-h-[120px] sm:min-h-[140px]",
+                    "px-1 py-1.5",
+                    isToday ? "bg-orange-50/70" : "bg-white",
                   ].join(" ")}
                 >
                   {/* 上列：日期 + owners chips */}
@@ -262,16 +259,17 @@ export default function CalendarPage() {
                   </div>
 
                   {/* 事件列表 */}
-                  <div className="space-y-[2px]">
+                  <div className="space-y-[3px]">
                     {list.slice(0, 3).map((n) => {
                       const o = primaryOwner(n.owner);
                       const st = OWNER_STYLE[o] || OWNER_STYLE["家庭"];
                       return (
-                        <div
+                        <button
                           key={n.id}
+                          type="button"
                           className={[
-                            "w-full text-[10px] font-bold truncate leading-tight",
-                            "rounded-[4px] px-1.5 py-[3px] border",
+                            "w-full text-left text-[10px] font-bold truncate leading-tight",
+                            "rounded-[4px] px-1.5 py-[4px] border",
                             "active:opacity-80 transition-opacity",
                             st.itemBg,
                           ].join(" ")}
@@ -282,7 +280,7 @@ export default function CalendarPage() {
                           title={n.title}
                         >
                           {n.title}
-                        </div>
+                        </button>
                       );
                     })}
 
@@ -292,31 +290,30 @@ export default function CalendarPage() {
                       </div>
                     )}
                   </div>
-                </button>
+                </div>
               );
             })}
           </div>
         </div>
 
-        {/* 底部留白避免 FAB/底部工具列遮到 */}
         <div className="h-28" />
       </section>
 
-      {/* ===== Draft：手機底部抽屜 ===== */}
+      {/* ✅ Draft：響應式 Modal/Drawer (電腦版置中，手機版底部) */}
       {draft && (
-        <div className="fixed inset-0 z-50">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center sm:justify-center sm:p-6">
           <button
             className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px] transition-opacity"
             onClick={closeDraft}
             aria-label="關閉"
           />
-          <div className="absolute left-0 right-0 bottom-0 bg-white rounded-t-[32px] shadow-2xl max-h-[86dvh] overflow-y-auto animate-in slide-in-from-bottom-8 duration-200">
-            {/* 抽屜把手 */}
-            <div className="w-full flex justify-center pt-3 pb-1">
+          <div className="relative w-full sm:max-w-xl bg-white rounded-t-[32px] sm:rounded-3xl shadow-2xl max-h-[86dvh] sm:max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom-8 sm:slide-in-from-bottom-4 sm:zoom-in-95 duration-200">
+            {/* 抽屜把手 (僅手機顯示) */}
+            <div className="w-full flex justify-center pt-3 pb-1 sm:hidden">
                 <div className="w-12 h-1.5 bg-slate-200 rounded-full"></div>
             </div>
 
-            <div className="px-5 pb-6 space-y-4">
+            <div className="p-5 sm:p-6 space-y-4">
               <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-3">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
@@ -412,13 +409,13 @@ export default function CalendarPage() {
                 placeholder="點此輸入詳細內容..."
               />
 
-              <div className="h-[env(safe-area-inset-bottom)]" />
+              <div className="h-[env(safe-area-inset-bottom)] sm:h-0" />
             </div>
           </div>
         </div>
       )}
 
-      {/* ===== Mobile FAB ===== */}
+      {/* Mobile FAB */}
       <button
         type="button"
         className="md:hidden fixed right-5 bottom-[calc(16px+env(safe-area-inset-bottom)+72px)] z-30 h-14 w-14 rounded-full bg-orange-600 hover:bg-orange-700 text-white shadow-xl shadow-orange-600/40 grid place-items-center transition-transform active:scale-95"
