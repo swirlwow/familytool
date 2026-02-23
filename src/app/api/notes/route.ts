@@ -3,10 +3,55 @@ import { NextResponse } from "next/server";
 import { apiError, parseJson } from "@/lib/api/http";
 import { createNote, listNotes } from "@/lib/notesRepo";
 
-
 function getWorkspaceId(req: Request, body?: any) {
   const { searchParams } = new URL(req.url);
   return String(searchParams.get("workspace_id") || body?.workspace_id || "").trim();
+}
+
+// ✅ 統一 owner 格式：支援 array / JSON字串 / "|" / ","，最後存成 "家庭|爸媽"
+const OWNER_LIST = ["家庭", "爸媽", "雅惠", "昱元", "子逸", "英茵"] as const;
+
+function parseOwnerToArray(raw: any): string[] {
+  if (raw == null) return ["家庭"];
+
+  if (Array.isArray(raw)) {
+    const arr = raw.map((x) => String(x ?? "").trim()).filter(Boolean);
+    return arr.length ? arr : ["家庭"];
+  }
+
+  const s = String(raw ?? "").trim();
+  if (!s) return ["家庭"];
+
+  // JSON array string: '["家庭","爸媽"]'
+  if (s.startsWith("[") && s.endsWith("]")) {
+    try {
+      const j = JSON.parse(s);
+      if (Array.isArray(j)) {
+        const arr = j.map((x) => String(x ?? "").trim()).filter(Boolean);
+        return arr.length ? arr : ["家庭"];
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  if (s.includes("|")) return s.split("|").map((x) => x.trim()).filter(Boolean);
+  return s.split(",").map((x) => x.trim()).filter(Boolean);
+}
+
+function normalizeOwner(raw: any): string {
+  const arr = parseOwnerToArray(raw);
+
+  // ✅ 白名單過濾 + 去重
+  const cleaned = Array.from(
+    new Set(arr.map((x) => String(x ?? "").trim()).filter(Boolean))
+  ).filter((x) => (OWNER_LIST as readonly string[]).includes(x));
+
+  // ✅ 至少要有一個
+  const finalArr = cleaned.length ? cleaned : ["家庭"];
+
+  // ✅ 存成字串（DB 最穩）
+  return finalArr.join("|");
 }
 
 export async function GET(req: Request) {
@@ -47,7 +92,8 @@ export async function POST(req: Request) {
 
     const id = await createNote({
       workspace_id,
-      owner: body?.owner,
+      // ✅ 關鍵：永遠存字串，不再把 array 直接丟進 DB
+      owner: normalizeOwner(body?.owner),
       title,
       content: body?.content ?? "",
       note_date: body?.note_date ?? null,
