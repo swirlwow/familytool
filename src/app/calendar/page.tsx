@@ -18,6 +18,11 @@ const OWNER_STYLE: Record<string, { chip: string; ring: string; itemBg: string }
   英茵: { chip: "bg-amber-100 text-amber-800", ring: "ring-amber-200", itemBg: "bg-amber-50 text-amber-800 border-amber-100" },
 };
 
+// ✅ 補上缺少的 cn 工具函式
+function cn(...xs: Array<string | false | null | undefined>) {
+  return xs.filter(Boolean).join(" ");
+}
+
 function pad(n: number) { return String(n).padStart(2, "0"); }
 function ymd(d: Date) { return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; }
 function monthKey(d: Date) { return `${d.getFullYear()}-${pad(d.getMonth() + 1)}`; }
