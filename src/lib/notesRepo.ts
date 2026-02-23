@@ -16,7 +16,7 @@ export type NoteRow = {
   deleted_at: string | null;
 };
 
-const ALLOWED_OWNERS = ["家庭", "雅惠", "昱元", "子逸", "英茵"] as const;
+const ALLOWED_OWNERS = ["家庭", "爸媽", "雅惠","昱元", "子逸", "英茵"] as const;
 
 function mustId(row: any) {
   return String(row?.id || row?.note_id || row?.data?.id || "").trim();
