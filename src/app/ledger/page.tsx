@@ -86,7 +86,7 @@ export default function LedgerPage() {
   // --- 新增表單 State ---
   const [type, setType] = useState<"expense" | "income">("expense");
   const [entryDate, setEntryDate] = useState(todayStr());
-  const [amount, setAmount] = useState<number>(0);
+  const [amount, setAmount] = useState<number | "">("");
   const [groupName, setGroupName] = useState<string>("");
   const [lastExpenseGroup, setLastExpenseGroup] = useState<string>("");
   const [categoryId, setCategoryId] = useState<string>("");
@@ -210,11 +210,11 @@ export default function LedgerPage() {
   async function submitNew() {
     if (!WORKSPACE_ID) return alert("未設定 WORKSPACE_ID");
     if (!entryDate) return alert("請選擇日期");
-    if (!amount || amount <= 0) return alert("請輸入大於 0 的金額");
+    const numAmount = Number(amount);
+    if (!numAmount || numAmount <= 0) return alert("請輸入大於 0 的金額");
 
     if (useSplit) {
-      const check = validateSplitLocal({ type, amount, payer_id: payerId || null, splits });
-      // @ts-ignore
+      const check = validateSplitLocal({ type, amount: numAmount, payer_id: payerId || null, splits });
       if (!check.ok) return alert(check.error);
     }
 
@@ -226,7 +226,7 @@ export default function LedgerPage() {
           workspace_id: WORKSPACE_ID,
           entry_date: entryDate,
           type,
-          amount,
+          amount: numAmount,
           category_id: categoryId || null,
           pay_method: payMethod || null,
           merchant: merchant || null,
@@ -236,7 +236,7 @@ export default function LedgerPage() {
         }),
       });
       if (res.ok) {
-        setAmount(0);
+        setAmount(""); // 復原為空
         setNote("");
         setMerchant("");
         setUseSplit(false);
@@ -296,7 +296,6 @@ export default function LedgerPage() {
         payer_id: editForm.payer_id || null,
         splits: editForm.splits,
       });
-      // @ts-ignore
       if (!check.ok) return alert(check.error);
     }
 
@@ -342,29 +341,32 @@ export default function LedgerPage() {
   }, [editCats, editForm.group_name]);
 
   return (
-    <main className="min-h-screen bg-slate-50 p-4 md:p-6 lg:p-8">
-      <div className="mx-auto max-w-6xl space-y-6">
+    // ✅ 手機版 px-2 py-4 靠邊；電腦版維持 md:p-6 lg:p-8 寬敞
+    <main className="min-h-screen bg-slate-50 px-2 py-4 md:p-6 lg:p-8 pb-24 md:pb-8">
+      {/* ✅ 電腦版維持 max-w-6xl 寬度，不壓縮 */}
+      <div className="mx-auto max-w-6xl space-y-4 md:space-y-6">
+        
         {/* Sticky Header */}
         <div className="card bg-white/90 backdrop-blur-md shadow-sm border border-slate-200 rounded-2xl sticky top-0 z-40">
-          <div className="card-body p-3 flex flex-row items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="bg-sky-50 text-sky-600 p-2 rounded-lg border border-sky-100">
-                <Wallet className="w-5 h-5" />
+          <div className="card-body p-2.5 md:p-3 flex flex-row items-center justify-between gap-2">
+            <div className="flex items-center gap-2 md:gap-3">
+              <div className="bg-sky-50 text-sky-600 p-1.5 md:p-2 rounded-lg border border-sky-100">
+                <Wallet className="w-5 h-5 md:w-5 md:h-5" />
               </div>
               <div className="flex items-center gap-2">
-                <h1 className="text-lg font-black text-slate-800 tracking-tight">記帳本</h1>
+                <h1 className="text-lg md:text-lg font-black text-slate-800 tracking-tight">記帳本</h1>
                 <div className="badge badge-sm bg-sky-100 text-sky-700 border-none font-bold hidden sm:inline-flex">
                   Ledger
                 </div>
               </div>
             </div>
-            <div className="flex gap-2">
-              <Link href="/ledger/dashboard" className="btn btn-outline btn-sm h-9 min-h-0 rounded-xl font-bold">
+            <div className="flex gap-1.5 md:gap-2">
+              <Link href="/ledger/dashboard" className="btn btn-outline btn-sm h-8 md:h-9 min-h-0 rounded-xl font-bold px-2.5 md:px-3 text-xs md:text-sm text-slate-600 border-slate-300">
                 財務儀表板
               </Link>
               <Link
                 href="/"
-                className="btn btn-ghost btn-sm h-9 min-h-0 rounded-xl font-bold text-slate-500 hover:bg-slate-100"
+                className="btn btn-ghost btn-sm h-8 md:h-9 min-h-0 rounded-xl font-bold text-slate-500 hover:bg-slate-100 px-2.5 md:px-3 hidden sm:inline-flex"
               >
                 回首頁
               </Link>
@@ -373,20 +375,20 @@ export default function LedgerPage() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <div className="card bg-white shadow-sm border border-slate-200 rounded-3xl">
-            <div className="card-body p-5">
-              <div className="flex items-center gap-2 mb-3">
-                <Calendar className="w-4 h-4 text-sky-500" />
+        <div className="grid grid-cols-1 gap-3 md:gap-4 sm:grid-cols-3">
+          <div className="card bg-white shadow-sm border border-slate-200 rounded-2xl md:rounded-3xl">
+            <div className="card-body p-4 md:p-5 flex flex-col justify-center">
+              <div className="flex items-center gap-1.5 md:gap-2 mb-2 md:mb-3">
+                <Calendar className="w-3.5 h-3.5 md:w-4 md:h-4 text-sky-500" />
                 <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">統計月份</span>
               </div>
               <input
                 type="month"
-                className="input input-bordered w-full font-bold text-lg bg-slate-50 border-slate-200 focus:border-sky-500 rounded-xl"
+                className="input input-sm md:input-md input-bordered w-full font-bold text-base md:text-lg bg-slate-50 border-slate-200 focus:border-sky-500 rounded-xl"
                 value={ym}
                 onChange={(e) => setYm(e.target.value)}
               />
-              <div className="mt-2 text-[10px] text-slate-400 font-mono tracking-tighter">
+              <div className="mt-1.5 md:mt-2 text-[10px] md:text-xs text-slate-400 font-mono tracking-tighter">
                 {from} ~ {to}
               </div>
             </div>
@@ -409,38 +411,40 @@ export default function LedgerPage() {
         </div>
 
         {/* ===== New Entry Form ===== */}
-        <div className="card bg-white shadow-md border border-slate-200 rounded-3xl overflow-hidden">
-          <div className="bg-slate-50/50 px-6 py-4 border-b border-slate-200 flex items-center justify-between">
-            <h2 className="font-black text-lg text-slate-800 flex items-center gap-2">
-              <div className="bg-sky-500 text-white p-1 rounded-lg">
-                <Plus className="w-4 h-4" />
+        <div className="card bg-white shadow-md border border-slate-200 rounded-2xl md:rounded-3xl overflow-visible">
+          <div className="bg-slate-50/50 px-4 md:px-6 py-3 md:py-4 border-b border-slate-200 flex items-center justify-between rounded-t-2xl md:rounded-t-3xl">
+            <h2 className="font-black text-base md:text-lg text-slate-800 flex items-center gap-2">
+              <div className="bg-sky-500 text-white p-1 rounded-md md:rounded-lg">
+                <Plus className="w-3.5 h-3.5 md:w-4 md:h-4" />
               </div>{" "}
               新增記帳
             </h2>
           </div>
 
-          <div className="card-body p-6 space-y-6">
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-4">
+          {/* ✅ 手機版縮小 Padding 與 Gap，電腦版維持 md:p-6 與 md:gap-5 */}
+          <div className="card-body p-4 md:p-6 space-y-4 md:space-y-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-x-3 gap-y-4 md:gap-5 items-end">
+              
               {/* 日期 */}
-              <div className="md:col-span-1">
-                <label className="label py-1">
-                  <span className="label-text font-bold text-slate-400 text-xs uppercase">日期</span>
+              <div className="col-span-1 md:col-span-1">
+                <label className="label py-0.5 md:py-1 mb-0.5 md:mb-0">
+                  <span className="label-text font-bold text-slate-400 text-[11px] md:text-xs uppercase">日期</span>
                 </label>
                 <input
                   type="date"
-                  className="input input-bordered w-full rounded-xl"
+                  className="input input-sm md:input-md input-bordered w-full rounded-xl focus:border-sky-500 text-sm md:text-base font-medium"
                   value={entryDate}
                   onChange={(e) => setEntryDate(e.target.value)}
                 />
               </div>
 
               {/* 類型 */}
-              <div className="md:col-span-1">
-                <label className="label py-1">
-                  <span className="label-text font-bold text-slate-400 text-xs uppercase">類型</span>
+              <div className="col-span-1 md:col-span-1">
+                <label className="label py-0.5 md:py-1 mb-0.5 md:mb-0">
+                  <span className="label-text font-bold text-slate-400 text-[11px] md:text-xs uppercase">類型</span>
                 </label>
                 <select
-                  className={`select select-bordered w-full rounded-xl font-bold ${
+                  className={`select select-sm md:select-md select-bordered w-full rounded-xl font-bold focus:border-sky-500 ${
                     type === "expense" ? "text-rose-500" : "text-emerald-500"
                   }`}
                   value={type}
@@ -464,31 +468,32 @@ export default function LedgerPage() {
                 </select>
               </div>
 
-              {/* 金額 */}
-              <div className="md:col-span-2">
-                <label className="label py-1">
-                  <span className="label-text font-bold text-slate-400 text-xs uppercase">金額</span>
+              {/* 金額 (手機2欄/電腦2欄) */}
+              <div className="col-span-2 md:col-span-2">
+                <label className="label py-0.5 md:py-1 mb-0.5 md:mb-0">
+                  <span className="label-text font-bold text-slate-400 text-[11px] md:text-xs uppercase">金額</span>
                 </label>
                 <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-black text-slate-300">
+                  <span className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 text-base md:text-lg font-black text-slate-300">
                     $
                   </span>
                   <input
                     type="number"
-                    className="input input-bordered w-full pl-10 text-xl font-black tabular-nums rounded-xl"
-                    value={amount || ""}
-                    onChange={(e) => setAmount(Number(e.target.value))}
+                    className="input input-bordered w-full pl-8 md:pl-10 text-lg md:text-xl font-black tabular-nums rounded-xl focus:border-sky-500 h-10 md:h-12"
+                    value={amount}
+                    placeholder="0"
+                    onChange={(e) => setAmount(e.target.value ? Number(e.target.value) : "")}
                   />
                 </div>
               </div>
 
               {/* 大分類 */}
-              <div className="md:col-span-2">
-                <label className="label py-1">
-                  <span className="label-text font-bold text-slate-400 text-xs uppercase">大分類</span>
+              <div className="col-span-1 md:col-span-2">
+                <label className="label py-0.5 md:py-1 mb-0.5 md:mb-0">
+                  <span className="label-text font-bold text-slate-400 text-[11px] md:text-xs uppercase">大分類</span>
                 </label>
                 <select
-                  className="select select-bordered w-full rounded-xl"
+                  className="select select-sm md:select-md select-bordered w-full rounded-xl text-sm md:text-base focus:border-sky-500"
                   value={groupName}
                   onChange={(e) => {
                     setGroupName(e.target.value);
@@ -505,12 +510,12 @@ export default function LedgerPage() {
               </div>
 
               {/* 小分類 */}
-              <div className="md:col-span-2">
-                <label className="label py-1">
-                  <span className="label-text font-bold text-slate-400 text-xs uppercase">小分類</span>
+              <div className="col-span-1 md:col-span-2">
+                <label className="label py-0.5 md:py-1 mb-0.5 md:mb-0">
+                  <span className="label-text font-bold text-slate-400 text-[11px] md:text-xs uppercase">小分類</span>
                 </label>
                 <select
-                  className="select select-bordered w-full rounded-xl"
+                  className="select select-sm md:select-md select-bordered w-full rounded-xl text-sm md:text-base focus:border-sky-500"
                   value={categoryId}
                   onChange={(e) => setCategoryId(e.target.value)}
                   disabled={!groupName}
@@ -522,18 +527,15 @@ export default function LedgerPage() {
                     </option>
                   ))}
                 </select>
-                {!groupName && (
-                  <div className="mt-1 text-[10px] text-slate-400 ml-1">※ 先選大分類才會顯示小分類</div>
-                )}
               </div>
 
               {/* 付款方式 */}
-              <div className="md:col-span-2">
-                <label className="label py-1">
-                  <span className="label-text font-bold text-slate-400 text-xs uppercase">付款方式</span>
+              <div className="col-span-1 md:col-span-2">
+                <label className="label py-0.5 md:py-1 mb-0.5 md:mb-0">
+                  <span className="label-text font-bold text-slate-400 text-[11px] md:text-xs uppercase">付款方式</span>
                 </label>
                 <select
-                  className="select select-bordered w-full rounded-xl"
+                  className="select select-sm md:select-md select-bordered w-full rounded-xl text-sm md:text-base focus:border-sky-500"
                   value={payMethod}
                   onChange={(e) => setPayMethod(e.target.value)}
                 >
@@ -547,12 +549,12 @@ export default function LedgerPage() {
               </div>
 
               {/* 付款人 */}
-              <div className="md:col-span-2">
-                <label className="label py-1">
-                  <span className="label-text font-bold text-slate-400 text-xs uppercase">誰先付錢</span>
+              <div className="col-span-1 md:col-span-2">
+                <label className="label py-0.5 md:py-1 mb-0.5 md:mb-0">
+                  <span className="label-text font-bold text-slate-400 text-[11px] md:text-xs uppercase">誰先付錢</span>
                 </label>
                 <select
-                  className="select select-bordered w-full rounded-xl font-medium"
+                  className="select select-sm md:select-md select-bordered w-full rounded-xl text-sm md:text-base font-bold focus:border-sky-500 text-sky-700"
                   value={payerId}
                   onChange={(e) => setPayerId(e.target.value)}
                 >
@@ -566,12 +568,12 @@ export default function LedgerPage() {
               </div>
 
               {/* 店家 */}
-              <div className="md:col-span-2">
-                <label className="label py-1">
-                  <span className="label-text font-bold text-slate-400 text-xs uppercase">店家 / 對象</span>
+              <div className="col-span-2 md:col-span-2">
+                <label className="label py-0.5 md:py-1 mb-0.5 md:mb-0">
+                  <span className="label-text font-bold text-slate-400 text-[11px] md:text-xs uppercase">店家 / 對象</span>
                 </label>
                 <input
-                  className="input input-bordered w-full rounded-xl"
+                  className="input input-sm md:input-md input-bordered w-full rounded-xl text-sm md:text-base focus:border-sky-500"
                   value={merchant}
                   onChange={(e) => setMerchant(e.target.value)}
                   placeholder="例如：7-11"
@@ -579,12 +581,12 @@ export default function LedgerPage() {
               </div>
 
               {/* 備註 */}
-              <div className="md:col-span-2">
-                <label className="label py-1">
-                  <span className="label-text font-bold text-slate-400 text-xs uppercase">備註</span>
+              <div className="col-span-2 md:col-span-2">
+                <label className="label py-0.5 md:py-1 mb-0.5 md:mb-0">
+                  <span className="label-text font-bold text-slate-400 text-[11px] md:text-xs uppercase">備註</span>
                 </label>
                 <input
-                  className="input input-bordered w-full rounded-xl"
+                  className="input input-sm md:input-md input-bordered w-full rounded-xl text-sm md:text-base focus:border-sky-500"
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                   placeholder="備註..."
@@ -592,17 +594,17 @@ export default function LedgerPage() {
               </div>
 
               {/* Split Bill */}
-              <div className="md:col-span-4">
+              <div className="col-span-2 md:col-span-4 mt-2 md:mt-0">
                 <div
-                  className={`p-5 rounded-3xl border transition-all duration-300 ${
-                    useSplit ? "bg-sky-50 border-sky-200" : "bg-slate-50 border-slate-100 opacity-60"
+                  className={`p-3.5 md:p-5 rounded-2xl md:rounded-3xl border transition-all duration-300 ${
+                    useSplit ? "bg-sky-50 border-sky-200" : "bg-slate-50 border-slate-100 opacity-60 md:opacity-100"
                   }`}
                 >
                   <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                    <label className="flex items-center gap-4 cursor-pointer">
+                    <label className="flex items-center gap-3 md:gap-4 cursor-pointer">
                       <input
                         type="checkbox"
-                        className="toggle toggle-info toggle-md"
+                        className="toggle toggle-info toggle-sm md:toggle-md"
                         checked={useSplit}
                         onChange={(e) => {
                           if (e.target.checked && type !== "expense") {
@@ -617,21 +619,19 @@ export default function LedgerPage() {
                           }
                         }}
                       />
-                      <div>
-                        <div className="font-bold text-slate-700 flex items-center gap-2">
-                          <Split className="w-4 h-4 text-sky-500" /> 拆帳 / 代墊分攤
-                        </div>
+                      <div className="font-bold text-sm md:text-base text-slate-700 flex items-center gap-1.5 md:gap-2">
+                        <Split className="w-3.5 h-3.5 md:w-4 md:h-4 text-sky-500" /> 拆帳 / 代墊分攤
                       </div>
                     </label>
                   </div>
 
                   {useSplit && (
-                    <div className="mt-5 space-y-4">
+                    <div className="mt-4 md:mt-5 space-y-3 md:space-y-4">
                       {splits.map((s, idx) => (
-                        <div key={idx} className="flex flex-col md:flex-row gap-3 items-end md:items-center">
-                          <div className="w-full md:flex-1">
+                        <div key={idx} className="flex flex-row md:gap-3 items-center gap-2">
+                          <div className="flex-1">
                             <select
-                              className="select select-bordered select-sm w-full rounded-xl font-bold"
+                              className="select select-bordered select-sm md:select-md w-full rounded-xl font-bold text-xs md:text-sm"
                               value={s.payer_id}
                               onChange={(e) =>
                                 setSplits((prev) =>
@@ -639,7 +639,7 @@ export default function LedgerPage() {
                                 )
                               }
                             >
-                              <option value="">（選擇應付者）</option>
+                              <option value="">（應付者）</option>
                               {payers
                                 .filter((p) => p.id !== payerId)
                                 .map((p) => (
@@ -650,14 +650,14 @@ export default function LedgerPage() {
                             </select>
                           </div>
 
-                          <div className="w-full md:w-40 relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-300">
+                          <div className="w-24 md:w-40 relative">
+                            <span className="absolute left-2.5 md:left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-300">
                               $
                             </span>
                             <input
                               type="number"
-                              className="input input-bordered input-sm w-full pl-6 font-black rounded-xl"
-                              value={s.amount}
+                              className="input input-bordered input-sm md:input-md w-full pl-6 md:pl-6 font-black rounded-xl text-xs md:text-sm"
+                              value={s.amount || ""}
                               onChange={(e) =>
                                 setSplits((prev) =>
                                   prev.map((r, i) => (i === idx ? { ...r, amount: Number(e.target.value) } : r))
@@ -667,16 +667,17 @@ export default function LedgerPage() {
                           </div>
 
                           <button
-                            className="btn btn-ghost text-rose-500 btn-sm rounded-xl px-4"
+                            className="btn btn-ghost text-rose-500 btn-sm md:px-4 rounded-xl px-2"
                             onClick={() => setSplits((prev) => prev.filter((_, i) => i !== idx))}
                           >
-                            移除
+                            <Trash2 className="w-4 h-4 md:w-4 md:h-4" />
+                            <span className="hidden md:inline ml-1">移除</span>
                           </button>
                         </div>
                       ))}
 
                       <button
-                        className="btn btn-ghost btn-xs text-sky-600 font-bold"
+                        className="btn btn-ghost btn-xs md:btn-sm text-sky-600 font-bold"
                         onClick={() => {
                           const other = payerId ? payers.find((p) => p.id !== payerId)?.id || "" : "";
                           setSplits((prev) => [...prev, { payer_id: other, amount: 0 }]);
@@ -689,9 +690,10 @@ export default function LedgerPage() {
                 </div>
               </div>
 
-              <div className="md:col-span-4 flex justify-end md:static sticky bottom-[72px] z-30 mt-6 mb-2">
+              {/* 提交按鈕：手機版 w-full，電腦版靠右 */}
+              <div className="col-span-2 md:col-span-4 flex justify-end mt-4 md:mt-2">
                 <button
-                  className="btn bg-sky-600 hover:bg-sky-700 text-white rounded-2xl px-10 font-black shadow-md shadow-sky-200/30 w-full md:w-auto"
+                  className="btn bg-sky-600 hover:bg-sky-700 text-white rounded-xl md:rounded-2xl px-10 font-black shadow-md shadow-sky-200/30 w-full md:w-auto"
                   onClick={submitNew}
                 >
                   確認新增
@@ -702,21 +704,21 @@ export default function LedgerPage() {
         </div>
 
         {/* ===== List ===== */}
-        <div className="card bg-white shadow-sm border border-slate-200 rounded-3xl overflow-hidden">
-          <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between">
-            <div className="flex items-center gap-3">
+        <div className="card bg-white shadow-sm border border-slate-200 rounded-2xl md:rounded-3xl overflow-hidden">
+          <div className="px-5 py-4 md:px-8 md:py-6 border-b border-slate-100 flex items-center justify-between">
+            <div className="flex items-center gap-2.5 md:gap-3">
               <div className="w-1.5 h-1.5 rounded-full bg-slate-800"></div>
-              <h2 className="text-xl font-black text-slate-800 italic tracking-tight">TRANSACTIONS</h2>
+              <h2 className="text-lg md:text-xl font-black text-slate-800 italic tracking-tight">TRANSACTIONS</h2>
             </div>
             <div className="flex items-center gap-2">
               {rowsLoading && <span className="loading loading-spinner loading-xs text-sky-500"></span>}
-              <span className="text-[10px] font-black opacity-30 tracking-widest uppercase">{safeRows.length} 筆記錄</span>
+              <span className="text-[10px] font-black opacity-40 tracking-widest uppercase">{safeRows.length} 筆</span>
             </div>
           </div>
 
           <div className="divide-y divide-slate-100">
             {safeRows.length === 0 ? (
-              <div className="p-20 text-center opacity-30 font-black italic text-lg">本月尚無任何記帳資料。</div>
+              <div className="p-16 md:p-20 text-center opacity-30 font-black italic text-base md:text-lg">本月尚無任何記帳資料。</div>
             ) : (
               safeRows.map((r) => {
                 const sp = Array.isArray(r.ledger_splits) ? r.ledger_splits : [];
@@ -727,26 +729,27 @@ export default function LedgerPage() {
                     key={r.id}
                     className="group relative px-4 py-3 md:px-8 md:py-5 hover:bg-slate-50 transition-colors"
                   >
-                    <div className="absolute right-3 top-3 flex gap-1.5 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                    {/* 操作按鈕 */}
+                    <div className="absolute right-2 md:right-3 top-2.5 md:top-3 flex gap-0.5 md:gap-1.5 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                       <button
-                        className="btn btn-ghost btn-xs h-8 min-h-0 w-8 p-0 rounded-lg text-slate-400 hover:text-sky-600 hover:bg-sky-50"
+                        className="btn btn-ghost btn-xs h-7 w-7 md:h-8 md:w-8 p-0 min-h-0 rounded-lg text-slate-400 hover:text-sky-600 hover:bg-sky-50"
                         onClick={() => openEdit(r)}
                         aria-label="編輯"
                       >
-                        <Edit3 className="w-4 h-4" />
+                        <Edit3 className="w-3.5 h-3.5 md:w-4 md:h-4" />
                       </button>
                       <button
-                        className="btn btn-ghost btn-xs h-8 min-h-0 w-8 p-0 rounded-lg text-rose-400 hover:text-rose-600 hover:bg-rose-50"
+                        className="btn btn-ghost btn-xs h-7 w-7 md:h-8 md:w-8 p-0 min-h-0 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50"
                         onClick={() => deleteRow(r)}
                         aria-label="刪除"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-3.5 h-3.5 md:w-4 md:h-4" />
                       </button>
                     </div>
 
-                    <div className="flex items-start gap-3 min-w-0">
+                    <div className="flex items-start gap-3 md:gap-4 min-w-0 pr-14 md:pr-0">
                       <div
-                        className={`w-12 h-12 md:w-14 md:h-14 rounded-2xl flex items-center justify-center font-black shrink-0 border-2 ${
+                        className={`w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl flex items-center justify-center font-black text-sm md:text-base shrink-0 border-2 ${
                           isExp
                             ? "bg-rose-50 text-rose-500 border-rose-100"
                             : "bg-emerald-50 text-emerald-500 border-emerald-100"
@@ -755,58 +758,60 @@ export default function LedgerPage() {
                         {isExp ? "支" : "收"}
                       </div>
 
-                      <div className="min-w-0 flex-1 pr-16 md:pr-0">
-                        <div className="flex flex-wrap items-center gap-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
                           <span
-                            className={`text-xl font-black tabular-nums tracking-tighter ${
+                            className={`text-lg md:text-xl font-black tabular-nums tracking-tighter leading-none ${
                               isExp ? "text-rose-500" : "text-emerald-500"
                             }`}
                           >
                             ${Number(r.amount).toLocaleString()}
                           </span>
-                          <span className="text-xs font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded-md">
+                          <span className="text-[10px] md:text-xs font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 md:px-2 md:py-1 rounded-md">
                             {r.entry_date}
                           </span>
 
                           {sp.length > 0 && (
-                            <span className="badge bg-orange-100 text-orange-600 border-none badge-sm font-black text-[10px] tracking-widest uppercase">
-                              SPLITS
+                            <span className="px-1.5 py-0.5 rounded bg-orange-100 text-orange-600 font-black text-[9px] uppercase">
+                              拆帳
                             </span>
                           )}
 
                           {r.bill_instance_id && (
-                            <span className="badge badge-outline text-slate-400 badge-sm font-black text-[10px]">
-                              SYNC
+                            <span className="px-1.5 py-0.5 rounded border border-slate-200 text-slate-400 font-black text-[9px] uppercase">
+                              帳單
                             </span>
                           )}
                         </div>
 
-                        <div className="mt-1.5 flex flex-wrap items-center gap-2 text-sm font-medium text-slate-500">
-                          <span className="text-slate-700 font-extrabold border-b-2 border-slate-100 pb-0.5 mr-1">
+                        <div className="mt-1.5 flex flex-wrap items-center gap-1.5 md:gap-2 text-xs md:text-sm font-medium text-slate-500">
+                          <span className="text-slate-700 font-extrabold border-b-2 border-slate-100 pb-0.5 mr-0.5 md:mr-1">
                             {catName(r.category_id) || "未分類"}
                           </span>
 
                           {r.pay_method && (
-                            <span className="flex items-center gap-1 bg-slate-100 px-1.5 py-0.5 rounded-md text-xs text-slate-500 border border-slate-200/50">
-                              <CreditCard className="w-3 h-3" />
+                            <span className="flex items-center gap-1 bg-slate-100 px-1.5 py-0.5 rounded-md text-[10px] md:text-xs text-slate-500 border border-slate-200/50 whitespace-nowrap">
+                              <CreditCard className="w-2.5 h-2.5 md:w-3 md:h-3" />
                               {r.pay_method}
                             </span>
                           )}
 
                           {r.payer_id && (
-                            <span className="flex items-center gap-1 bg-sky-50 px-1.5 py-0.5 rounded-md text-xs text-sky-700 font-bold border border-sky-100">
-                              <User className="w-3 h-3" />
+                            <span className="flex items-center gap-1 bg-sky-50 px-1.5 py-0.5 rounded-md text-[10px] md:text-xs text-sky-700 font-bold border border-sky-100 whitespace-nowrap">
+                              <User className="w-2.5 h-2.5 md:w-3 md:h-3" />
                               {payerName(r.payer_id)} 先付
                             </span>
                           )}
 
                           {r.merchant && (
-                            <span className="text-indigo-600 font-bold flex items-center ml-1">@ {r.merchant}</span>
+                            <span className="text-indigo-600 font-bold flex items-center ml-0.5 md:ml-1 truncate max-w-[100px] md:max-w-none">
+                              @ {r.merchant}
+                            </span>
                           )}
 
                           {r.note && (
                             <span
-                              className="text-violet-600 font-normal max-w-[220px] sm:max-w-[320px] truncate cursor-help ml-1"
+                              className="text-violet-600 font-normal max-w-[150px] sm:max-w-[220px] md:max-w-[320px] truncate ml-0.5 md:ml-1"
                               title={r.note}
                             >
                               ({r.note})
@@ -819,7 +824,7 @@ export default function LedgerPage() {
                             {sp.map((x, i) => (
                               <div
                                 key={i}
-                                className="px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-[10px] font-black text-slate-500"
+                                className="px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-[9px] md:text-[10px] font-black text-slate-500"
                               >
                                 {payerName(x.payer_id)}: ${Number(x.amount)}
                               </div>
@@ -838,12 +843,12 @@ export default function LedgerPage() {
 
       {/* ===== Edit Modal ===== */}
       {editing && (
-        <div className="modal modal-open bg-slate-900/40 backdrop-blur-sm">
-          <div className="modal-box max-w-2xl rounded-3xl p-0 shadow-2xl border border-white/20">
-            <div className="bg-slate-50 px-8 py-6 flex items-start justify-between border-b border-slate-200">
+        <div className="modal modal-open bg-slate-900/40 backdrop-blur-sm p-2 sm:p-0">
+          <div className="modal-box w-full max-w-2xl rounded-2xl md:rounded-3xl p-0 shadow-2xl border border-white/20">
+            <div className="bg-slate-50 px-5 md:px-8 py-4 md:py-6 flex items-start justify-between border-b border-slate-200">
               <div>
-                <h3 className="text-xl font-black text-slate-800">修改記帳內容</h3>
-                <div className="text-xs font-bold text-slate-400 mt-1 uppercase tracking-widest">
+                <h3 className="text-lg md:text-xl font-black text-slate-800">修改記帳內容</h3>
+                <div className="text-[10px] md:text-xs font-bold text-slate-400 mt-1 uppercase tracking-widest">
                   Transaction Editor
                 </div>
               </div>
@@ -852,26 +857,26 @@ export default function LedgerPage() {
               </button>
             </div>
 
-            <div className="p-8 space-y-6 max-h-[70vh] overflow-y-auto bg-white">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="md:col-span-1">
+            <div className="p-5 md:p-8 space-y-4 md:space-y-6 max-h-[70vh] overflow-y-auto bg-white">
+              <div className="grid grid-cols-2 md:grid-cols-2 gap-3 md:gap-4">
+                <div className="col-span-1">
                   <label className="label py-0 mb-1">
                     <span className="label-text font-bold text-[10px] opacity-40 uppercase">日期</span>
                   </label>
                   <input
                     type="date"
-                    className="input input-bordered w-full rounded-xl font-bold"
+                    className="input input-sm md:input-md input-bordered w-full rounded-xl font-bold focus:border-sky-500"
                     value={editForm.entry_date}
                     onChange={(e) => setEditForm({ ...editForm, entry_date: e.target.value })}
                   />
                 </div>
 
-                <div className="md:col-span-1">
+                <div className="col-span-1">
                   <label className="label py-0 mb-1">
                     <span className="label-text font-bold text-[10px] opacity-40 uppercase">類型</span>
                   </label>
                   <select
-                    className="select select-bordered w-full rounded-xl font-bold"
+                    className="select select-sm md:select-md select-bordered w-full rounded-xl font-bold focus:border-sky-500"
                     value={editForm.type}
                     onChange={(e) => {
                       const t = e.target.value as "expense" | "income";
@@ -890,24 +895,24 @@ export default function LedgerPage() {
                   </select>
                 </div>
 
-                <div className="md:col-span-2">
+                <div className="col-span-2">
                   <label className="label py-0 mb-1">
                     <span className="label-text font-bold text-[10px] opacity-40 uppercase">金額</span>
                   </label>
                   <input
                     type="number"
-                    className="input input-bordered w-full text-3xl font-black tabular-nums py-8 rounded-xl"
-                    value={editForm.amount}
+                    className="input input-bordered w-full text-2xl md:text-3xl font-black tabular-nums py-6 md:py-8 rounded-xl focus:border-sky-500"
+                    value={editForm.amount || ""}
                     onChange={(e) => setEditForm({ ...editForm, amount: Number(e.target.value) })}
                   />
                 </div>
 
-                <div>
+                <div className="col-span-1 md:col-span-2">
                   <label className="label py-0 mb-1">
                     <span className="label-text font-bold text-[10px] opacity-40 uppercase">大分類</span>
                   </label>
                   <select
-                    className="select select-bordered w-full rounded-xl font-medium"
+                    className="select select-sm md:select-md select-bordered w-full rounded-xl font-medium focus:border-sky-500"
                     value={editForm.group_name}
                     onChange={(e) => setEditForm({ ...editForm, group_name: e.target.value, category_id: "" })}
                   >
@@ -920,12 +925,12 @@ export default function LedgerPage() {
                   </select>
                 </div>
 
-                <div>
+                <div className="col-span-1 md:col-span-2">
                   <label className="label py-0 mb-1">
                     <span className="label-text font-bold text-[10px] opacity-40 uppercase">小分類</span>
                   </label>
                   <select
-                    className="select select-bordered w-full rounded-xl font-medium"
+                    className="select select-sm md:select-md select-bordered w-full rounded-xl font-medium focus:border-sky-500"
                     value={editForm.category_id}
                     onChange={(e) => setEditForm({ ...editForm, category_id: e.target.value })}
                     disabled={!editForm.group_name}
@@ -939,12 +944,12 @@ export default function LedgerPage() {
                   </select>
                 </div>
 
-                <div>
+                <div className="col-span-1 md:col-span-2">
                   <label className="label py-0 mb-1">
                     <span className="label-text font-bold text-[10px] opacity-40 uppercase">付款方式</span>
                   </label>
                   <select
-                    className="select select-bordered w-full rounded-xl font-medium"
+                    className="select select-sm md:select-md select-bordered w-full rounded-xl font-medium focus:border-sky-500"
                     value={editForm.pay_method}
                     onChange={(e) => setEditForm({ ...editForm, pay_method: e.target.value })}
                   >
@@ -957,12 +962,12 @@ export default function LedgerPage() {
                   </select>
                 </div>
 
-                <div>
+                <div className="col-span-1 md:col-span-2">
                   <label className="label py-0 mb-1">
                     <span className="label-text font-bold text-[10px] opacity-40 uppercase">付款人</span>
                   </label>
                   <select
-                    className="select select-bordered w-full rounded-xl font-medium"
+                    className="select select-sm md:select-md select-bordered w-full rounded-xl font-bold text-sky-700 focus:border-sky-500"
                     value={editForm.payer_id}
                     onChange={(e) => {
                       const nextPayer = e.target.value;
@@ -983,34 +988,34 @@ export default function LedgerPage() {
                   </select>
                 </div>
 
-                <div className="md:col-span-2">
+                <div className="col-span-2">
                   <label className="label py-0 mb-1">
                     <span className="label-text font-bold text-[10px] opacity-40 uppercase">店家 / 對象</span>
                   </label>
                   <input
-                    className="input input-bordered w-full rounded-xl"
+                    className="input input-sm md:input-md input-bordered w-full rounded-xl focus:border-sky-500"
                     value={editForm.merchant}
                     onChange={(e) => setEditForm({ ...editForm, merchant: e.target.value })}
                   />
                 </div>
 
-                <div className="md:col-span-2">
+                <div className="col-span-2">
                   <label className="label py-0 mb-1">
                     <span className="label-text font-bold text-[10px] opacity-40 uppercase">備註</span>
                   </label>
                   <input
-                    className="input input-bordered w-full rounded-xl"
+                    className="input input-sm md:input-md input-bordered w-full rounded-xl focus:border-sky-500"
                     value={editForm.note}
                     onChange={(e) => setEditForm({ ...editForm, note: e.target.value })}
                   />
                 </div>
               </div>
 
-              <div className="bg-sky-50 p-6 rounded-2xl border border-sky-200">
-                <label className="flex items-center gap-3 cursor-pointer mb-4">
+              <div className={`p-4 md:p-6 rounded-2xl border transition-all duration-300 ${editForm.useSplit ? "bg-sky-50 border-sky-200" : "bg-slate-50 border-slate-100"}`}>
+                <label className="flex items-center gap-3 cursor-pointer mb-3 md:mb-4">
                   <input
                     type="checkbox"
-                    className="toggle toggle-info"
+                    className="toggle toggle-info toggle-sm md:toggle-md"
                     checked={editForm.useSplit}
                     onChange={(e) => {
                       if (e.target.checked && editForm.type !== "expense") {
@@ -1030,43 +1035,41 @@ export default function LedgerPage() {
                       });
                     }}
                   />
-                  <div className="font-bold text-slate-700">修改拆帳內容</div>
+                  <div className="font-bold text-sm text-slate-700">修改拆帳內容</div>
                 </label>
 
                 {editForm.useSplit && (
                   <div className="space-y-3">
                     {(editForm.splits || []).map((s, idx) => (
-                      <div key={idx} className="flex flex-col md:flex-row gap-3 items-end md:items-center">
-                        <div className="w-full md:flex-1">
-                          <select
-                            className="select select-bordered select-sm w-full rounded-xl font-bold"
-                            value={s.payer_id}
-                            onChange={(e) => {
-                              const next = (editForm.splits || []).map((r, i) =>
-                                i === idx ? { ...r, payer_id: e.target.value } : r
-                              );
-                              setEditForm({ ...editForm, splits: next });
-                            }}
-                          >
-                            <option value="">（選擇應付者）</option>
-                            {payers
-                              .filter((p) => p.id !== editForm.payer_id)
-                              .map((p) => (
-                                <option key={p.id} value={p.id}>
-                                  {p.name}
-                                </option>
-                              ))}
-                          </select>
-                        </div>
+                      <div key={idx} className="flex gap-2 items-center">
+                        <select
+                          className="select select-bordered select-sm md:select-md w-full rounded-lg md:rounded-xl font-bold text-xs md:text-sm"
+                          value={s.payer_id}
+                          onChange={(e) => {
+                            const next = (editForm.splits || []).map((r, i) =>
+                              i === idx ? { ...r, payer_id: e.target.value } : r
+                            );
+                            setEditForm({ ...editForm, splits: next });
+                          }}
+                        >
+                          <option value="">（應付者）</option>
+                          {payers
+                            .filter((p) => p.id !== editForm.payer_id)
+                            .map((p) => (
+                              <option key={p.id} value={p.id}>
+                                {p.name}
+                              </option>
+                            ))}
+                        </select>
 
-                        <div className="w-full md:w-32 relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-300">
+                        <div className="relative w-28 md:w-32 shrink-0">
+                          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] md:text-xs font-bold text-slate-400">
                             $
                           </span>
                           <input
                             type="number"
-                            className="input input-bordered input-sm w-full pl-6 font-black rounded-xl"
-                            value={s.amount}
+                            className="input input-bordered input-sm md:input-md w-full pl-5 md:pl-6 font-black rounded-lg md:rounded-xl text-xs md:text-sm"
+                            value={s.amount || ""}
                             onChange={(e) => {
                               const next = (editForm.splits || []).map((r, i) =>
                                 i === idx ? { ...r, amount: Number(e.target.value) } : r
@@ -1077,19 +1080,19 @@ export default function LedgerPage() {
                         </div>
 
                         <button
-                          className="btn btn-ghost text-rose-500 btn-sm rounded-xl"
+                          className="btn btn-ghost text-rose-500 btn-sm px-2 rounded-lg"
                           onClick={() => {
                             const next = (editForm.splits || []).filter((_, i) => i !== idx);
                             setEditForm({ ...editForm, splits: next });
                           }}
                         >
-                          刪除
+                          <Trash2 className="w-3.5 h-3.5 md:w-4 md:h-4" />
                         </button>
                       </div>
                     ))}
 
                     <button
-                      className="btn btn-ghost btn-xs text-sky-600 font-bold"
+                      className="btn btn-ghost btn-xs md:btn-sm text-sky-600 font-bold"
                       onClick={() => {
                         const payer = editForm.payer_id || "";
                         const other = payer ? payers.find((p) => p.id !== payer)?.id || "" : "";
@@ -1104,29 +1107,28 @@ export default function LedgerPage() {
               </div>
             </div>
 
-            <div className="bg-slate-50 px-8 py-5 flex justify-end gap-3 border-t border-slate-200">
+            <div className="bg-slate-50 px-5 md:px-8 py-4 flex justify-end gap-3 border-t border-slate-200 rounded-b-2xl md:rounded-b-3xl">
               <button
-                className="btn btn-outline btn-sm rounded-xl border-slate-200 text-slate-600"
+                className="btn btn-ghost btn-sm md:btn-md rounded-xl text-slate-600 font-bold"
                 onClick={() => setEditing(null)}
               >
                 取消
               </button>
               <button
-                className="btn bg-sky-600 hover:bg-sky-700 text-white border-none rounded-2xl px-10 font-black shadow-md"
+                className="btn bg-sky-600 hover:bg-sky-700 text-white border-none btn-sm md:btn-md rounded-xl md:rounded-2xl px-6 md:px-8 font-black shadow-md"
                 onClick={submitEdit}
               >
                 確認修改
               </button>
             </div>
           </div>
-
           <div className="modal-backdrop" onClick={() => setEditing(null)}></div>
         </div>
       )}
 
-      {/* ✅ 若 workspaceId 空值，給提示（不影響 hooks 執行） */}
+      {/* ✅ 若 workspaceId 空值，給提示 */}
       {!WORKSPACE_ID ? (
-        <div className="fixed bottom-3 left-1/2 -translate-x-1/2 px-4 py-2 rounded-xl bg-red-600 text-white text-xs font-bold shadow-lg">
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 px-4 py-2 rounded-xl bg-red-600 text-white text-xs font-bold shadow-lg z-50">
           缺少 NEXT_PUBLIC_WORKSPACE_ID（Vercel / .env.local 尚未設定）
         </div>
       ) : null}
