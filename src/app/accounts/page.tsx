@@ -5,15 +5,18 @@ import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { WORKSPACE_ID } from "@/lib/appConfig";
 import { useToast } from "@/hooks/use-toast";
-import { CreditCard, Edit3, Plus, Trash2, ShieldCheck, Building2 } from "lucide-react";
+import { CreditCard, Edit3, Plus, Trash2, ShieldCheck, Building2, Copy, CheckCircle2 } from "lucide-react";
 
+// ✅ 完美對齊最新的資料庫欄位，加入 account_number
 type AccountRow = {
   id: string;
-  type: string; // "bank" | "credit_card" | "e_wallet" ...
-  name: string; // 銀行名稱 or 信用卡名稱
+  type: string;
+  name: string;
   account_number: string | null;
-  owner: string | null;
+  owner_name: string | null;
   note: string | null;
+  sort_order: number | null;
+  is_active: boolean;
 };
 
 const ACCOUNT_TYPES = [
@@ -137,8 +140,8 @@ export default function AccountsPage() {
   // New Form
   const [formType, setFormType] = useState("bank");
   const [formName, setFormName] = useState("");
-  const [formAccNum, setFormAccNum] = useState("");
-  const [formOwner, setFormOwner] = useState("");
+  const [formOwnerName, setFormOwnerName] = useState("");
+  const [formAccountNumber, setFormAccountNumber] = useState(""); // ✅ 新增卡號狀態
   const [formNote, setFormNote] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -147,10 +150,13 @@ export default function AccountsPage() {
   const [editForm, setEditForm] = useState({
     type: "bank",
     name: "",
-    account_number: "",
-    owner: "",
+    owner_name: "",
+    account_number: "", // ✅ 新增卡號狀態
     note: "",
   });
+
+  // Copy Feedback
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   async function load() {
     if (!WORKSPACE_ID) {
@@ -192,17 +198,18 @@ export default function AccountsPage() {
           workspace_id: WORKSPACE_ID,
           type: formType,
           name: n,
-          account_number: formAccNum || null,
-          owner: formOwner || null,
+          owner_name: formOwnerName || null,
+          account_number: formAccountNumber || null, // ✅ 傳送卡號
           note: formNote || null,
+          is_active: true,
         }),
       });
       const j = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(j.error || "新增失敗");
 
       setFormName("");
-      setFormAccNum("");
-      setFormOwner("");
+      setFormOwnerName("");
+      setFormAccountNumber(""); // ✅ 清除卡號狀態
       setFormNote("");
       toast({ title: "已新增帳戶/卡片" });
       load();
@@ -230,8 +237,8 @@ export default function AccountsPage() {
           id: editing.id,
           type: editForm.type,
           name: n,
-          account_number: editForm.account_number || null,
-          owner: editForm.owner || null,
+          owner_name: editForm.owner_name || null,
+          account_number: editForm.account_number || null, // ✅ 傳送卡號
           note: editForm.note || null,
         }),
       });
@@ -269,10 +276,23 @@ export default function AccountsPage() {
     setEditForm({
       type: r.type || "bank",
       name: r.name || "",
-      account_number: r.account_number || "",
-      owner: r.owner || "",
+      owner_name: r.owner_name || "",
+      account_number: r.account_number || "", // ✅ 帶入卡號
       note: r.note || "",
     });
+  }
+
+  // ✅ 複製帳號功能
+  async function handleCopy(text: string, id: string, e: React.MouseEvent) {
+    e.stopPropagation(); // 避免觸發滑動或其他點擊事件
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 1500);
+      toast({ title: "已複製帳號/卡號" });
+    } catch (err) {
+      toast({ variant: "destructive", title: "複製失敗", description: "請手動選取複製" });
+    }
   }
 
   return (
@@ -322,19 +342,22 @@ export default function AccountsPage() {
               </div>
               <div className="col-span-1">
                 <label className="label py-0.5 sm:py-1 mb-0.5"><span className="label-text font-bold text-slate-400 text-xs uppercase">持有人</span></label>
-                <input className="input input-sm sm:input-md input-bordered w-full rounded-xl focus:border-emerald-500" value={formOwner} onChange={(e) => setFormOwner(e.target.value)} placeholder="如：自己、老公" />
+                <input className="input input-sm sm:input-md input-bordered w-full rounded-xl focus:border-emerald-500" value={formOwnerName} onChange={(e) => setFormOwnerName(e.target.value)} placeholder="如：自己、老公" />
               </div>
               <div className="col-span-2">
-                <label className="label py-0.5 sm:py-1 mb-0.5"><span className="label-text font-bold text-slate-400 text-xs uppercase">名稱</span></label>
-                <input className="input input-sm sm:input-md input-bordered w-full rounded-xl font-bold focus:border-emerald-500" value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="如：國泰世華銀行" />
+                <label className="label py-0.5 sm:py-1 mb-0.5"><span className="label-text font-bold text-slate-400 text-xs uppercase">銀行/卡片名稱</span></label>
+                <input className="input input-sm sm:input-md input-bordered w-full rounded-xl font-bold focus:border-emerald-500" value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="如：國泰世華、玉山 Cube" />
               </div>
-              <div className="col-span-2">
+              
+              {/* ✅ 獨立出卡號/帳號輸入框 */}
+              <div className="col-span-2 md:col-span-2">
                 <label className="label py-0.5 sm:py-1 mb-0.5"><span className="label-text font-bold text-slate-400 text-xs uppercase">帳號 / 卡號</span></label>
-                <input className="input input-sm sm:input-md input-bordered w-full rounded-xl font-mono focus:border-emerald-500" value={formAccNum} onChange={(e) => setFormAccNum(e.target.value)} placeholder="000-0000-0000" />
+                <input className="input input-sm sm:input-md input-bordered w-full rounded-xl focus:border-emerald-500 font-mono tracking-wide placeholder:font-sans" value={formAccountNumber} onChange={(e) => setFormAccountNumber(e.target.value)} placeholder="000-0000-0000" />
               </div>
-              <div className="col-span-2">
+
+              <div className="col-span-2 md:col-span-2">
                 <label className="label py-0.5 sm:py-1 mb-0.5"><span className="label-text font-bold text-slate-400 text-xs uppercase">備註</span></label>
-                <input className="input input-sm sm:input-md input-bordered w-full rounded-xl focus:border-emerald-500" value={formNote} onChange={(e) => setFormNote(e.target.value)} placeholder="繳費帳戶、綁定街口..." />
+                <input className="input input-sm sm:input-md input-bordered w-full rounded-xl focus:border-emerald-500" value={formNote} onChange={(e) => setFormNote(e.target.value)} placeholder="如：繳費帳戶、結帳日5號" />
               </div>
             </div>
             <div className="mt-4 flex justify-end">
@@ -360,7 +383,7 @@ export default function AccountsPage() {
             ) : (
               list.map((r) => (
                 <SwipeableRow key={r.id} onEdit={() => openEdit(r)} onDelete={() => deleteRow(r.id)}>
-                  <div className="group relative px-4 py-3 sm:px-6 sm:py-4 hover:bg-slate-50 transition-colors">
+                  <div className="group relative px-4 py-4 sm:px-6 hover:bg-slate-50 transition-colors">
                     
                     {/* PC 端按鈕 */}
                     <div className="absolute right-4 top-1/2 -translate-y-1/2 hidden sm:flex flex-row gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -373,35 +396,41 @@ export default function AccountsPage() {
                     </div>
 
                     <div className="flex items-start gap-3 sm:gap-4 pr-0 sm:pr-24">
-                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 shrink-0 border border-slate-200">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 shrink-0 border border-slate-200 mt-1">
                         {r.type === 'credit_card' ? <CreditCard className="w-5 h-5 sm:w-6 sm:h-6" /> : <Building2 className="w-5 h-5 sm:w-6 sm:h-6" />}
                       </div>
                       
-                      <div className="flex-1 min-w-0">
-                        <div className="flex flex-wrap items-center gap-2 mb-1">
+                      <div className="flex-1 min-w-0 flex flex-col justify-center gap-1.5">
+                        <div className="flex flex-wrap items-center gap-2">
                           <h3 className="font-black text-slate-900 text-sm sm:text-base leading-tight truncate">{r.name}</h3>
                           <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-500 font-bold text-[10px] sm:text-xs">
                             {getTypeLabel(r.type)}
                           </span>
-                          {r.owner && (
+                          {r.owner_name && (
                             <span className="px-2 py-0.5 rounded bg-sky-50 text-sky-700 font-bold text-[10px] sm:text-xs border border-sky-100">
-                              {r.owner}
+                              {r.owner_name}
                             </span>
                           )}
                         </div>
-                        
-                        <div className="mt-1.5">
-                          {r.account_number ? (
-                            <div className="font-mono text-xs sm:text-sm text-slate-600 font-medium select-all">
+
+                        {/* ✅ 獨立帳號顯示，支援一鍵複製 */}
+                        {r.account_number && (
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-sm sm:text-[15px] font-bold text-slate-700 tracking-wide select-all bg-slate-100/50 px-2 py-0.5 rounded-md border border-slate-200/50">
                               {r.account_number}
-                            </div>
-                          ) : (
-                            <div className="text-xs text-slate-400 italic">無號碼紀錄</div>
-                          )}
-                        </div>
+                            </span>
+                            <button 
+                              onClick={(e) => handleCopy(r.account_number!, r.id, e)}
+                              className="text-slate-400 hover:text-emerald-600 transition-colors p-1"
+                              title="複製帳號"
+                            >
+                              {copiedId === r.id ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                            </button>
+                          </div>
+                        )}
 
                         {r.note && (
-                          <div className="mt-1 text-[11px] sm:text-xs text-slate-500 leading-snug">
+                          <div className="text-xs text-slate-500 leading-snug">
                             備註：{r.note}
                           </div>
                         )}
@@ -434,16 +463,19 @@ export default function AccountsPage() {
                 </div>
                 <div className="col-span-1">
                   <label className="label py-0 mb-1"><span className="label-text font-bold text-[10px] text-slate-400 uppercase">持有人</span></label>
-                  <input className="input input-bordered w-full rounded-xl focus:border-emerald-500" value={editForm.owner} onChange={(e) => setEditForm({ ...editForm, owner: e.target.value })} />
+                  <input className="input input-bordered w-full rounded-xl focus:border-emerald-500" value={editForm.owner_name} onChange={(e) => setEditForm({ ...editForm, owner_name: e.target.value })} />
                 </div>
                 <div className="col-span-2">
-                  <label className="label py-0 mb-1"><span className="label-text font-bold text-[10px] text-slate-400 uppercase">名稱</span></label>
+                  <label className="label py-0 mb-1"><span className="label-text font-bold text-[10px] text-slate-400 uppercase">銀行/卡片名稱</span></label>
                   <input className="input input-bordered w-full rounded-xl font-bold focus:border-emerald-500" value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} />
                 </div>
+                
+                {/* ✅ 編輯 Modal 加上卡號 */}
                 <div className="col-span-2">
                   <label className="label py-0 mb-1"><span className="label-text font-bold text-[10px] text-slate-400 uppercase">帳號 / 卡號</span></label>
-                  <input className="input input-bordered w-full rounded-xl font-mono focus:border-emerald-500" value={editForm.account_number} onChange={(e) => setEditForm({ ...editForm, account_number: e.target.value })} />
+                  <input className="input input-bordered w-full rounded-xl focus:border-emerald-500 font-mono tracking-wide placeholder:font-sans" value={editForm.account_number} onChange={(e) => setEditForm({ ...editForm, account_number: e.target.value })} placeholder="000-0000-0000" />
                 </div>
+
                 <div className="col-span-2">
                   <label className="label py-0 mb-1"><span className="label-text font-bold text-[10px] text-slate-400 uppercase">備註</span></label>
                   <input className="input input-bordered w-full rounded-xl focus:border-emerald-500" value={editForm.note} onChange={(e) => setEditForm({ ...editForm, note: e.target.value })} />
