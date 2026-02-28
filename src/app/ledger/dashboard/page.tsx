@@ -354,6 +354,9 @@ export default function LedgerDashboardPage() {
         // 如果有拆帳，將一筆交易展開為多行
         sp.forEach((split) => {
           const splitPayer = split.payer_id ? maps.payerMap.get(split.payer_id) || split.payer_id : "";
+          // ✅ 若付款人等於分攤人，金額強制顯示為 0
+          const splitAmount = split.payer_id === x.payer_id ? 0 : split.amount;
+
           lines.push([
             toCsvCell(x.entry_date),
             toCsvCell(typeLabel),
@@ -364,13 +367,13 @@ export default function LedgerDashboardPage() {
             toCsvCell(pm),
             toCsvCell(payer),
             toCsvCell(splitPayer),
-            toCsvCell(split.amount),
+            toCsvCell(splitAmount), // 這裡會自動輸出 0
             toCsvCell(x.note || ""),
             toCsvCell(x.id),
           ].join(","));
         });
       } else {
-        // 如果沒有拆帳，則應付人與付款人相同，分攤金額即為總金額
+        // 如果沒有拆帳，則應付人與付款人相同，分攤金額直接記為 0
         lines.push([
           toCsvCell(x.entry_date),
           toCsvCell(typeLabel),
@@ -381,7 +384,7 @@ export default function LedgerDashboardPage() {
           toCsvCell(pm),
           toCsvCell(payer),
           toCsvCell(payer || "—"), // 應付人同付款人
-          toCsvCell(x.amount), // 分攤金額即為總額
+          toCsvCell(0), // ✅ 沒有拆帳代表自己付自己的，分攤金額為 0
           toCsvCell(x.note || ""),
           toCsvCell(x.id),
         ].join(","));
@@ -526,7 +529,7 @@ export default function LedgerDashboardPage() {
             </span>
           ) : null}
 
-          {/* ✅ 替換為單一強大的「匯出完整明細」按鈕 */}
+          {/* 單一強大的「匯出完整明細」按鈕 */}
           <button
             onClick={exportSummaryCsv}
             className={cn(
@@ -894,19 +897,20 @@ export default function LedgerDashboardPage() {
                 {filteredRows
                   .slice()
                   .sort((a, b) => (a.entry_date < b.entry_date ? 1 : -1))
-                  .map((x) => {
-                    const c = x.category_id ? maps.catMap.get(x.category_id) : null;
+                  .map((r) => {
+                    const c = r.category_id ? maps.catMap.get(r.category_id) : null;
                     const group = c?.group_name || "未分類";
                     const cat = c?.name || "未分類";
-                    const payer = x.payer_id ? maps.payerMap.get(x.payer_id) || "" : "";
-                    const pm = x.pay_method ? maps.pmMap.get(x.pay_method) || x.pay_method : "";
-                    const isIncome = x.type === "income";
+                    const payer = r.payer_id ? maps.payerMap.get(r.payer_id) || "" : "";
+                    const pm = r.pay_method ? maps.pmMap.get(r.pay_method) || r.pay_method : "";
+                    const isIncome = r.type === "income";
+                    const sp = Array.isArray(r.ledger_splits) ? r.ledger_splits : [];
 
                     return (
                       <button
-                        key={x.id}
+                        key={r.id}
                         type="button"
-                        onClick={() => copyRow(x)}
+                        onClick={() => copyRow(r)}
                         className={cn(
                           "w-full text-left",
                           "border border-slate-200 bg-white rounded-2xl p-4 shadow-sm",
@@ -918,7 +922,7 @@ export default function LedgerDashboardPage() {
                         <div className="flex items-start justify-between gap-3">
                           <div>
                             <div className="text-xs font-bold text-slate-500 font-mono">
-                              {x.entry_date}
+                              {r.entry_date}
                             </div>
                             <div className="mt-2">
                               <span
@@ -942,7 +946,7 @@ export default function LedgerDashboardPage() {
                                 isIncome ? "text-green-600" : "text-red-600"
                               )}
                             >
-                              {Number(x.amount || 0).toLocaleString()}
+                              {Number(r.amount || 0).toLocaleString()}
                             </div>
                           </div>
                         </div>
@@ -957,7 +961,7 @@ export default function LedgerDashboardPage() {
                           <div className="rounded-xl bg-slate-50 border border-slate-100 p-3">
                             <div className="text-[11px] font-black text-slate-400">店家</div>
                             <div className="mt-1 font-bold text-slate-800 break-words">
-                              {x.merchant || "—"}
+                              {r.merchant || "—"}
                             </div>
                           </div>
                         </div>
@@ -979,9 +983,26 @@ export default function LedgerDashboardPage() {
                         <div className="mt-3">
                           <div className="text-[11px] font-black text-slate-400">備註</div>
                           <div className="mt-1 text-sm text-slate-600 break-words">
-                            {x.note || "—"}
+                            {r.note || "—"}
                           </div>
                         </div>
+
+                        {/* ✅ UI：若付款人等同於分攤人，顯示 0 */}
+                        {sp.length > 0 && (
+                          <div className="mt-2 flex flex-wrap gap-1">
+                            {sp.map((splitItem, i) => {
+                              const displayAmt = splitItem.payer_id === r.payer_id ? 0 : Number(splitItem.amount);
+                              return (
+                                <div
+                                  key={i}
+                                  className="px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-[9px] sm:text-[10px] font-black text-slate-500"
+                                >
+                                  {payerName(splitItem.payer_id)}: ${displayAmt}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
 
                         <div className="mt-3 text-[11px] font-bold text-slate-400">
                           點一下可複製此筆摘要
