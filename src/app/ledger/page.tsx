@@ -1,7 +1,7 @@
 // src/app/ledger/page.tsx
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import Link from "next/link";
 import { WORKSPACE_ID } from "@/lib/appConfig";
 import {
@@ -62,6 +62,116 @@ function n(v: any) {
   return Number.isFinite(x) ? x : 0;
 }
 
+// ===== 🚀 新增：手機版專用滑動元件 (Swipe to Action) =====
+function SwipeableRow({ children, onEdit, onDelete }: { children: React.ReactNode, onEdit: () => void, onDelete: () => void }) {
+  const rowRef = useRef<HTMLDivElement>(null);
+  const startX = useRef<number | null>(null);
+  const startY = useRef<number | null>(null);
+  const currentX = useRef<number>(0);
+  const isSwiping = useRef(false);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    startX.current = e.touches[0].clientX;
+    startY.current = e.touches[0].clientY;
+    isSwiping.current = false;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (startX.current === null || startY.current === null) return;
+    const dx = e.touches[0].clientX - startX.current;
+    const dy = e.touches[0].clientY - startY.current;
+
+    // 判斷是否為水平滑動 (排除垂直滾動)
+    if (!isSwiping.current && Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 10) {
+      isSwiping.current = true;
+    }
+
+    if (isSwiping.current) {
+      let newX = currentX.current + dx;
+      // 增加邊界阻力 (Friction)
+      if (newX > 80) newX = 80 + (newX - 80) * 0.2;
+      if (newX < -80) newX = -80 + (newX + 80) * 0.2;
+      
+      if (rowRef.current) {
+        rowRef.current.style.transform = `translateX(${newX}px)`;
+      }
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!isSwiping.current) {
+      // 點擊時若已展開，則自動收起
+      if (currentX.current !== 0) {
+         currentX.current = 0;
+         if (rowRef.current) {
+           rowRef.current.style.transition = 'transform 0.2s ease-out';
+           rowRef.current.style.transform = `translateX(0px)`;
+           setTimeout(() => { if(rowRef.current) rowRef.current.style.transition = ''; }, 200);
+         }
+      }
+      return;
+    }
+    
+    const dx = e.changedTouches[0].clientX - (startX.current || 0);
+    let finalX = currentX.current + dx;
+
+    // 決定滑動超過多少門檻要停靠 (Snap)
+    if (finalX > 40) {
+      currentX.current = 80; // 展開左側 (編輯)
+    } else if (finalX < -40) {
+      currentX.current = -80; // 展開右側 (刪除)
+    } else {
+      currentX.current = 0; // 還原
+    }
+
+    if (rowRef.current) {
+      rowRef.current.style.transition = 'transform 0.2s ease-out';
+      rowRef.current.style.transform = `translateX(${currentX.current}px)`;
+      setTimeout(() => {
+        if (rowRef.current) rowRef.current.style.transition = '';
+      }, 200);
+    }
+    
+    startX.current = null;
+    startY.current = null;
+    isSwiping.current = false;
+  };
+
+  return (
+    <div className="relative overflow-hidden group touch-pan-y border-b border-slate-100 last:border-b-0 bg-slate-50">
+      {/* 左側背景 (向右滑出現) - 編輯 */}
+      <div 
+        className="absolute inset-y-0 left-0 w-20 bg-sky-500 flex flex-col items-center justify-center text-white md:hidden cursor-pointer" 
+        onClick={() => { currentX.current = 0; if(rowRef.current) rowRef.current.style.transform = 'translateX(0px)'; onEdit(); }}
+      >
+        <Edit3 className="w-5 h-5 mb-1" />
+        <span className="text-[10px] font-bold tracking-widest">編輯</span>
+      </div>
+      
+      {/* 右側背景 (向左滑出現) - 刪除 */}
+      <div 
+        className="absolute inset-y-0 right-0 w-20 bg-rose-500 flex flex-col items-center justify-center text-white md:hidden cursor-pointer" 
+        onClick={() => { currentX.current = 0; if(rowRef.current) rowRef.current.style.transform = 'translateX(0px)'; onDelete(); }}
+      >
+        <Trash2 className="w-5 h-5 mb-1" />
+        <span className="text-[10px] font-bold tracking-widest">刪除</span>
+      </div>
+      
+      {/* 主體內容 */}
+      <div 
+        ref={rowRef}
+        className="bg-white relative z-10 w-full"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+// ==========================================
+
 export default function LedgerPage() {
   const [ym, setYm] = useState(ymNow());
 
@@ -110,14 +220,12 @@ export default function LedgerPage() {
 
   const cats: Cat[] = type === "expense" ? catsExpense : catsIncome;
 
-  // ✅ 修正：大分類排序邏輯，不再強制用字母排序，直接保留資料庫傳來的正確排序
   const groups = useMemo(() => {
     const map = new Map<string, number>();
     cats.forEach((c, idx) => {
       const g = (c.group_name || "").trim();
       if (!g) return;
       if (!map.has(g)) {
-        // 優先使用後端的 group_sort_order，若無則依賴陣列的原始排序索引 (idx)
         const order = ('group_sort_order' in c && c.group_sort_order != null) 
           ? n((c as any).group_sort_order) 
           : idx;
@@ -125,11 +233,10 @@ export default function LedgerPage() {
       }
     });
     return Array.from(map.entries())
-      .sort((a, b) => a[1] - b[1]) // 純數字順序排，不會再被筆畫打亂
+      .sort((a, b) => a[1] - b[1])
       .map(([g]) => g);
   }, [cats]);
 
-  // ✅ 修正：小分類直接繼承分類管理的排序數字
   const subcats = useMemo(() => {
     if (!groupName) return [];
     return cats
@@ -313,7 +420,6 @@ export default function LedgerPage() {
 
   const editCats: Cat[] = editForm.type === "expense" ? catsExpense : catsIncome;
 
-  // ✅ 編輯視窗也套用相同的精確排序邏輯
   const editGroups = useMemo(() => {
     const map = new Map<string, number>();
     editCats.forEach((c, idx) => {
@@ -420,7 +526,6 @@ export default function LedgerPage() {
           <div className="card-body p-4 sm:p-6 space-y-4 sm:space-y-6">
             <div className="grid grid-cols-2 sm:grid-cols-1 md:grid-cols-4 gap-x-3 gap-y-4 sm:gap-5 items-end">
               
-              {/* 日期 */}
               <div className="col-span-1 sm:col-span-1 md:col-span-1">
                 <label className="label py-0.5 sm:py-1 mb-0.5 sm:mb-0">
                   <span className="label-text font-bold text-slate-400 text-[11px] sm:text-xs uppercase">日期</span>
@@ -433,7 +538,6 @@ export default function LedgerPage() {
                 />
               </div>
 
-              {/* 類型 */}
               <div className="col-span-1 sm:col-span-1 md:col-span-1">
                 <label className="label py-0.5 sm:py-1 mb-0.5 sm:mb-0">
                   <span className="label-text font-bold text-slate-400 text-[11px] sm:text-xs uppercase">類型</span>
@@ -463,7 +567,6 @@ export default function LedgerPage() {
                 </select>
               </div>
 
-              {/* 金額 */}
               <div className="col-span-2 sm:col-span-1 md:col-span-2">
                 <label className="label py-0.5 sm:py-1 mb-0.5 sm:mb-0">
                   <span className="label-text font-bold text-slate-400 text-[11px] sm:text-xs uppercase">金額</span>
@@ -482,7 +585,6 @@ export default function LedgerPage() {
                 </div>
               </div>
 
-              {/* 大分類 */}
               <div className="col-span-1 sm:col-span-1 md:col-span-2">
                 <label className="label py-0.5 sm:py-1 mb-0.5 sm:mb-0">
                   <span className="label-text font-bold text-slate-400 text-[11px] sm:text-xs uppercase">大分類</span>
@@ -504,7 +606,6 @@ export default function LedgerPage() {
                 </select>
               </div>
 
-              {/* 小分類 */}
               <div className="col-span-1 sm:col-span-1 md:col-span-2">
                 <label className="label py-0.5 sm:py-1 mb-0.5 sm:mb-0">
                   <span className="label-text font-bold text-slate-400 text-[11px] sm:text-xs uppercase">小分類</span>
@@ -524,7 +625,6 @@ export default function LedgerPage() {
                 </select>
               </div>
 
-              {/* 付款方式 */}
               <div className="col-span-1 sm:col-span-1 md:col-span-2">
                 <label className="label py-0.5 sm:py-1 mb-0.5 sm:mb-0">
                   <span className="label-text font-bold text-slate-400 text-[11px] sm:text-xs uppercase">付款方式</span>
@@ -543,7 +643,6 @@ export default function LedgerPage() {
                 </select>
               </div>
 
-              {/* 付款人 */}
               <div className="col-span-1 sm:col-span-1 md:col-span-2">
                 <label className="label py-0.5 sm:py-1 mb-0.5 sm:mb-0">
                   <span className="label-text font-bold text-slate-400 text-[11px] sm:text-xs uppercase">誰先付錢</span>
@@ -562,7 +661,6 @@ export default function LedgerPage() {
                 </select>
               </div>
 
-              {/* 店家 */}
               <div className="col-span-2 sm:col-span-1 md:col-span-2">
                 <label className="label py-0.5 sm:py-1 mb-0.5 sm:mb-0">
                   <span className="label-text font-bold text-slate-400 text-[11px] sm:text-xs uppercase">店家 / 對象</span>
@@ -575,7 +673,6 @@ export default function LedgerPage() {
                 />
               </div>
 
-              {/* 備註 */}
               <div className="col-span-2 sm:col-span-1 md:col-span-2">
                 <label className="label py-0.5 sm:py-1 mb-0.5 sm:mb-0">
                   <span className="label-text font-bold text-slate-400 text-[11px] sm:text-xs uppercase">備註</span>
@@ -685,7 +782,6 @@ export default function LedgerPage() {
                 </div>
               </div>
 
-              {/* 提交按鈕 */}
               <div className="col-span-2 sm:col-span-1 md:col-span-4 flex justify-end mt-2 md:mt-2">
                 <button
                   className="btn bg-sky-600 hover:bg-sky-700 text-white rounded-xl sm:rounded-2xl w-full sm:w-auto px-10 font-black shadow-md shadow-sky-200/50"
@@ -711,7 +807,7 @@ export default function LedgerPage() {
             </div>
           </div>
 
-          <div className="divide-y divide-slate-100">
+          <div className="flex flex-col">
             {safeRows.length === 0 ? (
               <div className="p-16 sm:p-20 text-center opacity-30 font-black italic text-base sm:text-lg">本月尚無任何記帳資料。</div>
             ) : (
@@ -720,120 +816,122 @@ export default function LedgerPage() {
                 const isExp = r.type === "expense";
 
                 return (
-                  <div
-                    key={r.id}
-                    className="group relative px-4 py-3 md:px-8 md:py-5 hover:bg-slate-50 transition-colors"
-                  >
-                    {/* 操作按鈕 */}
-                    <div className="absolute right-3 top-3.5 sm:top-4 flex flex-col sm:flex-row gap-1 sm:gap-1.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                      <button
-                        className="btn btn-ghost btn-xs h-7 w-7 sm:h-8 sm:w-8 p-0 min-h-0 rounded-lg text-slate-400 hover:text-sky-600 hover:bg-sky-50"
-                        onClick={() => openEdit(r)}
-                        aria-label="編輯"
-                      >
-                        <Edit3 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                      </button>
-                      <button
-                        className="btn btn-ghost btn-xs h-7 w-7 sm:h-8 sm:w-8 p-0 min-h-0 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50"
-                        onClick={() => deleteRow(r)}
-                        aria-label="刪除"
-                      >
-                        <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                      </button>
-                    </div>
-
-                    <div className="flex items-start gap-3 sm:gap-4 min-w-0 pr-8 sm:pr-16">
-                      <div
-                        className={`w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl flex items-center justify-center font-black text-sm sm:text-base shrink-0 border-2 ${
-                          isExp
-                            ? "bg-rose-50 text-rose-500 border-rose-100"
-                            : "bg-emerald-50 text-emerald-500 border-emerald-100"
-                        }`}
-                      >
-                        {isExp ? "支" : "收"}
+                  // 🚀 套用我們全新撰寫的 SwipeableRow
+                  <SwipeableRow key={r.id} onEdit={() => openEdit(r)} onDelete={() => deleteRow(r)}>
+                    <div className="group relative px-4 py-3 md:px-8 md:py-5 hover:bg-slate-50 transition-colors">
+                      
+                      {/* 💻 電腦版：懸停時才出現的操作按鈕 (手機版透過 SwipeableRow 隱藏) */}
+                      <div className="absolute right-3 top-3.5 sm:top-4 hidden sm:flex flex-row gap-1.5 opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                        <button
+                          className="btn btn-ghost btn-xs h-8 w-8 p-0 min-h-0 rounded-lg text-slate-400 hover:text-sky-600 hover:bg-sky-50"
+                          onClick={() => openEdit(r)}
+                          aria-label="編輯"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                        </button>
+                        <button
+                          className="btn btn-ghost btn-xs h-8 w-8 p-0 min-h-0 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50"
+                          onClick={() => deleteRow(r)}
+                          aria-label="刪除"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
 
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                          <span
-                            className={`text-lg sm:text-xl font-black tabular-nums tracking-tighter leading-none ${
-                              isExp ? "text-rose-500" : "text-emerald-500"
-                            }`}
-                          >
-                            ${Number(r.amount).toLocaleString()}
-                          </span>
-                          <span className="text-[10px] sm:text-xs font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-md">
-                            {r.entry_date}
-                          </span>
+                      {/* 📱 手機版：取消了原本右邊留白的 pr-8，因為現在不需要預留按鈕空間了，畫面更寬敞！ */}
+                      <div className="flex items-start gap-3 sm:gap-4 min-w-0 pr-0 sm:pr-16">
+                        <div
+                          className={`w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl flex items-center justify-center font-black text-sm sm:text-base shrink-0 border-2 ${
+                            isExp
+                              ? "bg-rose-50 text-rose-500 border-rose-100"
+                              : "bg-emerald-50 text-emerald-500 border-emerald-100"
+                          }`}
+                        >
+                          {isExp ? "支" : "收"}
+                        </div>
+
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                            <span
+                              className={`text-lg sm:text-xl font-black tabular-nums tracking-tighter leading-none ${
+                                isExp ? "text-rose-500" : "text-emerald-500"
+                              }`}
+                            >
+                              ${Number(r.amount).toLocaleString()}
+                            </span>
+                            <span className="text-[10px] sm:text-xs font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-md">
+                              {r.entry_date}
+                            </span>
+
+                            {sp.length > 0 && (
+                              <span className="px-1.5 py-0.5 rounded bg-orange-100 text-orange-600 font-black text-[9px] uppercase">
+                                拆帳
+                              </span>
+                            )}
+
+                            {r.bill_instance_id && (
+                              <span className="px-1.5 py-0.5 rounded border border-slate-200 text-slate-400 font-black text-[9px] uppercase">
+                                帳單
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-xs md:text-sm font-medium text-slate-500">
+                            <span className="text-slate-700 font-extrabold border-b-2 border-slate-100 pb-0.5 mr-0.5 md:mr-1">
+                              {catName(r.category_id) || "未分類"}
+                            </span>
+
+                            {r.pay_method && (
+                              <span className="flex items-center gap-0.5 md:gap-1 bg-slate-100 px-1.5 py-0.5 rounded-md text-[10px] md:text-xs text-slate-500 border border-slate-200/50 whitespace-nowrap">
+                                <CreditCard className="w-2.5 h-2.5 md:w-3 md:h-3" />
+                                {r.pay_method}
+                              </span>
+                            )}
+
+                            {r.payer_id && (
+                              <span className="flex items-center gap-0.5 md:gap-1 bg-sky-50 px-1.5 py-0.5 rounded-md text-[10px] md:text-xs text-sky-700 font-bold border border-sky-100 whitespace-nowrap">
+                                <User className="w-2.5 h-2.5 md:w-3 md:h-3" />
+                                {payerName(r.payer_id)} 先付
+                              </span>
+                            )}
+
+                            {r.merchant && (
+                              <>
+                                <span className="text-indigo-600 font-bold truncate max-w-[120px] md:hidden ml-0.5">
+                                  @ {r.merchant}
+                                </span>
+                                <span className="text-indigo-600 font-bold flex items-center hidden md:flex md:ml-1">
+                                  @ {r.merchant}
+                                </span>
+                              </>
+                            )}
+
+                            {r.note && (
+                              <span
+                                className="text-violet-600 font-normal max-w-[160px] sm:max-w-[220px] md:max-w-[320px] truncate cursor-help ml-0.5 md:ml-1"
+                                title={r.note}
+                              >
+                                ({r.note})
+                              </span>
+                            )}
+                          </div>
 
                           {sp.length > 0 && (
-                            <span className="px-1.5 py-0.5 rounded bg-orange-100 text-orange-600 font-black text-[9px] uppercase">
-                              拆帳
-                            </span>
-                          )}
-
-                          {r.bill_instance_id && (
-                            <span className="px-1.5 py-0.5 rounded border border-slate-200 text-slate-400 font-black text-[9px] uppercase">
-                              帳單
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-xs md:text-sm font-medium text-slate-500">
-                          <span className="text-slate-700 font-extrabold border-b-2 border-slate-100 pb-0.5 mr-0.5 md:mr-1">
-                            {catName(r.category_id) || "未分類"}
-                          </span>
-
-                          {r.pay_method && (
-                            <span className="flex items-center gap-0.5 md:gap-1 bg-slate-100 px-1.5 py-0.5 rounded-md text-[10px] md:text-xs text-slate-500 border border-slate-200/50 whitespace-nowrap">
-                              <CreditCard className="w-2.5 h-2.5 md:w-3 md:h-3" />
-                              {r.pay_method}
-                            </span>
-                          )}
-
-                          {r.payer_id && (
-                            <span className="flex items-center gap-0.5 md:gap-1 bg-sky-50 px-1.5 py-0.5 rounded-md text-[10px] md:text-xs text-sky-700 font-bold border border-sky-100 whitespace-nowrap">
-                              <User className="w-2.5 h-2.5 md:w-3 md:h-3" />
-                              {payerName(r.payer_id)} 先付
-                            </span>
-                          )}
-
-                          {r.merchant && (
-                            <>
-                              <span className="text-indigo-600 font-bold truncate max-w-[120px] md:hidden ml-0.5">
-                                @ {r.merchant}
-                              </span>
-                              <span className="text-indigo-600 font-bold flex items-center hidden md:flex md:ml-1">
-                                @ {r.merchant}
-                              </span>
-                            </>
-                          )}
-
-                          {r.note && (
-                            <span
-                              className="text-violet-600 font-normal max-w-[160px] sm:max-w-[220px] md:max-w-[320px] truncate cursor-help ml-0.5 md:ml-1"
-                              title={r.note}
-                            >
-                              ({r.note})
-                            </span>
+                            <div className="mt-2 flex flex-wrap gap-1">
+                              {sp.map((x, i) => (
+                                <div
+                                  key={i}
+                                  className="px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-[9px] sm:text-[10px] font-black text-slate-500"
+                                >
+                                  {payerName(x.payer_id)}: ${x.payer_id === r.payer_id ? 0 : Number(x.amount)}
+                                </div>
+                              ))}
+                            </div>
                           )}
                         </div>
-
-                        {sp.length > 0 && (
-                          <div className="mt-2 flex flex-wrap gap-1">
-                            {sp.map((x, i) => (
-                              <div
-                                key={i}
-                                className="px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-[9px] sm:text-[10px] font-black text-slate-500"
-                              >
-                                {payerName(x.payer_id)}: ${Number(x.amount)}
-                              </div>
-                            ))}
-                          </div>
-                        )}
                       </div>
                     </div>
-                  </div>
+                  </SwipeableRow>
                 );
               })
             )}
