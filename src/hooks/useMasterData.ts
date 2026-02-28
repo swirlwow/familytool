@@ -1,16 +1,15 @@
+// src/hooks/useMasterData.ts
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { WORKSPACE_ID } from "@/lib/appConfig";
 
 /**
- * useMasterData.ts（最穩版本）
- * - 不新增檔案
- * - 維持原回傳欄位：catsExpense / catsIncome / payMethods / payers
- * - 優先使用 /api/lookups（1 次拿齊）
- * - 若 lookups 失敗，fallback 回原本 4 支 API（不改任何既有 API）
- * - sessionStorage + memory 快取（TTL）
+ * useMasterData.ts (Stale-While-Revalidate 版本)
+ * - 進入頁面時立刻給快取資料（畫面秒出）
+ * - 背景一律強制抓取最新資料（解決新增分類後看不到的問題）
  * - single-flight 防重複請求
+ * - 強制 fetch 使用 cache: "no-store"
  */
 
 type Cat = { id: string; name: string; group_name: string | null };
@@ -24,7 +23,6 @@ type MasterData = {
   payers: Payer[];
 };
 
-const TTL_MS = 10 * 60 * 1000; // 10分鐘（可自行調）
 const cacheKey = (workspaceId: string) => `masterData:${workspaceId}`;
 
 function safeArray<T>(v: any): T[] {
@@ -49,16 +47,15 @@ function normalize(d: Partial<MasterData> | null | undefined): MasterData {
 }
 
 // ===== module-level cache (memory) + single-flight =====
-let memCache: { at: number; workspaceId: string; data: MasterData } | null = null;
+let memCache: { workspaceId: string; data: MasterData } | null = null;
 let inflight: Promise<MasterData> | null = null;
 
 function readSessionCache(workspaceId: string): MasterData | null {
   try {
     const raw = sessionStorage.getItem(cacheKey(workspaceId));
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as { at: number; data: MasterData };
-    if (!parsed?.at || !parsed?.data) return null;
-    if (Date.now() - parsed.at > TTL_MS) return null;
+    const parsed = JSON.parse(raw) as { data: MasterData };
+    if (!parsed?.data) return null;
     return normalize(parsed.data);
   } catch {
     return null;
@@ -74,12 +71,14 @@ function writeSessionCache(workspaceId: string, data: MasterData) {
 }
 
 async function fetchViaLookups(workspaceId: string): Promise<MasterData> {
-  const r = await fetch(`/api/lookups?workspace_id=${encodeURIComponent(workspaceId)}`);
+  // ✅ 強制不快取，確保永遠向資料庫要最新資料
+  const r = await fetch(`/api/lookups?workspace_id=${encodeURIComponent(workspaceId)}`, {
+    cache: "no-store",
+  });
   const j = await r.json();
   if (!r.ok) throw new Error(j?.error || "lookups 讀取失敗");
 
   const d = j?.data || {};
-  // lookups 資料結構：categories_expense / categories_income / payment_methods / payers
   return normalize({
     catsExpense: safeArray<Cat>(d.categories_expense),
     catsIncome: safeArray<Cat>(d.categories_income),
@@ -90,12 +89,14 @@ async function fetchViaLookups(workspaceId: string): Promise<MasterData> {
 
 async function fetchViaLegacyApis(workspaceId: string): Promise<MasterData> {
   const qs = new URLSearchParams({ workspace_id: workspaceId });
+  // ✅ 強制不快取
+  const opts = { cache: "no-store" as RequestCache };
 
   const [rCatsEx, rCatsIn, rPayMethods, rPayers] = await Promise.all([
-    fetch(`/api/categories?type=expense&${qs.toString()}`),
-    fetch(`/api/categories?type=income&${qs.toString()}`),
-    fetch(`/api/payment-methods?${qs.toString()}`),
-    fetch(`/api/payers?${qs.toString()}`),
+    fetch(`/api/categories?type=expense&${qs.toString()}`, opts),
+    fetch(`/api/categories?type=income&${qs.toString()}`, opts),
+    fetch(`/api/payment-methods?${qs.toString()}`, opts),
+    fetch(`/api/payers?${qs.toString()}`, opts),
   ]);
 
   const [jCatsEx, jCatsIn, jPayMethods, jPayers] = await Promise.all([
@@ -124,16 +125,14 @@ async function fetchMasterData(workspaceId: string): Promise<MasterData> {
   inflight = (async () => {
     let data: MasterData | null = null;
 
-    // 1) 優先 lookups（一次拿齊）
     try {
       data = await fetchViaLookups(workspaceId);
     } catch {
-      // 2) fallback：原本 4 支 API
       data = await fetchViaLegacyApis(workspaceId);
     }
 
-    // 寫入快取
-    memCache = { at: Date.now(), workspaceId, data };
+    // 寫入快取，供下次「瞬間顯示」使用
+    memCache = { workspaceId, data };
     writeSessionCache(workspaceId, data);
 
     return data;
@@ -156,7 +155,6 @@ export function useMasterData() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
 
-  // 避免 StrictMode mount/unmount 造成 setState on unmounted
   const aliveRef = useRef(true);
   useEffect(() => {
     aliveRef.current = true;
@@ -174,39 +172,40 @@ export function useMasterData() {
   }, []);
 
   const load = useCallback(
-    async (opts?: { force?: boolean }) => {
+    async () => {
       if (!workspaceId) {
         setLoading(false);
         return;
       }
 
       setError("");
+      let hasCache = false;
 
-      // 1) 快取（除非 force）
-      if (!opts?.force) {
-        if (memCache && memCache.workspaceId === workspaceId && Date.now() - memCache.at <= TTL_MS) {
-          applyData(memCache.data);
-          setLoading(false);
-          return;
-        }
-
+      // 1) 先嘗試讀取快取 (讓畫面立刻顯示選單，不卡 loading 轉圈圈)
+      if (memCache && memCache.workspaceId === workspaceId) {
+        applyData(memCache.data);
+        hasCache = true;
+      } else {
         const s = readSessionCache(workspaceId);
         if (s) {
-          memCache = { at: Date.now(), workspaceId, data: s };
+          memCache = { workspaceId, data: s };
           applyData(s);
-          setLoading(false);
-          return;
+          hasCache = true;
         }
       }
 
-      // 2) 抓資料
-      setLoading(true);
+      // 如果完全沒有快取，才顯示 loading
+      if (!hasCache) {
+        setLoading(true);
+      }
+
+      // 2) 無論有沒有快取，都在背景發送 API 獲取「最新資料」 (Stale-While-Revalidate)
       try {
         const d = await fetchMasterData(workspaceId);
-        applyData(d);
+        applyData(d); // 更新為最新資料
       } catch (e: any) {
         if (!aliveRef.current) return;
-        setError(e?.message || "讀取失敗");
+        if (!hasCache) setError(e?.message || "讀取失敗");
       } finally {
         if (!aliveRef.current) return;
         setLoading(false);
@@ -221,7 +220,7 @@ export function useMasterData() {
   }, []);
 
   const refresh = useCallback(async () => {
-    await load({ force: true });
+    await load();
   }, [load]);
 
   return {
