@@ -671,13 +671,6 @@ export default function CategoriesPage() {
                 </button>
             </div>
           </div>
-
-          <div className="px-4 pb-3 -mt-1">
-            <p className="text-[11px] font-medium text-slate-400">
-                管理您的收支分類，拖曳左側手柄可調整順序。大分類改名會同步更新關聯的小分類。
-            </p>
-          </div>
-
           {!WORKSPACE_ID && (
             <div className="px-4 pb-3">
               <div className="alert alert-warning rounded-2xl py-3 text-sm">
