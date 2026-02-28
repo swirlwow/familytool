@@ -1,6 +1,7 @@
 // src/app/api/export/route.ts
 import { NextResponse } from "next/server";
-import { getSupabase } from "@/lib/supabaseClient";
+// ✅ 修正：改為直接匯入 supabase
+import { supabase } from "@/lib/supabaseClient";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -9,8 +10,6 @@ export async function GET(request: Request) {
   if (!workspace_id) {
     return NextResponse.json({ error: "Missing workspace_id" }, { status: 400 });
   }
-
-  const supabase = getSupabase();
   
   const tables = [
     "payers",
@@ -34,7 +33,7 @@ export async function GET(request: Request) {
 
   for (const table of tables) {
     try {
-      // ✅ 加上 as any，繞過 Supabase 的嚴格型別檢查
+      // ✅ 使用 import 進來的 supabase
       const { data, error } = await supabase
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .from(table as any)
@@ -44,7 +43,6 @@ export async function GET(request: Request) {
       if (!error && data) {
         backupData[table] = data;
       }
-    // ✅ 捕捉錯誤強制指定為 any，符合 ESLint 規範
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       console.error(`Error exporting table ${table}:`, err.message);
