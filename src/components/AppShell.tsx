@@ -15,6 +15,7 @@ import {
   CalendarDays,
   StickyNote,
   NotebookPen,
+  DatabaseBackup, // ✅ 補上資料備份的圖示引入，解決 Vercel Error
 } from "lucide-react";
 // ✅ 引入 BottomNav
 import BottomNav from "./BottomNav";
@@ -30,8 +31,7 @@ const NAV_GROUPS = [
       { name: "帳戶總覽", href: "/accounts", icon: Wallet, theme: "emerald" },
       { name: "分類管理", href: "/settings/categories", icon: Tags, theme: "slate" },
       { name: "付款方式", href: "/settings/payment-methods", icon: CreditCard, theme: "slate" },
-      { name: "資料備份", href: "/settings/backup", icon: Tags, theme: "indigo" }, 
-    
+      { name: "資料備份", href: "/settings/backup", icon: DatabaseBackup, theme: "indigo" }, // ✅ 新增資料備份選單
     ],
   },
   {
@@ -100,10 +100,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       
       <div className="drawer-content flex flex-col min-h-screen">
         
-        {/* ✅ 已移除手機版最上方的 NextBook Header，讓各頁面專屬的 Header 能夠直接貼齊頂部 */}
-
-        {/* 頁面內容：增加 pb-24 防止被底部導航遮擋 */}
-        <div className="flex-1 p-4 lg:p-8 pb-24 lg:pb-8">
+        {/* ✅ 解除手機版強制 p-4 的限制，改為 px-0 py-0，讓手機版可以真正達到左右滿版貼邊！ */}
+        {/* 電腦版 (sm 以上) 則自動恢復原本的 p-4 與 lg:p-8 */}
+        <div className="flex-1 px-0 py-0 sm:p-4 lg:p-8 pb-24 lg:pb-8">
             {children}
         </div>
 
