@@ -147,9 +147,7 @@ function weekRangeByAnchor(anchorYmd: string) {
   return { from: ymd(start), to: ymd(end) };
 }
 
-/** ✅ 自動短化（手機顯示 MM/DD–MM/DD，跨年才顯示 YY/..；桌機顯示 YYYY/MM/DD–MM/DD 或跨年顯示 YYYY/MM/DD–YYYY/MM/DD） */
 function weekLabelAuto(from: string, to: string, compact: boolean) {
-  // from/to: YYYY-MM-DD
   const fy = from.slice(0, 4);
   const fm = from.slice(5, 7);
   const fd = from.slice(8, 10);
@@ -160,17 +158,14 @@ function weekLabelAuto(from: string, to: string, compact: boolean) {
   const sameYear = fy === ty;
 
   if (compact) {
-    // 手機：一般只顯示 MM/DD–MM/DD；跨年顯示 YY/MM/DD–YY/MM/DD
     if (sameYear) return `${fm}/${fd}–${tm}/${td}`;
     return `${fy.slice(2)}/${fm}/${fd}–${ty.slice(2)}/${tm}/${td}`;
   }
 
-  // 桌機：同年顯示 YYYY/MM/DD–MM/DD；跨年顯示 YYYY/MM/DD–YYYY/MM/DD
   if (sameYear) return `${fy}/${fm}/${fd}–${tm}/${td}`;
   return `${fy}/${fm}/${fd}–${ty}/${tm}/${td}`;
 }
 
-// Month view segments within a week
 type Seg = {
   id: string;
   note: NoteRow;
@@ -267,16 +262,14 @@ export default function CalendarPage() {
   const [draft, setDraft] = useState<Draft | null>(null);
   const [saving, setSaving] = useState(false);
 
-  // Swipe (week view)
   const swipeStartX = useRef<number | null>(null);
   const swipeStartY = useRef<number | null>(null);
   const isSwiping = useRef(false);
   const swipeCooldownRef = useRef(false);
 
-  // ✅ 用 media query 判斷 compact（手機）
   const [compact, setCompact] = useState(false);
   useEffect(() => {
-    const mq = window.matchMedia("(max-width: 639px)"); // < sm
+    const mq = window.matchMedia("(max-width: 639px)");
     const update = () => setCompact(mq.matches);
     update();
     mq.addEventListener?.("change", update);
@@ -319,7 +312,7 @@ export default function CalendarPage() {
   function next() {
     if (mode === "month") {
       const [y, m] = ym.split("-").map(Number);
-      setYm(monthKey(new Date(y, m, 1)));
+      setYm(monthKey(new Date(y, m, 1))); // Date API handles overflowing months perfectly
     } else {
       setWeekAnchor(addDays(weekAnchor, 7));
     }
@@ -419,10 +412,8 @@ export default function CalendarPage() {
     }
   }
 
-  // Month view
   const monthWeeks = useMemo(() => buildMonthWeeks(ym), [ym]);
 
-  // Week view
   const weekRange = useMemo(() => weekRangeByAnchor(weekAnchor), [weekAnchor]);
   const weekDays = useMemo(() => {
     const days: string[] = [];
@@ -494,40 +485,42 @@ export default function CalendarPage() {
   }, [mode, ym, weekRange.from, weekRange.to, compact]);
 
   return (
-    <main className="h-dvh flex flex-col bg-white">
+    // ✅ 修正高度：確保能完美避開 AppShell 的底部導覽列 (pb-24 即 96px) 並完整顯示於螢幕中
+    <main className="flex flex-col bg-white overflow-hidden h-[calc(100dvh-96px)] md:h-[calc(100dvh-32px)] border-t border-slate-200 md:border-none md:rounded-2xl md:shadow-sm">
+      
       {/* ===== Header ===== */}
       <header className="shrink-0 border-b border-slate-200 bg-white">
-        <div className="max-w-6xl mx-auto w-full px-3 sm:px-4">
-          <div className="h-16 grid grid-cols-3 items-center gap-3">
-            {/* 左：標題 */}
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="bg-orange-50 text-orange-600 p-2 rounded-xl border border-orange-100 shrink-0">
-                <CalendarDays className="w-5 h-5" />
+        <div className="max-w-6xl mx-auto w-full px-2 sm:px-4">
+          {/* ✅ 修正圖層與排版問題：改為 flex 排版確保「下一頁」按鈕不會被覆蓋 */}
+          <div className="h-16 flex items-center justify-between gap-1 sm:gap-3">
+            
+            {/* 左：標題 (使用 flex-1 推擠) */}
+            <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+              <div className="bg-orange-50 text-orange-600 p-1.5 sm:p-2 rounded-xl border border-orange-100 shrink-0">
+                <CalendarDays className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
-              <div className="min-w-0">
+              <div className="min-w-0 flex flex-col justify-center">
                 <div className="flex items-center gap-2">
-                  <h1 className="font-black text-[20px] text-slate-900 truncate">行事曆</h1>
+                  <h1 className="font-black text-[16px] sm:text-[20px] text-slate-900 truncate">行事曆</h1>
                   <span className="hidden sm:inline-flex px-2 py-0.5 rounded-full text-[11px] font-black bg-orange-100 text-orange-700">
                     Calendar
                   </span>
                 </div>
-                <p className="text-[12px] font-medium text-slate-400 truncate -mt-0.5">
-                  {mode === "month" ? "月視圖：多日事件橫跨顯示" : "週視圖：左右滑動切換週"}
+                <p className="text-[10px] sm:text-[12px] font-medium text-slate-400 truncate -mt-0.5">
+                  {mode === "month" ? "月視圖：多日橫跨" : "週視圖：左右滑動"}
                   {loading ? "（載入中…）" : ""}
                 </p>
               </div>
             </div>
 
-            {/* 中：模式 + 膠囊（置中） */}
-            <div className="flex justify-center items-center gap-2">
-              <div className="inline-flex items-center bg-slate-50 border border-slate-200 rounded-full p-1 shadow-sm">
+            {/* 中：模式與日期切換 */}
+            <div className="flex justify-center items-center gap-1 sm:gap-2 shrink-0">
+              <div className="hidden sm:inline-flex items-center bg-slate-50 border border-slate-200 rounded-full p-1 shadow-sm">
                 <button
                   type="button"
                   className={cn(
                     "h-8 px-3 rounded-full text-sm font-black transition-colors",
-                    mode === "month"
-                      ? "bg-orange-600 text-white shadow-sm"
-                      : "text-slate-700 hover:bg-slate-100"
+                    mode === "month" ? "bg-orange-600 text-white shadow-sm" : "text-slate-700 hover:bg-slate-100"
                   )}
                   onClick={() => setMode("month")}
                 >
@@ -537,9 +530,7 @@ export default function CalendarPage() {
                   type="button"
                   className={cn(
                     "h-8 px-3 rounded-full text-sm font-black transition-colors",
-                    mode === "week"
-                      ? "bg-orange-600 text-white shadow-sm"
-                      : "text-slate-700 hover:bg-slate-100"
+                    mode === "week" ? "bg-orange-600 text-white shadow-sm" : "text-slate-700 hover:bg-slate-100"
                   )}
                   onClick={() => setMode("week")}
                 >
@@ -547,54 +538,55 @@ export default function CalendarPage() {
                 </button>
               </div>
 
-              {/* ✅ 週標題自動短化 + 右鍵可點修正 */}
-              <div className="inline-flex items-center bg-slate-50 border border-slate-200 rounded-full px-2 py-1 shadow-sm w-[210px] sm:w-auto">
+              {/* 縮小手機版控制項的寬度避免覆蓋 */}
+              <div className="inline-flex items-center bg-slate-50 border border-slate-200 rounded-full px-1 sm:px-2 py-1 shadow-sm w-[150px] sm:w-auto">
                 <button
-                  className="shrink-0 h-8 w-8 rounded-full hover:bg-orange-100 hover:text-orange-600 text-slate-600 grid place-items-center transition-colors"
+                  className="shrink-0 h-7 w-7 sm:h-8 sm:w-8 rounded-full hover:bg-orange-100 hover:text-orange-600 text-slate-600 grid place-items-center transition-colors relative z-10"
                   onClick={prev}
                   aria-label={mode === "month" ? "上個月" : "上一週"}
                   type="button"
                 >
-                  <ChevronLeft className="w-5 h-5" />
+                  <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
                 </button>
 
-                <div className="flex-1 min-w-0 px-1">
-                  <div className="text-center text-[14px] sm:text-[18px] font-black tracking-tight text-slate-900 tabular-nums truncate">
+                <div className="flex-1 min-w-0 px-1 text-center">
+                  <div className="text-[13px] sm:text-[16px] font-black tracking-tight text-slate-900 tabular-nums truncate">
                     {headerRangeText}
                   </div>
                 </div>
 
                 <button
-                  className="shrink-0 h-8 w-8 rounded-full hover:bg-orange-100 hover:text-orange-600 text-slate-600 grid place-items-center transition-colors"
+                  className="shrink-0 h-7 w-7 sm:h-8 sm:w-8 rounded-full hover:bg-orange-100 hover:text-orange-600 text-slate-600 grid place-items-center transition-colors relative z-10"
                   onClick={next}
                   aria-label={mode === "month" ? "下個月" : "下一週"}
                   type="button"
                 >
-                  <ChevronRight className="w-5 h-5" />
+                  <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
                 </button>
               </div>
             </div>
 
-            {/* 右：新增 */}
-            <div className="flex justify-end">
+            {/* 右：新增 (使用 flex-1 確保右邊對齊) */}
+            <div className="flex justify-end flex-1 shrink-0">
+              {/* 手機版模式切換按鈕，節省空間 */}
               <button
-                className="h-10 w-10 rounded-full bg-orange-600 hover:bg-orange-700 text-white grid place-items-center shadow-sm"
+                type="button"
+                className="sm:hidden h-8 px-2.5 mr-2 rounded-xl border border-slate-200 bg-slate-50 text-[11px] font-black text-slate-600"
+                onClick={() => setMode(mode === "month" ? "week" : "month")}
+              >
+                切換{mode === "month" ? "週" : "月"}
+              </button>
+              
+              <button
+                className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-orange-600 hover:bg-orange-700 text-white grid place-items-center shadow-sm"
                 onClick={() => openNew(ymd(new Date()))}
                 aria-label="新增記事"
                 type="button"
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
             </div>
           </div>
-
-          {!WORKSPACE_ID && (
-            <div className="pb-3">
-              <div className="rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-                未設定 WORKSPACE_ID（請檢查 .env.local）
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Weekday Row */}
@@ -611,8 +603,9 @@ export default function CalendarPage() {
       </header>
 
       {/* ===== Body ===== */}
-      <section className="flex-1 overflow-hidden bg-white">
+      <section className="flex-1 overflow-hidden bg-white relative">
         <div className="max-w-6xl mx-auto w-full h-full border-x border-slate-200 bg-slate-100/50 flex flex-col">
+          
           {/* ===== Month view ===== */}
           {mode === "month" && (
             <div className="flex-1 overflow-hidden bg-slate-200">
@@ -744,17 +737,17 @@ export default function CalendarPage() {
           {/* ===== Week view ===== */}
           {mode === "week" && (
             <div
-              className="flex-1 bg-slate-200 overflow-x-auto"
+              className="flex-1 bg-slate-200 overflow-x-auto relative"
               onTouchStart={onWeekTouchStart}
               onTouchMove={onWeekTouchMove}
               onTouchEnd={onWeekTouchEnd}
             >
-              <div className="px-3 py-2 bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 flex items-center justify-between">
+              <div className="px-3 py-2 bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 flex items-center justify-between sticky top-0 z-10 shadow-sm">
                 <span>左右滑動切換週</span>
-                <span className="tabular-nums">{weekLabelAuto(weekRange.from, weekRange.to, true)}</span>
+                <span className="tabular-nums">{weekLabelAuto(weekRange.from, weekRange.to, compact)}</span>
               </div>
 
-              <div className="grid grid-cols-7 h-[calc(100%-40px)] gap-px">
+              <div className="grid grid-cols-7 h-[calc(100%-36px)] gap-px">
                 {weekDays.map((d) => {
                   const isToday = d === ymd(new Date());
                   const todays = notes
@@ -785,14 +778,14 @@ export default function CalendarPage() {
                         }
                       }}
                       className={cn(
-                        "bg-white p-2.5 flex flex-col outline-none hover:bg-orange-50/40 active:bg-orange-50/60 transition-colors",
+                        "bg-white p-2 flex flex-col outline-none hover:bg-orange-50/40 active:bg-orange-50/60 transition-colors h-full",
                         isToday && "bg-orange-50/70"
                       )}
                     >
                       <div className="flex items-center justify-between mb-2">
                         <div
                           className={cn(
-                            "text-[12px] font-black tabular-nums w-8 h-8 flex items-center justify-center rounded-full",
+                            "text-[12px] font-black tabular-nums w-7 h-7 flex items-center justify-center rounded-full",
                             isToday
                               ? "bg-orange-500 text-white shadow-sm shadow-orange-500/30"
                               : "text-slate-800 bg-slate-50 border border-slate-200"
@@ -800,13 +793,14 @@ export default function CalendarPage() {
                         >
                           {d.slice(8, 10)}
                         </div>
-                        <div className="text-[11px] font-bold text-slate-400">{d}</div>
+                        <div className="text-[10px] font-bold text-slate-400 hidden sm:block">{d.slice(5, 10)}</div>
                       </div>
 
-                      <div className="flex-1 overflow-y-auto space-y-2 pr-1">
+                      {/* ✅ 修正被遮擋：加入 pb-24 以確保能滑動超過下方的導覽列 / FAB */}
+                      <div className="flex-1 overflow-y-auto space-y-2 pr-1 pb-24 scrollbar-hide">
                         {todays.length === 0 && (
-                          <div className="text-[12px] font-bold text-slate-300 mt-6 text-center">
-                            （無事項）
+                          <div className="text-[11px] font-bold text-slate-300 mt-4 text-center">
+                            無
                           </div>
                         )}
 
@@ -820,7 +814,7 @@ export default function CalendarPage() {
                               key={n.id}
                               type="button"
                               className={cn(
-                                "w-full text-left rounded-xl border p-2 transition-opacity active:opacity-80",
+                                "w-full text-left rounded-xl border p-1.5 transition-opacity active:opacity-80",
                                 st.itemBg
                               )}
                               onClick={(e) => {
@@ -829,21 +823,19 @@ export default function CalendarPage() {
                               }}
                               title={n.title}
                             >
-                              <div className="flex items-center justify-between gap-2">
-                                <div className="text-[12px] font-black truncate">{n.title}</div>
+                              <div className="flex flex-col gap-1">
                                 <span
                                   className={cn(
-                                    "px-2 py-0.5 rounded-full text-[10px] font-black border",
+                                    "px-1.5 py-0.5 rounded text-[9px] font-black border self-start",
                                     st.chip,
                                     st.ring.replace("ring-", "border-")
                                   )}
                                 >
                                   {owner}
                                 </span>
-                              </div>
-                              <div className="text-[11px] font-bold text-slate-500 mt-1">
-                                {r.from}
-                                {r.to && r.to !== r.from ? ` ~ ${r.to}` : ""}
+                                <div className="text-[11px] sm:text-[12px] font-black leading-tight break-words">
+                                  {n.title}
+                                </div>
                               </div>
                             </button>
                           );
