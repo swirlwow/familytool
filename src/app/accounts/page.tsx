@@ -152,7 +152,6 @@ export default function AccountsSettingsPage() {
                 <button className="btn btn-outline btn-sm h-9 min-h-0 rounded-xl font-bold border-slate-300 hover:bg-slate-100 hover:text-slate-700 gap-2" onClick={() => router.push("/ledger")}><ArrowLeft className="w-4 h-4" /> 記帳本</button>
             </div>
           </div>
-          <div className="px-4 pb-3 -mt-1"><p className="text-[11px] font-medium text-slate-400">管理所有帳戶來源，支援排序與狀態切換。</p></div>
           {!WORKSPACE_ID && (<div className="px-4 pb-3"><div className="alert alert-warning rounded-2xl py-3 text-sm"><span>未設定 WORKSPACE_ID（請檢查 .env.local）</span></div></div>)}
         </div>
 
