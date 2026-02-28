@@ -318,7 +318,7 @@ export default function LedgerDashboardPage() {
     URL.revokeObjectURL(url);
   }
 
-  // ✅ 優化：匯出完整明細 (包含拆帳展開與未拆帳)
+  // 匯出完整明細 (包含拆帳展開與未拆帳)
   function exportAllDetailCsv() {
     const header = [
       "日期",
@@ -354,7 +354,7 @@ export default function LedgerDashboardPage() {
         // 如果有拆帳，將一筆交易展開為多行
         sp.forEach((split) => {
           const splitPayer = split.payer_id ? maps.payerMap.get(split.payer_id) || split.payer_id : "";
-          // ✅ 若付款人等於分攤人，金額強制顯示為 0
+          // 若付款人等於分攤人，金額強制顯示為 0
           const splitAmount = split.payer_id === x.payer_id ? 0 : split.amount;
 
           lines.push([
@@ -367,7 +367,7 @@ export default function LedgerDashboardPage() {
             toCsvCell(pm),
             toCsvCell(payer),
             toCsvCell(splitPayer),
-            toCsvCell(splitAmount), // 這裡會自動輸出 0
+            toCsvCell(splitAmount), 
             toCsvCell(x.note || ""),
             toCsvCell(x.id),
           ].join(","));
@@ -384,7 +384,7 @@ export default function LedgerDashboardPage() {
           toCsvCell(pm),
           toCsvCell(payer),
           toCsvCell(payer || "—"), // 應付人同付款人
-          toCsvCell(0), // ✅ 沒有拆帳代表自己付自己的，分攤金額為 0
+          toCsvCell(0), // 沒有拆帳代表自己付自己的，分攤金額為 0
           toCsvCell(x.note || ""),
           toCsvCell(x.id),
         ].join(","));
@@ -529,7 +529,6 @@ export default function LedgerDashboardPage() {
             </span>
           ) : null}
 
-          {/* 單一強大的「匯出完整明細」按鈕 */}
           <button
             onClick={exportSummaryCsv}
             className={cn(
@@ -987,17 +986,19 @@ export default function LedgerDashboardPage() {
                           </div>
                         </div>
 
-                        {/* ✅ UI：若付款人等同於分攤人，顯示 0 */}
+                        {/* ✅ UI 修正：使用 maps.payerMap.get 來轉換顯示名稱 */}
                         {sp.length > 0 && (
                           <div className="mt-2 flex flex-wrap gap-1">
                             {sp.map((splitItem, i) => {
                               const displayAmt = splitItem.payer_id === r.payer_id ? 0 : Number(splitItem.amount);
+                              const splitPayerName = maps.payerMap.get(splitItem.payer_id) || splitItem.payer_id;
+                              
                               return (
                                 <div
                                   key={i}
                                   className="px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-[9px] sm:text-[10px] font-black text-slate-500"
                                 >
-                                  {payerName(splitItem.payer_id)}: ${displayAmt}
+                                  {splitPayerName}: ${displayAmt}
                                 </div>
                               );
                             })}
