@@ -277,11 +277,6 @@ export default function BillsPage() {
               <button className="btn btn-ghost btn-sm h-9 min-h-0 rounded-xl font-bold text-slate-500 hover:bg-slate-100" onClick={() => router.push("/")}>回首頁</button>
             </div>
           </div>
-
-          <div className="px-4 pb-3 -mt-1">
-            <p className="text-[11px] font-medium text-slate-400">直接新增「本期帳單」，付款時可寫入記帳（支援分帳）</p>
-          </div>
-
           {!WORKSPACE_ID && (
             <div className="px-4 pb-3">
               <div className="alert alert-warning rounded-2xl py-3 text-sm"><span>未設定 WORKSPACE_ID（請檢查 .env.local）</span></div>
