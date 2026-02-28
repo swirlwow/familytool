@@ -30,6 +30,8 @@ const NAV_GROUPS = [
       { name: "帳戶總覽", href: "/accounts", icon: Wallet, theme: "emerald" },
       { name: "分類管理", href: "/settings/categories", icon: Tags, theme: "slate" },
       { name: "付款方式", href: "/settings/payment-methods", icon: CreditCard, theme: "slate" },
+      { name: "資料備份", href: "/settings/backup", icon: Tags, theme: "indigo" }, 
+    
     ],
   },
   {
@@ -101,9 +103,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         {/* ✅ 已移除手機版最上方的 NextBook Header，讓各頁面專屬的 Header 能夠直接貼齊頂部 */}
 
         {/* 頁面內容：增加 pb-24 防止被底部導航遮擋 */}
-        <div className="flex-1 px-0 py-0 sm:p-4 lg:p-8 pb-24 lg:pb-8">
-         {children}
+        <div className="flex-1 p-4 lg:p-8 pb-24 lg:pb-8">
+            {children}
         </div>
+
         {/* 底部導航 (手機版顯示) */}
         <BottomNav />
       </div>
