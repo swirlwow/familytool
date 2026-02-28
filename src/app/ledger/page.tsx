@@ -65,16 +65,13 @@ function n(v: any) {
 export default function LedgerPage() {
   const [ym, setYm] = useState(ymNow());
 
-  // ✅ 這裡一定要 string，避免 Vercel build 看到 string|null 報錯
   const workspaceId: string = WORKSPACE_ID ?? "";
 
-  // Hooks（不改 API）
   const { from, to, rows, loading: rowsLoading, refresh } = useLedgerMonth(
     workspaceId,
     ym
   );
 
-  // ✅ 重點：useMasterData 可能初始是 undefined/null，全部先用 [] 保護
   const master = useMasterData() as any;
   const catsExpense: Cat[] = Array.isArray(master?.catsExpense) ? master.catsExpense : [];
   const catsIncome: Cat[] = Array.isArray(master?.catsIncome) ? master.catsIncome : [];
@@ -83,7 +80,6 @@ export default function LedgerPage() {
 
   const safeRows: LedgerRow[] = Array.isArray(rows) ? (rows as any) : [];
 
-  // --- 新增表單 State ---
   const [type, setType] = useState<"expense" | "income">("expense");
   const [entryDate, setEntryDate] = useState(todayStr());
   const [amount, setAmount] = useState<number | "">("");
@@ -97,7 +93,6 @@ export default function LedgerPage() {
   const [useSplit, setUseSplit] = useState(false);
   const [splits, setSplits] = useState<SplitRow[]>([]);
 
-  // --- 編輯表單 State ---
   const [editing, setEditing] = useState<LedgerRow | null>(null);
   const [editForm, setEditForm] = useState({
     entry_date: todayStr(),
@@ -113,22 +108,28 @@ export default function LedgerPage() {
     splits: [] as SplitRow[],
   });
 
-  // --- 計算邏輯 ---
   const cats: Cat[] = type === "expense" ? catsExpense : catsIncome;
 
+  // ✅ 修正：大分類排序邏輯，不再強制用字母排序，直接保留資料庫傳來的正確排序
   const groups = useMemo(() => {
     const map = new Map<string, number>();
-    for (const c of cats) {
+    cats.forEach((c, idx) => {
       const g = (c.group_name || "").trim();
-      if (!g) continue;
-      const so = n(c.sort_order);
-      map.set(g, map.has(g) ? Math.min(map.get(g)!, so) : so);
-    }
+      if (!g) return;
+      if (!map.has(g)) {
+        // 優先使用後端的 group_sort_order，若無則依賴陣列的原始排序索引 (idx)
+        const order = ('group_sort_order' in c && c.group_sort_order != null) 
+          ? n((c as any).group_sort_order) 
+          : idx;
+        map.set(g, order);
+      }
+    });
     return Array.from(map.entries())
-      .sort((a, b) => a[1] - b[1] || a[0].localeCompare(b[0], "zh-Hant"))
+      .sort((a, b) => a[1] - b[1]) // 純數字順序排，不會再被筆畫打亂
       .map(([g]) => g);
   }, [cats]);
 
+  // ✅ 修正：小分類直接繼承分類管理的排序數字
   const subcats = useMemo(() => {
     if (!groupName) return [];
     return cats
@@ -149,7 +150,6 @@ export default function LedgerPage() {
     return payers.find((p) => p.id === id)?.name ?? (id || "");
   }
 
-  // ✅ 顯示 大分類 / 小分類
   function catName(id?: string | null) {
     const all = [...catsExpense, ...catsIncome];
     const c = all.find((x) => x.id === id);
@@ -158,19 +158,16 @@ export default function LedgerPage() {
     return g ? `${g} / ${c.name}` : c.name;
   }
 
-  // Effect: 切換類型時自動選第一個群組
   useEffect(() => {
     if (type !== "expense") return;
     if (groupName) return;
     if (groups.length > 0) setGroupName(groups[0]);
   }, [groups, type, groupName]);
 
-  // Effect: 記憶支出大分類
   useEffect(() => {
     if (type === "expense") setLastExpenseGroup(groupName || "");
   }, [groupName, type]);
 
-  // Effect: 拆帳自動帶入另一人
   useEffect(() => {
     if (!useSplit) return;
     if (!payerId) return;
@@ -182,7 +179,6 @@ export default function LedgerPage() {
     });
   }, [payerId, useSplit, payers]);
 
-  // 驗證拆帳
   function validateSplitLocal(params: {
     type: string;
     amount: number;
@@ -206,7 +202,6 @@ export default function LedgerPage() {
     return { ok: true as const };
   }
 
-  // --- API 操作 ---
   async function submitNew() {
     if (!WORKSPACE_ID) return alert("未設定 WORKSPACE_ID");
     if (!entryDate) return alert("請選擇日期");
@@ -236,7 +231,7 @@ export default function LedgerPage() {
         }),
       });
       if (res.ok) {
-        setAmount(""); // 復原為空
+        setAmount(""); 
         setNote("");
         setMerchant("");
         setUseSplit(false);
@@ -264,7 +259,6 @@ export default function LedgerPage() {
     refresh();
   }
 
-  // 開啟編輯 Modal
   function openEdit(r: LedgerRow) {
     setEditing(r);
     const all = [...catsExpense, ...catsIncome];
@@ -317,19 +311,23 @@ export default function LedgerPage() {
     }
   }
 
-  // 編輯模式的分類計算
   const editCats: Cat[] = editForm.type === "expense" ? catsExpense : catsIncome;
 
+  // ✅ 編輯視窗也套用相同的精確排序邏輯
   const editGroups = useMemo(() => {
     const map = new Map<string, number>();
-    for (const c of editCats) {
+    editCats.forEach((c, idx) => {
       const g = (c.group_name || "").trim();
-      if (!g) continue;
-      const so = n(c.sort_order);
-      map.set(g, map.has(g) ? Math.min(map.get(g)!, so) : so);
-    }
+      if (!g) return;
+      if (!map.has(g)) {
+        const order = ('group_sort_order' in c && c.group_sort_order != null) 
+          ? n((c as any).group_sort_order) 
+          : idx;
+        map.set(g, order);
+      }
+    });
     return Array.from(map.entries())
-      .sort((a, b) => a[1] - b[1] || a[0].localeCompare(b[0], "zh-Hant"))
+      .sort((a, b) => a[1] - b[1])
       .map(([g]) => g);
   }, [editCats]);
 
@@ -341,32 +339,30 @@ export default function LedgerPage() {
   }, [editCats, editForm.group_name]);
 
   return (
-    // ✅ 手機版 px-2 py-4 靠邊；電腦版維持 md:p-6 lg:p-8 寬敞
-    <main className="min-h-screen bg-slate-50 px-2 py-4 md:p-6 lg:p-8 pb-24 md:pb-8">
-      {/* ✅ 電腦版維持 max-w-6xl 寬度，不壓縮 */}
-      <div className="mx-auto max-w-6xl space-y-4 md:space-y-6">
+    <main className="min-h-screen bg-slate-50 px-0 py-4 sm:p-4 md:p-6 lg:p-8 pb-24 md:pb-8">
+      <div className="mx-auto max-w-6xl space-y-3 sm:space-y-6">
         
         {/* Sticky Header */}
-        <div className="card bg-white/90 backdrop-blur-md shadow-sm border border-slate-200 rounded-2xl sticky top-0 z-40">
-          <div className="card-body p-2.5 md:p-3 flex flex-row items-center justify-between gap-2">
-            <div className="flex items-center gap-2 md:gap-3">
-              <div className="bg-sky-50 text-sky-600 p-1.5 md:p-2 rounded-lg border border-sky-100">
-                <Wallet className="w-5 h-5 md:w-5 md:h-5" />
+        <div className="card bg-white/90 backdrop-blur-md shadow-none sm:shadow-sm border-b sm:border border-slate-200 rounded-none sm:rounded-3xl sticky top-0 z-40">
+          <div className="card-body p-3 px-4 sm:p-3 flex flex-row items-center justify-between gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="bg-sky-50 text-sky-600 p-1.5 sm:p-2 rounded-lg border border-sky-100">
+                <Wallet className="w-5 h-5" />
               </div>
               <div className="flex items-center gap-2">
-                <h1 className="text-lg md:text-lg font-black text-slate-800 tracking-tight">記帳本</h1>
+                <h1 className="text-lg font-black text-slate-800 tracking-tight">記帳本</h1>
                 <div className="badge badge-sm bg-sky-100 text-sky-700 border-none font-bold hidden sm:inline-flex">
                   Ledger
                 </div>
               </div>
             </div>
-            <div className="flex gap-1.5 md:gap-2">
-              <Link href="/ledger/dashboard" className="btn btn-outline btn-sm h-8 md:h-9 min-h-0 rounded-xl font-bold px-2.5 md:px-3 text-xs md:text-sm text-slate-600 border-slate-300">
+            <div className="flex gap-2">
+              <Link href="/ledger/dashboard" className="btn btn-outline btn-sm h-8 sm:h-9 min-h-0 rounded-xl font-bold px-3 sm:px-4 text-xs sm:text-sm text-slate-600 border-slate-300">
                 財務儀表板
               </Link>
               <Link
                 href="/"
-                className="btn btn-ghost btn-sm h-8 md:h-9 min-h-0 rounded-xl font-bold text-slate-500 hover:bg-slate-100 px-2.5 md:px-3 hidden sm:inline-flex"
+                className="btn btn-ghost btn-sm h-8 sm:h-9 min-h-0 rounded-xl font-bold text-slate-500 hover:bg-slate-100 hidden sm:inline-flex"
               >
                 回首頁
               </Link>
@@ -375,20 +371,20 @@ export default function LedgerPage() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 gap-3 md:gap-4 sm:grid-cols-3">
-          <div className="card bg-white shadow-sm border border-slate-200 rounded-2xl md:rounded-3xl">
-            <div className="card-body p-4 md:p-5 flex flex-col justify-center">
-              <div className="flex items-center gap-1.5 md:gap-2 mb-2 md:mb-3">
-                <Calendar className="w-3.5 h-3.5 md:w-4 md:h-4 text-sky-500" />
+        <div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-3 px-3 sm:px-0">
+          <div className="card bg-white shadow-sm border border-slate-200 rounded-2xl sm:rounded-3xl">
+            <div className="card-body p-4 sm:p-5 flex flex-col justify-center">
+              <div className="flex items-center gap-2 mb-2 sm:mb-3">
+                <Calendar className="w-4 h-4 text-sky-500" />
                 <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">統計月份</span>
               </div>
               <input
                 type="month"
-                className="input input-sm md:input-md input-bordered w-full font-bold text-base md:text-lg bg-slate-50 border-slate-200 focus:border-sky-500 rounded-xl"
+                className="input input-sm sm:input-md input-bordered w-full font-bold text-base sm:text-lg bg-slate-50 border-slate-200 focus:border-sky-500 rounded-xl"
                 value={ym}
                 onChange={(e) => setYm(e.target.value)}
               />
-              <div className="mt-1.5 md:mt-2 text-[10px] md:text-xs text-slate-400 font-mono tracking-tighter">
+              <div className="mt-2 text-[10px] text-slate-400 font-mono tracking-tighter">
                 {from} ~ {to}
               </div>
             </div>
@@ -411,40 +407,39 @@ export default function LedgerPage() {
         </div>
 
         {/* ===== New Entry Form ===== */}
-        <div className="card bg-white shadow-md border border-slate-200 rounded-2xl md:rounded-3xl overflow-visible">
-          <div className="bg-slate-50/50 px-4 md:px-6 py-3 md:py-4 border-b border-slate-200 flex items-center justify-between rounded-t-2xl md:rounded-t-3xl">
-            <h2 className="font-black text-base md:text-lg text-slate-800 flex items-center gap-2">
-              <div className="bg-sky-500 text-white p-1 rounded-md md:rounded-lg">
-                <Plus className="w-3.5 h-3.5 md:w-4 md:h-4" />
+        <div className="card bg-white shadow-none sm:shadow-md border-y sm:border border-slate-200 rounded-none sm:rounded-3xl overflow-visible sm:overflow-hidden">
+          <div className="bg-slate-50/50 px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-200 flex items-center justify-between sm:rounded-t-3xl">
+            <h2 className="font-black text-base sm:text-lg text-slate-800 flex items-center gap-2">
+              <div className="bg-sky-500 text-white p-1 rounded-md sm:rounded-lg">
+                <Plus className="w-4 h-4" />
               </div>{" "}
               新增記帳
             </h2>
           </div>
 
-          {/* ✅ 手機版縮小 Padding 與 Gap，電腦版維持 md:p-6 與 md:gap-5 */}
-          <div className="card-body p-4 md:p-6 space-y-4 md:space-y-6">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-x-3 gap-y-4 md:gap-5 items-end">
+          <div className="card-body p-4 sm:p-6 space-y-4 sm:space-y-6">
+            <div className="grid grid-cols-2 sm:grid-cols-1 md:grid-cols-4 gap-x-3 gap-y-4 sm:gap-5 items-end">
               
               {/* 日期 */}
-              <div className="col-span-1 md:col-span-1">
-                <label className="label py-0.5 md:py-1 mb-0.5 md:mb-0">
-                  <span className="label-text font-bold text-slate-400 text-[11px] md:text-xs uppercase">日期</span>
+              <div className="col-span-1 sm:col-span-1 md:col-span-1">
+                <label className="label py-0.5 sm:py-1 mb-0.5 sm:mb-0">
+                  <span className="label-text font-bold text-slate-400 text-[11px] sm:text-xs uppercase">日期</span>
                 </label>
                 <input
                   type="date"
-                  className="input input-sm md:input-md input-bordered w-full rounded-xl focus:border-sky-500 text-sm md:text-base font-medium"
+                  className="input input-sm sm:input-md input-bordered w-full rounded-xl text-sm sm:text-base font-medium focus:border-sky-500"
                   value={entryDate}
                   onChange={(e) => setEntryDate(e.target.value)}
                 />
               </div>
 
               {/* 類型 */}
-              <div className="col-span-1 md:col-span-1">
-                <label className="label py-0.5 md:py-1 mb-0.5 md:mb-0">
-                  <span className="label-text font-bold text-slate-400 text-[11px] md:text-xs uppercase">類型</span>
+              <div className="col-span-1 sm:col-span-1 md:col-span-1">
+                <label className="label py-0.5 sm:py-1 mb-0.5 sm:mb-0">
+                  <span className="label-text font-bold text-slate-400 text-[11px] sm:text-xs uppercase">類型</span>
                 </label>
                 <select
-                  className={`select select-sm md:select-md select-bordered w-full rounded-xl font-bold focus:border-sky-500 ${
+                  className={`select select-sm sm:select-md select-bordered w-full rounded-xl font-bold focus:border-sky-500 text-sm sm:text-base ${
                     type === "expense" ? "text-rose-500" : "text-emerald-500"
                   }`}
                   value={type}
@@ -468,18 +463,18 @@ export default function LedgerPage() {
                 </select>
               </div>
 
-              {/* 金額 (手機2欄/電腦2欄) */}
-              <div className="col-span-2 md:col-span-2">
-                <label className="label py-0.5 md:py-1 mb-0.5 md:mb-0">
-                  <span className="label-text font-bold text-slate-400 text-[11px] md:text-xs uppercase">金額</span>
+              {/* 金額 */}
+              <div className="col-span-2 sm:col-span-1 md:col-span-2">
+                <label className="label py-0.5 sm:py-1 mb-0.5 sm:mb-0">
+                  <span className="label-text font-bold text-slate-400 text-[11px] sm:text-xs uppercase">金額</span>
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 text-base md:text-lg font-black text-slate-300">
+                  <span className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-lg sm:text-xl font-black text-slate-300">
                     $
                   </span>
                   <input
                     type="number"
-                    className="input input-bordered w-full pl-8 md:pl-10 text-lg md:text-xl font-black tabular-nums rounded-xl focus:border-sky-500 h-10 md:h-12"
+                    className="input input-bordered w-full pl-8 sm:pl-10 text-lg sm:text-xl font-black tabular-nums rounded-xl h-11 sm:h-12 focus:border-sky-500"
                     value={amount}
                     placeholder="0"
                     onChange={(e) => setAmount(e.target.value ? Number(e.target.value) : "")}
@@ -488,12 +483,12 @@ export default function LedgerPage() {
               </div>
 
               {/* 大分類 */}
-              <div className="col-span-1 md:col-span-2">
-                <label className="label py-0.5 md:py-1 mb-0.5 md:mb-0">
-                  <span className="label-text font-bold text-slate-400 text-[11px] md:text-xs uppercase">大分類</span>
+              <div className="col-span-1 sm:col-span-1 md:col-span-2">
+                <label className="label py-0.5 sm:py-1 mb-0.5 sm:mb-0">
+                  <span className="label-text font-bold text-slate-400 text-[11px] sm:text-xs uppercase">大分類</span>
                 </label>
                 <select
-                  className="select select-sm md:select-md select-bordered w-full rounded-xl text-sm md:text-base focus:border-sky-500"
+                  className="select select-sm sm:select-md select-bordered w-full rounded-xl text-sm sm:text-base focus:border-sky-500"
                   value={groupName}
                   onChange={(e) => {
                     setGroupName(e.target.value);
@@ -510,12 +505,12 @@ export default function LedgerPage() {
               </div>
 
               {/* 小分類 */}
-              <div className="col-span-1 md:col-span-2">
-                <label className="label py-0.5 md:py-1 mb-0.5 md:mb-0">
-                  <span className="label-text font-bold text-slate-400 text-[11px] md:text-xs uppercase">小分類</span>
+              <div className="col-span-1 sm:col-span-1 md:col-span-2">
+                <label className="label py-0.5 sm:py-1 mb-0.5 sm:mb-0">
+                  <span className="label-text font-bold text-slate-400 text-[11px] sm:text-xs uppercase">小分類</span>
                 </label>
                 <select
-                  className="select select-sm md:select-md select-bordered w-full rounded-xl text-sm md:text-base focus:border-sky-500"
+                  className="select select-sm sm:select-md select-bordered w-full rounded-xl text-sm sm:text-base focus:border-sky-500"
                   value={categoryId}
                   onChange={(e) => setCategoryId(e.target.value)}
                   disabled={!groupName}
@@ -530,12 +525,12 @@ export default function LedgerPage() {
               </div>
 
               {/* 付款方式 */}
-              <div className="col-span-1 md:col-span-2">
-                <label className="label py-0.5 md:py-1 mb-0.5 md:mb-0">
-                  <span className="label-text font-bold text-slate-400 text-[11px] md:text-xs uppercase">付款方式</span>
+              <div className="col-span-1 sm:col-span-1 md:col-span-2">
+                <label className="label py-0.5 sm:py-1 mb-0.5 sm:mb-0">
+                  <span className="label-text font-bold text-slate-400 text-[11px] sm:text-xs uppercase">付款方式</span>
                 </label>
                 <select
-                  className="select select-sm md:select-md select-bordered w-full rounded-xl text-sm md:text-base focus:border-sky-500"
+                  className="select select-sm sm:select-md select-bordered w-full rounded-xl text-sm sm:text-base focus:border-sky-500"
                   value={payMethod}
                   onChange={(e) => setPayMethod(e.target.value)}
                 >
@@ -549,12 +544,12 @@ export default function LedgerPage() {
               </div>
 
               {/* 付款人 */}
-              <div className="col-span-1 md:col-span-2">
-                <label className="label py-0.5 md:py-1 mb-0.5 md:mb-0">
-                  <span className="label-text font-bold text-slate-400 text-[11px] md:text-xs uppercase">誰先付錢</span>
+              <div className="col-span-1 sm:col-span-1 md:col-span-2">
+                <label className="label py-0.5 sm:py-1 mb-0.5 sm:mb-0">
+                  <span className="label-text font-bold text-slate-400 text-[11px] sm:text-xs uppercase">誰先付錢</span>
                 </label>
                 <select
-                  className="select select-sm md:select-md select-bordered w-full rounded-xl text-sm md:text-base font-bold focus:border-sky-500 text-sky-700"
+                  className="select select-sm sm:select-md select-bordered w-full rounded-xl text-sm sm:text-base font-bold focus:border-sky-500 text-sky-700"
                   value={payerId}
                   onChange={(e) => setPayerId(e.target.value)}
                 >
@@ -568,12 +563,12 @@ export default function LedgerPage() {
               </div>
 
               {/* 店家 */}
-              <div className="col-span-2 md:col-span-2">
-                <label className="label py-0.5 md:py-1 mb-0.5 md:mb-0">
-                  <span className="label-text font-bold text-slate-400 text-[11px] md:text-xs uppercase">店家 / 對象</span>
+              <div className="col-span-2 sm:col-span-1 md:col-span-2">
+                <label className="label py-0.5 sm:py-1 mb-0.5 sm:mb-0">
+                  <span className="label-text font-bold text-slate-400 text-[11px] sm:text-xs uppercase">店家 / 對象</span>
                 </label>
                 <input
-                  className="input input-sm md:input-md input-bordered w-full rounded-xl text-sm md:text-base focus:border-sky-500"
+                  className="input input-sm sm:input-md input-bordered w-full rounded-xl text-sm sm:text-base focus:border-sky-500"
                   value={merchant}
                   onChange={(e) => setMerchant(e.target.value)}
                   placeholder="例如：7-11"
@@ -581,12 +576,12 @@ export default function LedgerPage() {
               </div>
 
               {/* 備註 */}
-              <div className="col-span-2 md:col-span-2">
-                <label className="label py-0.5 md:py-1 mb-0.5 md:mb-0">
-                  <span className="label-text font-bold text-slate-400 text-[11px] md:text-xs uppercase">備註</span>
+              <div className="col-span-2 sm:col-span-1 md:col-span-2">
+                <label className="label py-0.5 sm:py-1 mb-0.5 sm:mb-0">
+                  <span className="label-text font-bold text-slate-400 text-[11px] sm:text-xs uppercase">備註</span>
                 </label>
                 <input
-                  className="input input-sm md:input-md input-bordered w-full rounded-xl text-sm md:text-base focus:border-sky-500"
+                  className="input input-sm sm:input-md input-bordered w-full rounded-xl text-sm sm:text-base focus:border-sky-500"
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                   placeholder="備註..."
@@ -594,17 +589,17 @@ export default function LedgerPage() {
               </div>
 
               {/* Split Bill */}
-              <div className="col-span-2 md:col-span-4 mt-2 md:mt-0">
+              <div className="col-span-2 sm:col-span-1 md:col-span-4 mt-1 sm:mt-0">
                 <div
-                  className={`p-3.5 md:p-5 rounded-2xl md:rounded-3xl border transition-all duration-300 ${
-                    useSplit ? "bg-sky-50 border-sky-200" : "bg-slate-50 border-slate-100 opacity-60 md:opacity-100"
+                  className={`p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border transition-all duration-300 ${
+                    useSplit ? "bg-sky-50 border-sky-200" : "bg-slate-50 border-slate-100 opacity-80 sm:opacity-100"
                   }`}
                 >
                   <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                    <label className="flex items-center gap-3 md:gap-4 cursor-pointer">
+                    <label className="flex items-center gap-3 sm:gap-4 cursor-pointer">
                       <input
                         type="checkbox"
-                        className="toggle toggle-info toggle-sm md:toggle-md"
+                        className="toggle toggle-info toggle-sm sm:toggle-md"
                         checked={useSplit}
                         onChange={(e) => {
                           if (e.target.checked && type !== "expense") {
@@ -619,19 +614,19 @@ export default function LedgerPage() {
                           }
                         }}
                       />
-                      <div className="font-bold text-sm md:text-base text-slate-700 flex items-center gap-1.5 md:gap-2">
-                        <Split className="w-3.5 h-3.5 md:w-4 md:h-4 text-sky-500" /> 拆帳 / 代墊分攤
+                      <div className="font-bold text-sm sm:text-base text-slate-700 flex items-center gap-1.5 sm:gap-2">
+                        <Split className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-sky-500" /> 拆帳分攤
                       </div>
                     </label>
                   </div>
 
                   {useSplit && (
-                    <div className="mt-4 md:mt-5 space-y-3 md:space-y-4">
+                    <div className="mt-3.5 sm:mt-5 space-y-3 sm:space-y-4">
                       {splits.map((s, idx) => (
-                        <div key={idx} className="flex flex-row md:gap-3 items-center gap-2">
+                        <div key={idx} className="flex flex-row sm:gap-3 items-center gap-2">
                           <div className="flex-1">
                             <select
-                              className="select select-bordered select-sm md:select-md w-full rounded-xl font-bold text-xs md:text-sm"
+                              className="select select-bordered select-sm sm:select-md w-full rounded-xl font-bold text-xs sm:text-sm"
                               value={s.payer_id}
                               onChange={(e) =>
                                 setSplits((prev) =>
@@ -650,13 +645,13 @@ export default function LedgerPage() {
                             </select>
                           </div>
 
-                          <div className="w-24 md:w-40 relative">
-                            <span className="absolute left-2.5 md:left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-300">
+                          <div className="w-24 sm:w-40 relative">
+                            <span className="absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-300">
                               $
                             </span>
                             <input
                               type="number"
-                              className="input input-bordered input-sm md:input-md w-full pl-6 md:pl-6 font-black rounded-xl text-xs md:text-sm"
+                              className="input input-bordered input-sm sm:input-md w-full pl-6 sm:pl-8 font-black rounded-xl text-xs sm:text-sm"
                               value={s.amount || ""}
                               onChange={(e) =>
                                 setSplits((prev) =>
@@ -667,33 +662,33 @@ export default function LedgerPage() {
                           </div>
 
                           <button
-                            className="btn btn-ghost text-rose-500 btn-sm md:px-4 rounded-xl px-2"
+                            className="btn btn-ghost text-rose-500 btn-sm sm:px-4 rounded-xl px-2"
                             onClick={() => setSplits((prev) => prev.filter((_, i) => i !== idx))}
                           >
-                            <Trash2 className="w-4 h-4 md:w-4 md:h-4" />
-                            <span className="hidden md:inline ml-1">移除</span>
+                            <Trash2 className="w-4 h-4 sm:w-4 sm:h-4" />
+                            <span className="hidden sm:inline ml-1">移除</span>
                           </button>
                         </div>
                       ))}
 
                       <button
-                        className="btn btn-ghost btn-xs md:btn-sm text-sky-600 font-bold"
+                        className="btn btn-ghost btn-xs sm:btn-sm text-sky-600 font-bold hover:bg-sky-100"
                         onClick={() => {
                           const other = payerId ? payers.find((p) => p.id !== payerId)?.id || "" : "";
                           setSplits((prev) => [...prev, { payer_id: other, amount: 0 }]);
                         }}
                       >
-                        ＋ 新增一位分攤者
+                        ＋ 新增分攤者
                       </button>
                     </div>
                   )}
                 </div>
               </div>
 
-              {/* 提交按鈕：手機版 w-full，電腦版靠右 */}
-              <div className="col-span-2 md:col-span-4 flex justify-end mt-4 md:mt-2">
+              {/* 提交按鈕 */}
+              <div className="col-span-2 sm:col-span-1 md:col-span-4 flex justify-end mt-2 md:mt-2">
                 <button
-                  className="btn bg-sky-600 hover:bg-sky-700 text-white rounded-xl md:rounded-2xl px-10 font-black shadow-md shadow-sky-200/30 w-full md:w-auto"
+                  className="btn bg-sky-600 hover:bg-sky-700 text-white rounded-xl sm:rounded-2xl w-full sm:w-auto px-10 font-black shadow-md shadow-sky-200/50"
                   onClick={submitNew}
                 >
                   確認新增
@@ -704,11 +699,11 @@ export default function LedgerPage() {
         </div>
 
         {/* ===== List ===== */}
-        <div className="card bg-white shadow-sm border border-slate-200 rounded-2xl md:rounded-3xl overflow-hidden">
-          <div className="px-5 py-4 md:px-8 md:py-6 border-b border-slate-100 flex items-center justify-between">
-            <div className="flex items-center gap-2.5 md:gap-3">
-              <div className="w-1.5 h-1.5 rounded-full bg-slate-800"></div>
-              <h2 className="text-lg md:text-xl font-black text-slate-800 italic tracking-tight">TRANSACTIONS</h2>
+        <div className="card bg-white shadow-none sm:shadow-sm border-y sm:border border-slate-200 rounded-none sm:rounded-3xl overflow-hidden">
+          <div className="px-4 sm:px-8 py-4 sm:py-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 sm:bg-transparent">
+            <div className="flex items-center gap-2.5 sm:gap-3">
+              <div className="w-1.5 h-1.5 rounded-full bg-slate-800 hidden sm:block"></div>
+              <h2 className="text-base sm:text-xl font-black text-slate-800 italic tracking-tight">TRANSACTIONS</h2>
             </div>
             <div className="flex items-center gap-2">
               {rowsLoading && <span className="loading loading-spinner loading-xs text-sky-500"></span>}
@@ -718,7 +713,7 @@ export default function LedgerPage() {
 
           <div className="divide-y divide-slate-100">
             {safeRows.length === 0 ? (
-              <div className="p-16 md:p-20 text-center opacity-30 font-black italic text-base md:text-lg">本月尚無任何記帳資料。</div>
+              <div className="p-16 sm:p-20 text-center opacity-30 font-black italic text-base sm:text-lg">本月尚無任何記帳資料。</div>
             ) : (
               safeRows.map((r) => {
                 const sp = Array.isArray(r.ledger_splits) ? r.ledger_splits : [];
@@ -730,26 +725,26 @@ export default function LedgerPage() {
                     className="group relative px-4 py-3 md:px-8 md:py-5 hover:bg-slate-50 transition-colors"
                   >
                     {/* 操作按鈕 */}
-                    <div className="absolute right-2 md:right-3 top-2.5 md:top-3 flex gap-0.5 md:gap-1.5 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                    <div className="absolute right-3 top-3.5 sm:top-4 flex flex-col sm:flex-row gap-1 sm:gap-1.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                       <button
-                        className="btn btn-ghost btn-xs h-7 w-7 md:h-8 md:w-8 p-0 min-h-0 rounded-lg text-slate-400 hover:text-sky-600 hover:bg-sky-50"
+                        className="btn btn-ghost btn-xs h-7 w-7 sm:h-8 sm:w-8 p-0 min-h-0 rounded-lg text-slate-400 hover:text-sky-600 hover:bg-sky-50"
                         onClick={() => openEdit(r)}
                         aria-label="編輯"
                       >
-                        <Edit3 className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                        <Edit3 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                       </button>
                       <button
-                        className="btn btn-ghost btn-xs h-7 w-7 md:h-8 md:w-8 p-0 min-h-0 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50"
+                        className="btn btn-ghost btn-xs h-7 w-7 sm:h-8 sm:w-8 p-0 min-h-0 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50"
                         onClick={() => deleteRow(r)}
                         aria-label="刪除"
                       >
-                        <Trash2 className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                        <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                       </button>
                     </div>
 
-                    <div className="flex items-start gap-3 md:gap-4 min-w-0 pr-14 md:pr-0">
+                    <div className="flex items-start gap-3 sm:gap-4 min-w-0 pr-8 sm:pr-16">
                       <div
-                        className={`w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl flex items-center justify-center font-black text-sm md:text-base shrink-0 border-2 ${
+                        className={`w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl flex items-center justify-center font-black text-sm sm:text-base shrink-0 border-2 ${
                           isExp
                             ? "bg-rose-50 text-rose-500 border-rose-100"
                             : "bg-emerald-50 text-emerald-500 border-emerald-100"
@@ -761,13 +756,13 @@ export default function LedgerPage() {
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
                           <span
-                            className={`text-lg md:text-xl font-black tabular-nums tracking-tighter leading-none ${
+                            className={`text-lg sm:text-xl font-black tabular-nums tracking-tighter leading-none ${
                               isExp ? "text-rose-500" : "text-emerald-500"
                             }`}
                           >
                             ${Number(r.amount).toLocaleString()}
                           </span>
-                          <span className="text-[10px] md:text-xs font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 md:px-2 md:py-1 rounded-md">
+                          <span className="text-[10px] sm:text-xs font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-md">
                             {r.entry_date}
                           </span>
 
@@ -784,34 +779,39 @@ export default function LedgerPage() {
                           )}
                         </div>
 
-                        <div className="mt-1.5 flex flex-wrap items-center gap-1.5 md:gap-2 text-xs md:text-sm font-medium text-slate-500">
+                        <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-xs md:text-sm font-medium text-slate-500">
                           <span className="text-slate-700 font-extrabold border-b-2 border-slate-100 pb-0.5 mr-0.5 md:mr-1">
                             {catName(r.category_id) || "未分類"}
                           </span>
 
                           {r.pay_method && (
-                            <span className="flex items-center gap-1 bg-slate-100 px-1.5 py-0.5 rounded-md text-[10px] md:text-xs text-slate-500 border border-slate-200/50 whitespace-nowrap">
+                            <span className="flex items-center gap-0.5 md:gap-1 bg-slate-100 px-1.5 py-0.5 rounded-md text-[10px] md:text-xs text-slate-500 border border-slate-200/50 whitespace-nowrap">
                               <CreditCard className="w-2.5 h-2.5 md:w-3 md:h-3" />
                               {r.pay_method}
                             </span>
                           )}
 
                           {r.payer_id && (
-                            <span className="flex items-center gap-1 bg-sky-50 px-1.5 py-0.5 rounded-md text-[10px] md:text-xs text-sky-700 font-bold border border-sky-100 whitespace-nowrap">
+                            <span className="flex items-center gap-0.5 md:gap-1 bg-sky-50 px-1.5 py-0.5 rounded-md text-[10px] md:text-xs text-sky-700 font-bold border border-sky-100 whitespace-nowrap">
                               <User className="w-2.5 h-2.5 md:w-3 md:h-3" />
                               {payerName(r.payer_id)} 先付
                             </span>
                           )}
 
                           {r.merchant && (
-                            <span className="text-indigo-600 font-bold flex items-center ml-0.5 md:ml-1 truncate max-w-[100px] md:max-w-none">
-                              @ {r.merchant}
-                            </span>
+                            <>
+                              <span className="text-indigo-600 font-bold truncate max-w-[120px] md:hidden ml-0.5">
+                                @ {r.merchant}
+                              </span>
+                              <span className="text-indigo-600 font-bold flex items-center hidden md:flex md:ml-1">
+                                @ {r.merchant}
+                              </span>
+                            </>
                           )}
 
                           {r.note && (
                             <span
-                              className="text-violet-600 font-normal max-w-[150px] sm:max-w-[220px] md:max-w-[320px] truncate ml-0.5 md:ml-1"
+                              className="text-violet-600 font-normal max-w-[160px] sm:max-w-[220px] md:max-w-[320px] truncate cursor-help ml-0.5 md:ml-1"
                               title={r.note}
                             >
                               ({r.note})
@@ -824,7 +824,7 @@ export default function LedgerPage() {
                             {sp.map((x, i) => (
                               <div
                                 key={i}
-                                className="px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-[9px] md:text-[10px] font-black text-slate-500"
+                                className="px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-[9px] sm:text-[10px] font-black text-slate-500"
                               >
                                 {payerName(x.payer_id)}: ${Number(x.amount)}
                               </div>
@@ -844,28 +844,25 @@ export default function LedgerPage() {
       {/* ===== Edit Modal ===== */}
       {editing && (
         <div className="modal modal-open bg-slate-900/40 backdrop-blur-sm p-2 sm:p-0">
-          <div className="modal-box w-full max-w-2xl rounded-2xl md:rounded-3xl p-0 shadow-2xl border border-white/20">
-            <div className="bg-slate-50 px-5 md:px-8 py-4 md:py-6 flex items-start justify-between border-b border-slate-200">
+          <div className="modal-box w-full max-w-2xl rounded-2xl sm:rounded-3xl p-0 shadow-2xl border border-white/20">
+            <div className="bg-slate-50 px-5 sm:px-8 py-4 sm:py-6 flex items-center justify-between border-b border-slate-200">
               <div>
-                <h3 className="text-lg md:text-xl font-black text-slate-800">修改記帳內容</h3>
-                <div className="text-[10px] md:text-xs font-bold text-slate-400 mt-1 uppercase tracking-widest">
-                  Transaction Editor
-                </div>
+                <h3 className="text-lg sm:text-xl font-black text-slate-800">修改記帳內容</h3>
               </div>
               <button className="btn btn-sm btn-circle btn-ghost" onClick={() => setEditing(null)}>
                 ✕
               </button>
             </div>
 
-            <div className="p-5 md:p-8 space-y-4 md:space-y-6 max-h-[70vh] overflow-y-auto bg-white">
-              <div className="grid grid-cols-2 md:grid-cols-2 gap-3 md:gap-4">
+            <div className="p-5 sm:p-8 space-y-4 sm:space-y-6 max-h-[65vh] overflow-y-auto bg-white">
+              <div className="grid grid-cols-2 gap-3 sm:gap-4">
                 <div className="col-span-1">
                   <label className="label py-0 mb-1">
-                    <span className="label-text font-bold text-[10px] opacity-40 uppercase">日期</span>
+                    <span className="label-text font-bold text-[10px] text-slate-400 uppercase">日期</span>
                   </label>
                   <input
                     type="date"
-                    className="input input-sm md:input-md input-bordered w-full rounded-xl font-bold focus:border-sky-500"
+                    className="input input-sm sm:input-md input-bordered w-full rounded-xl font-medium focus:border-sky-500"
                     value={editForm.entry_date}
                     onChange={(e) => setEditForm({ ...editForm, entry_date: e.target.value })}
                   />
@@ -873,10 +870,10 @@ export default function LedgerPage() {
 
                 <div className="col-span-1">
                   <label className="label py-0 mb-1">
-                    <span className="label-text font-bold text-[10px] opacity-40 uppercase">類型</span>
+                    <span className="label-text font-bold text-[10px] text-slate-400 uppercase">類型</span>
                   </label>
                   <select
-                    className="select select-sm md:select-md select-bordered w-full rounded-xl font-bold focus:border-sky-500"
+                    className="select select-sm sm:select-md select-bordered w-full rounded-xl font-bold focus:border-sky-500"
                     value={editForm.type}
                     onChange={(e) => {
                       const t = e.target.value as "expense" | "income";
@@ -897,22 +894,22 @@ export default function LedgerPage() {
 
                 <div className="col-span-2">
                   <label className="label py-0 mb-1">
-                    <span className="label-text font-bold text-[10px] opacity-40 uppercase">金額</span>
+                    <span className="label-text font-bold text-[10px] text-slate-400 uppercase">金額</span>
                   </label>
                   <input
                     type="number"
-                    className="input input-bordered w-full text-2xl md:text-3xl font-black tabular-nums py-6 md:py-8 rounded-xl focus:border-sky-500"
+                    className="input input-bordered w-full text-2xl sm:text-3xl font-black tabular-nums h-14 sm:h-16 rounded-xl focus:border-sky-500"
                     value={editForm.amount || ""}
                     onChange={(e) => setEditForm({ ...editForm, amount: Number(e.target.value) })}
                   />
                 </div>
 
-                <div className="col-span-1 md:col-span-2">
+                <div className="col-span-1 sm:col-span-2">
                   <label className="label py-0 mb-1">
-                    <span className="label-text font-bold text-[10px] opacity-40 uppercase">大分類</span>
+                    <span className="label-text font-bold text-[10px] text-slate-400 uppercase">大分類</span>
                   </label>
                   <select
-                    className="select select-sm md:select-md select-bordered w-full rounded-xl font-medium focus:border-sky-500"
+                    className="select select-sm sm:select-md select-bordered w-full rounded-xl font-medium focus:border-sky-500"
                     value={editForm.group_name}
                     onChange={(e) => setEditForm({ ...editForm, group_name: e.target.value, category_id: "" })}
                   >
@@ -925,12 +922,12 @@ export default function LedgerPage() {
                   </select>
                 </div>
 
-                <div className="col-span-1 md:col-span-2">
+                <div className="col-span-1 sm:col-span-2">
                   <label className="label py-0 mb-1">
-                    <span className="label-text font-bold text-[10px] opacity-40 uppercase">小分類</span>
+                    <span className="label-text font-bold text-[10px] text-slate-400 uppercase">小分類</span>
                   </label>
                   <select
-                    className="select select-sm md:select-md select-bordered w-full rounded-xl font-medium focus:border-sky-500"
+                    className="select select-sm sm:select-md select-bordered w-full rounded-xl font-medium focus:border-sky-500"
                     value={editForm.category_id}
                     onChange={(e) => setEditForm({ ...editForm, category_id: e.target.value })}
                     disabled={!editForm.group_name}
@@ -944,12 +941,12 @@ export default function LedgerPage() {
                   </select>
                 </div>
 
-                <div className="col-span-1 md:col-span-2">
+                <div className="col-span-1 sm:col-span-2">
                   <label className="label py-0 mb-1">
-                    <span className="label-text font-bold text-[10px] opacity-40 uppercase">付款方式</span>
+                    <span className="label-text font-bold text-[10px] text-slate-400 uppercase">付款方式</span>
                   </label>
                   <select
-                    className="select select-sm md:select-md select-bordered w-full rounded-xl font-medium focus:border-sky-500"
+                    className="select select-sm sm:select-md select-bordered w-full rounded-xl font-medium focus:border-sky-500"
                     value={editForm.pay_method}
                     onChange={(e) => setEditForm({ ...editForm, pay_method: e.target.value })}
                   >
@@ -962,12 +959,12 @@ export default function LedgerPage() {
                   </select>
                 </div>
 
-                <div className="col-span-1 md:col-span-2">
+                <div className="col-span-1 sm:col-span-2">
                   <label className="label py-0 mb-1">
-                    <span className="label-text font-bold text-[10px] opacity-40 uppercase">付款人</span>
+                    <span className="label-text font-bold text-[10px] text-slate-400 uppercase">付款人</span>
                   </label>
                   <select
-                    className="select select-sm md:select-md select-bordered w-full rounded-xl font-bold text-sky-700 focus:border-sky-500"
+                    className="select select-sm sm:select-md select-bordered w-full rounded-xl font-bold text-sky-700 focus:border-sky-500"
                     value={editForm.payer_id}
                     onChange={(e) => {
                       const nextPayer = e.target.value;
@@ -990,10 +987,10 @@ export default function LedgerPage() {
 
                 <div className="col-span-2">
                   <label className="label py-0 mb-1">
-                    <span className="label-text font-bold text-[10px] opacity-40 uppercase">店家 / 對象</span>
+                    <span className="label-text font-bold text-[10px] text-slate-400 uppercase">店家 / 對象</span>
                   </label>
                   <input
-                    className="input input-sm md:input-md input-bordered w-full rounded-xl focus:border-sky-500"
+                    className="input input-sm sm:input-md input-bordered w-full rounded-xl focus:border-sky-500"
                     value={editForm.merchant}
                     onChange={(e) => setEditForm({ ...editForm, merchant: e.target.value })}
                   />
@@ -1001,21 +998,21 @@ export default function LedgerPage() {
 
                 <div className="col-span-2">
                   <label className="label py-0 mb-1">
-                    <span className="label-text font-bold text-[10px] opacity-40 uppercase">備註</span>
+                    <span className="label-text font-bold text-[10px] text-slate-400 uppercase">備註</span>
                   </label>
                   <input
-                    className="input input-sm md:input-md input-bordered w-full rounded-xl focus:border-sky-500"
+                    className="input input-sm sm:input-md input-bordered w-full rounded-xl focus:border-sky-500"
                     value={editForm.note}
                     onChange={(e) => setEditForm({ ...editForm, note: e.target.value })}
                   />
                 </div>
               </div>
 
-              <div className={`p-4 md:p-6 rounded-2xl border transition-all duration-300 ${editForm.useSplit ? "bg-sky-50 border-sky-200" : "bg-slate-50 border-slate-100"}`}>
-                <label className="flex items-center gap-3 cursor-pointer mb-3 md:mb-4">
+              <div className={`p-4 sm:p-6 rounded-2xl border transition-all duration-300 ${editForm.useSplit ? "bg-sky-50 border-sky-200" : "bg-slate-50 border-slate-100"}`}>
+                <label className="flex items-center gap-3 cursor-pointer mb-3 sm:mb-4">
                   <input
                     type="checkbox"
-                    className="toggle toggle-info toggle-sm md:toggle-md"
+                    className="toggle toggle-info toggle-sm sm:toggle-md"
                     checked={editForm.useSplit}
                     onChange={(e) => {
                       if (e.target.checked && editForm.type !== "expense") {
@@ -1043,7 +1040,7 @@ export default function LedgerPage() {
                     {(editForm.splits || []).map((s, idx) => (
                       <div key={idx} className="flex gap-2 items-center">
                         <select
-                          className="select select-bordered select-sm md:select-md w-full rounded-lg md:rounded-xl font-bold text-xs md:text-sm"
+                          className="select select-bordered select-sm sm:select-md w-full rounded-lg sm:rounded-xl font-bold text-xs sm:text-sm"
                           value={s.payer_id}
                           onChange={(e) => {
                             const next = (editForm.splits || []).map((r, i) =>
@@ -1062,13 +1059,13 @@ export default function LedgerPage() {
                             ))}
                         </select>
 
-                        <div className="relative w-28 md:w-32 shrink-0">
-                          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] md:text-xs font-bold text-slate-400">
+                        <div className="relative w-28 shrink-0">
+                          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400">
                             $
                           </span>
                           <input
                             type="number"
-                            className="input input-bordered input-sm md:input-md w-full pl-5 md:pl-6 font-black rounded-lg md:rounded-xl text-xs md:text-sm"
+                            className="input input-bordered input-sm sm:input-md w-full pl-5 font-black rounded-lg sm:rounded-xl text-xs sm:text-sm"
                             value={s.amount || ""}
                             onChange={(e) => {
                               const next = (editForm.splits || []).map((r, i) =>
@@ -1086,13 +1083,13 @@ export default function LedgerPage() {
                             setEditForm({ ...editForm, splits: next });
                           }}
                         >
-                          <Trash2 className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     ))}
 
                     <button
-                      className="btn btn-ghost btn-xs md:btn-sm text-sky-600 font-bold"
+                      className="btn btn-ghost btn-xs sm:btn-sm text-sky-600 font-bold"
                       onClick={() => {
                         const payer = editForm.payer_id || "";
                         const other = payer ? payers.find((p) => p.id !== payer)?.id || "" : "";
@@ -1107,15 +1104,15 @@ export default function LedgerPage() {
               </div>
             </div>
 
-            <div className="bg-slate-50 px-5 md:px-8 py-4 flex justify-end gap-3 border-t border-slate-200 rounded-b-2xl md:rounded-b-3xl">
+            <div className="bg-slate-50 px-5 sm:px-8 py-4 flex justify-end gap-3 border-t border-slate-200 rounded-b-2xl sm:rounded-b-3xl">
               <button
-                className="btn btn-ghost btn-sm md:btn-md rounded-xl text-slate-600 font-bold"
+                className="btn btn-ghost btn-sm sm:btn-md rounded-xl text-slate-600 font-bold"
                 onClick={() => setEditing(null)}
               >
                 取消
               </button>
               <button
-                className="btn bg-sky-600 hover:bg-sky-700 text-white border-none btn-sm md:btn-md rounded-xl md:rounded-2xl px-6 md:px-8 font-black shadow-md"
+                className="btn bg-sky-600 hover:bg-sky-700 text-white border-none btn-sm sm:btn-md rounded-xl sm:rounded-2xl px-6 sm:px-8 font-black shadow-md"
                 onClick={submitEdit}
               >
                 確認修改
