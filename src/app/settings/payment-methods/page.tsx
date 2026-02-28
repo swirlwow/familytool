@@ -286,15 +286,15 @@ export default function PaymentMethodsPage() {
       <div className="mx-auto max-w-6xl space-y-6">
         
         {/* ✅ Header：黏住頂部 + 縮小 - Sky Theme */}
-        <div className="card bg-white/90 backdrop-blur-md shadow-sm border border-slate-200 rounded-2xl sticky top-0 z-40">
-          <div className="card-body p-3 flex flex-row items-center justify-between gap-3">
+        <div className="card bg-white/90 backdrop-blur-md shadow-sm border border-slate-200 rounded-3xl sticky top-0 z-40">
+          <div className="card-body p-4 flex flex-row items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="bg-sky-50 text-sky-600 p-2 rounded-lg border border-sky-100">
                 <CreditCard className="w-5 h-5" />
               </div>
 
               <div className="flex items-center gap-2">
-                <h1 className="text-lg font-black tracking-tight text-slate-800">付款方式</h1>
+                <h1 className="text-xl font-black tracking-tight text-slate-800">付款方式</h1>
                 <div className="badge badge-sm bg-sky-100 text-sky-700 border-none font-bold hidden sm:inline-flex">
                   Settings
                 </div>
