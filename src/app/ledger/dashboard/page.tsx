@@ -87,7 +87,7 @@ export default function LedgerDashboardPage() {
   const [groupFilter, setGroupFilter] = useState<string>("__ALL__");
   const [categoryFilter, setCategoryFilter] = useState<string>("__ALL__");
 
-  // ✅ 新增：關鍵字
+  // 關鍵字
   const [keyword, setKeyword] = useState<string>("");
 
   // 點擊複製提示
@@ -178,13 +178,14 @@ export default function LedgerDashboardPage() {
     setCategoryFilter("__ALL__");
   }, [groupFilter]);
 
-  // ✅ keyword 內容：把一筆資料可搜尋文字「展開」
+  // keyword 內容：把一筆資料可搜尋文字「展開」
   function rowSearchText(x: LedgerEntry) {
     const c = x.category_id ? maps.catMap.get(x.category_id) : null;
     const group = c?.group_name || "未分類";
     const cat = c?.name || "未分類";
     const payer = x.payer_id ? maps.payerMap.get(x.payer_id) || "" : "";
-    const pm = x.pay_method ? maps.pmMap.get(x.pay_method) || "" : "";
+    // ✅ 修正：允許直接讀取存下來的名稱
+    const pm = x.pay_method ? maps.pmMap.get(x.pay_method) || x.pay_method : "";
     return [
       x.entry_date,
       x.type === "expense" ? "支出" : "收入",
@@ -314,7 +315,8 @@ export default function LedgerDashboardPage() {
         const group = c?.group_name || "未分類";
         const cat = c?.name || "未分類";
         const payer = x.payer_id ? maps.payerMap.get(x.payer_id) || "" : "";
-        const pm = x.pay_method ? maps.pmMap.get(x.pay_method) || "" : "";
+        // ✅ 修正
+        const pm = x.pay_method ? maps.pmMap.get(x.pay_method) || x.pay_method : "";
         return [
           toCsvCell(x.entry_date),
           toCsvCell(x.type === "expense" ? "支出" : "收入"),
@@ -369,12 +371,9 @@ export default function LedgerDashboardPage() {
 
   const mergedError = err || masterError;
 
-  // ✅ 子逸醫療一鍵篩選（優先精準匹配，找不到就文字 fallback）
   function applyZiyiMedical() {
-    // 先確保類型是支出（醫療通常在支出）
     setTypeFilter("expense");
 
-    // 找大分類=子逸
     const wantGroup = "兒子";
     const wantCat = "醫療費";
 
@@ -389,7 +388,6 @@ export default function LedgerDashboardPage() {
     if (groupExists) {
       setGroupFilter(wantGroup);
 
-      // 在該 group 內找小分類=醫療
       const hit = (catsExpense || []).find((c: any) => {
         const g = (c.group_name || "未分組").trim() || "未分組";
         return g === wantGroup && String(c.name || "").trim() === wantCat;
@@ -400,13 +398,11 @@ export default function LedgerDashboardPage() {
         return;
       }
 
-      // group 有但沒有完全同名小分類，就用 keyword 輔助
       setCategoryFilter("__ALL__");
       setKeyword("醫療");
       return;
     }
 
-    // group 不存在：用 keyword 直接縮
     setGroupFilter("__ALL__");
     setCategoryFilter("__ALL__");
     setKeyword("子逸 醫療");
@@ -417,7 +413,8 @@ export default function LedgerDashboardPage() {
     const group = c?.group_name || "未分類";
     const cat = c?.name || "未分類";
     const payer = x.payer_id ? maps.payerMap.get(x.payer_id) || "" : "";
-    const pm = x.pay_method ? maps.pmMap.get(x.pay_method) || "" : "";
+    // ✅ 修正
+    const pm = x.pay_method ? maps.pmMap.get(x.pay_method) || x.pay_method : "";
     const text = [
       x.entry_date,
       x.type === "income" ? "收入" : "支出",
@@ -437,7 +434,6 @@ export default function LedgerDashboardPage() {
       setCopied("已複製");
       setTimeout(() => setCopied(""), 900);
     } catch {
-      // fallback：若 clipboard 權限被擋
       try {
         const ta = document.createElement("textarea");
         ta.value = text;
@@ -456,7 +452,6 @@ export default function LedgerDashboardPage() {
     }
   }
 
-  // 快速區間
   function setRange(kind: "thisMonth" | "lastMonth" | "d7" | "d30" | "thisYear") {
     const r =
       kind === "thisMonth"
@@ -517,7 +512,6 @@ export default function LedgerDashboardPage() {
         </div>
       </div>
 
-      {/* ✅ 快速區間 + 子逸醫療 */}
       <div className="flex flex-wrap gap-2">
         <button
           onClick={() => setRange("thisMonth")}
@@ -641,7 +635,6 @@ export default function LedgerDashboardPage() {
             </select>
           </div>
 
-          {/* ✅ 關鍵字搜尋 */}
           <div className="space-y-1">
             <div className="text-xs font-bold text-slate-500">關鍵字</div>
             <input
@@ -695,9 +688,9 @@ export default function LedgerDashboardPage() {
       </div>
 
       {/* Error */}
-      {err || masterError ? (
+      {mergedError ? (
         <div className="border border-red-200 bg-red-50 text-red-700 rounded-xl p-3">
-          讀取失敗：{err || masterError}
+          讀取失敗：{mergedError}
         </div>
       ) : null}
 
@@ -730,7 +723,6 @@ export default function LedgerDashboardPage() {
         </div>
       </div>
 
-      {/* ✅ 統計 + 明細（保留你的版面） */}
       <div className="space-y-6">
         {/* Group Summary Card */}
         <div className="border border-slate-200 rounded-3xl p-6 bg-white shadow-sm space-y-4">
@@ -857,8 +849,6 @@ export default function LedgerDashboardPage() {
           {!loading && !masterLoading && filteredRows.length === 0 ? (
             <div className="text-slate-500 py-8 font-medium">此條件下沒有明細資料</div>
           ) : (
-
-
             <div className="space-y-3">
               <div className="md:hidden space-y-3">
                 {filteredRows
@@ -869,7 +859,8 @@ export default function LedgerDashboardPage() {
                     const group = c?.group_name || "未分類";
                     const cat = c?.name || "未分類";
                     const payer = x.payer_id ? maps.payerMap.get(x.payer_id) || "" : "";
-                    const pm = x.pay_method ? maps.pmMap.get(x.pay_method) || "" : "";
+                    // ✅ 修正
+                    const pm = x.pay_method ? maps.pmMap.get(x.pay_method) || x.pay_method : "";
                     const isIncome = x.type === "income";
 
                     return (
@@ -984,7 +975,8 @@ export default function LedgerDashboardPage() {
                         const group = c?.group_name || "未分類";
                         const cat = c?.name || "未分類";
                         const payer = x.payer_id ? maps.payerMap.get(x.payer_id) || "" : "";
-                        const pm = x.pay_method ? maps.pmMap.get(x.pay_method) || "" : "";
+                        // ✅ 修正
+                        const pm = x.pay_method ? maps.pmMap.get(x.pay_method) || x.pay_method : "";
                         const isIncome = x.type === "income";
 
                         return (
@@ -1048,11 +1040,6 @@ export default function LedgerDashboardPage() {
                 </table>
               </div>
             </div>
-
-
-
-
-
           )}
         </div>
       </div>
