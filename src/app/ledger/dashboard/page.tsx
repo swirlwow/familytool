@@ -16,7 +16,6 @@ type LedgerEntry = {
   note: string | null;
   payer_id: string | null;
   created_at: string;
-  // ✅ 補上拆帳的型別
   ledger_splits?: Array<{ payer_id: string; amount: number }>;
 };
 
@@ -296,53 +295,6 @@ export default function LedgerDashboardPage() {
     return Array.from(m.values()).sort((a, b) => b.amount - a.amount);
   }, [filteredRows, maps.catMap, typeFilter]);
 
-  function exportDetailCsv() {
-    const header = [
-      "日期",
-      "類型",
-      "金額",
-      "大分類",
-      "小分類",
-      "付款人",
-      "付款方式",
-      "店家",
-      "備註",
-      "id",
-    ].join(",");
-
-    const body = filteredRows
-      .map((x) => {
-        const c = x.category_id ? maps.catMap.get(x.category_id) : null;
-        const group = c?.group_name || "未分類";
-        const cat = c?.name || "未分類";
-        const payer = x.payer_id ? maps.payerMap.get(x.payer_id) || "" : "";
-        const pm = x.pay_method ? maps.pmMap.get(x.pay_method) || x.pay_method : "";
-        return [
-          toCsvCell(x.entry_date),
-          toCsvCell(x.type === "expense" ? "支出" : "收入"),
-          toCsvCell(x.amount),
-          toCsvCell(group),
-          toCsvCell(cat),
-          toCsvCell(payer),
-          toCsvCell(pm),
-          toCsvCell(x.merchant || ""),
-          toCsvCell(x.note || ""),
-          toCsvCell(x.id),
-        ].join(",");
-      })
-      .join("\n");
-
-    const blob = new Blob([header + "\n" + body], {
-      type: "text/csv;charset=utf-8;",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `ledger_detail_${from}_${to}_${typeFilter}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
   function exportSummaryCsv() {
     const header = ["類型", "大分類", "小分類", "金額"].join(",");
 
@@ -366,14 +318,16 @@ export default function LedgerDashboardPage() {
     URL.revokeObjectURL(url);
   }
 
-  // ✅ 新增：匯出拆帳明細 CSV 功能
-  function exportSplitsCsv() {
+  // ✅ 優化：匯出完整明細 (包含拆帳展開與未拆帳)
+  function exportAllDetailCsv() {
     const header = [
       "日期",
+      "類型",
       "大分類",
       "小分類",
       "店家",
       "總金額",
+      "付款方式",
       "代墊/付款人",
       "應付/分攤人",
       "分攤金額",
@@ -383,44 +337,71 @@ export default function LedgerDashboardPage() {
 
     const lines: string[] = [];
 
-    filteredRows.forEach((x) => {
-      const sp = Array.isArray(x.ledger_splits) ? x.ledger_splits : [];
-      if (sp.length === 0) return; // 只匯出有拆帳的資料
+    // 依日期舊到新排序
+    const sortedRows = filteredRows.slice().sort((a, b) => (a.entry_date > b.entry_date ? 1 : -1));
 
+    sortedRows.forEach((x) => {
       const c = x.category_id ? maps.catMap.get(x.category_id) : null;
       const group = c?.group_name || "未分類";
       const cat = c?.name || "未分類";
       const payer = x.payer_id ? maps.payerMap.get(x.payer_id) || "" : "";
+      const pm = x.pay_method ? maps.pmMap.get(x.pay_method) || x.pay_method : "";
+      const typeLabel = x.type === "expense" ? "支出" : "收入";
 
-      sp.forEach((split) => {
-        const splitPayer = split.payer_id ? maps.payerMap.get(split.payer_id) || split.payer_id : "";
+      const sp = Array.isArray(x.ledger_splits) ? x.ledger_splits : [];
+
+      if (sp.length > 0) {
+        // 如果有拆帳，將一筆交易展開為多行
+        sp.forEach((split) => {
+          const splitPayer = split.payer_id ? maps.payerMap.get(split.payer_id) || split.payer_id : "";
+          lines.push([
+            toCsvCell(x.entry_date),
+            toCsvCell(typeLabel),
+            toCsvCell(group),
+            toCsvCell(cat),
+            toCsvCell(x.merchant || ""),
+            toCsvCell(x.amount),
+            toCsvCell(pm),
+            toCsvCell(payer),
+            toCsvCell(splitPayer),
+            toCsvCell(split.amount),
+            toCsvCell(x.note || ""),
+            toCsvCell(x.id),
+          ].join(","));
+        });
+      } else {
+        // 如果沒有拆帳，則應付人與付款人相同，分攤金額即為總金額
         lines.push([
           toCsvCell(x.entry_date),
+          toCsvCell(typeLabel),
           toCsvCell(group),
           toCsvCell(cat),
           toCsvCell(x.merchant || ""),
           toCsvCell(x.amount),
+          toCsvCell(pm),
           toCsvCell(payer),
-          toCsvCell(splitPayer),
-          toCsvCell(split.amount),
+          toCsvCell(payer || "—"), // 應付人同付款人
+          toCsvCell(x.amount), // 分攤金額即為總額
           toCsvCell(x.note || ""),
           toCsvCell(x.id),
         ].join(","));
-      });
+      }
     });
 
     if (lines.length === 0) {
-      alert("此搜尋條件下，沒有任何包含「拆帳」的明細資料。");
+      alert("此搜尋條件下，沒有任何明細資料。");
       return;
     }
 
-    const blob = new Blob([header + "\n" + lines.join("\n")], {
+    // 加上 UTF-8 BOM 以防 Excel 開啟中文亂碼
+    const bom = "\uFEFF";
+    const blob = new Blob([bom + header + "\n" + lines.join("\n")], {
       type: "text/csv;charset=utf-8;",
     });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `ledger_splits_detail_${from}_${to}.csv`;
+    a.download = `ledger_all_details_${from}_${to}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -545,18 +526,7 @@ export default function LedgerDashboardPage() {
             </span>
           ) : null}
 
-          {/* ✅ 新增的匯出拆帳明細按鈕 */}
-          <button
-            onClick={exportSplitsCsv}
-            className={cn(
-              "px-4 py-2 rounded-lg font-bold shadow-sm",
-              "bg-amber-500 text-white hover:bg-amber-600 border-none",
-              "disabled:opacity-60"
-            )}
-            disabled={loading || masterLoading}
-          >
-            匯出拆帳明細 CSV
-          </button>
+          {/* ✅ 替換為單一強大的「匯出完整明細」按鈕 */}
           <button
             onClick={exportSummaryCsv}
             className={cn(
@@ -569,7 +539,7 @@ export default function LedgerDashboardPage() {
             匯出分類彙總 CSV
           </button>
           <button
-            onClick={exportDetailCsv}
+            onClick={exportAllDetailCsv}
             className={cn(
               "px-4 py-2 rounded-lg font-bold shadow-sm",
               "bg-blue-600 text-white hover:bg-blue-500",
@@ -577,7 +547,7 @@ export default function LedgerDashboardPage() {
             )}
             disabled={loading || masterLoading}
           >
-            匯出明細 CSV
+            匯出完整明細 CSV (含拆帳展開)
           </button>
         </div>
       </div>
