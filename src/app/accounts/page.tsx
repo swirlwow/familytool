@@ -1,207 +1,464 @@
 // src/app/accounts/page.tsx
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState, useRef } from "react";
+import Link from "next/link";
 import { WORKSPACE_ID } from "@/lib/appConfig";
+import { useToast } from "@/hooks/use-toast";
+import { CreditCard, Edit3, Plus, Trash2, ShieldCheck, Building2 } from "lucide-react";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+type AccountRow = {
+  id: string;
+  type: string; // "bank" | "credit_card" | "e_wallet" ...
+  name: string; // 銀行名稱 or 信用卡名稱
+  account_number: string | null;
+  owner: string | null;
+  note: string | null;
+};
 
-import { DndContext, DragEndEvent, PointerSensor, closestCenter, useSensor, useSensors } from "@dnd-kit/core";
-import { SortableContext, useSortable, arrayMove, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
+const ACCOUNT_TYPES = [
+  { value: "bank", label: "銀行帳戶" },
+  { value: "credit_card", label: "信用卡" },
+  { value: "e_wallet", label: "電子支付/錢包" },
+  { value: "other", label: "其他" },
+];
 
-import { AccountRow, AccountType, apiGetAccounts, apiPostAccount, apiPatchAccount, apiDeleteAccount, n } from "@/lib/api";
-import { Wallet, CreditCard, Landmark, Plus, GripVertical, Power, Trash2, ArrowUpDown, ArrowLeft } from "lucide-react";
-
-function stopDrag(e: React.SyntheticEvent) { e.stopPropagation(); }
-
-function TypeIcon({ type }: { type: AccountType }) {
-  if (type === "credit_card") return <CreditCard className="w-5 h-5 text-emerald-600" />;
-  if (type === "bank") return <Landmark className="w-5 h-5 text-emerald-600" />;
-  return <Wallet className="w-5 h-5 text-emerald-600" />;
+function getTypeLabel(v: string) {
+  return ACCOUNT_TYPES.find((x) => x.value === v)?.label || v;
 }
 
-function SortableAccountCard({ row, onPatchLocal, onBlurCommit, onToggleActive, onDelete }: { row: AccountRow; onPatchLocal: (patch: Partial<AccountRow>) => void; onBlurCommit: () => void; onToggleActive: () => void; onDelete: () => void; }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: row.id });
-  const style: React.CSSProperties = { transform: CSS.Translate.toString(transform), transition, zIndex: isDragging ? 50 : undefined, position: "relative" };
-  const inactive = row.is_active === false;
+// ===== 🚀 手機版專用滑動元件 (Swipe to Action) =====
+function SwipeableRow({ children, onEdit, onDelete }: { children: React.ReactNode, onEdit: () => void, onDelete: () => void }) {
+  const rowRef = useRef<HTMLDivElement>(null);
+  const startX = useRef<number | null>(null);
+  const startY = useRef<number | null>(null);
+  const currentX = useRef<number>(0);
+  const isSwiping = useRef(false);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    startX.current = e.touches[0].clientX;
+    startY.current = e.touches[0].clientY;
+    isSwiping.current = false;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (startX.current === null || startY.current === null) return;
+    const dx = e.touches[0].clientX - startX.current;
+    const dy = e.touches[0].clientY - startY.current;
+
+    if (!isSwiping.current && Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 10) {
+      isSwiping.current = true;
+    }
+
+    if (isSwiping.current) {
+      let newX = currentX.current + dx;
+      if (newX > 80) newX = 80 + (newX - 80) * 0.2;
+      if (newX < -80) newX = -80 + (newX + 80) * 0.2;
+      
+      if (rowRef.current) {
+        rowRef.current.style.transform = `translateX(${newX}px)`;
+      }
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!isSwiping.current) {
+      if (currentX.current !== 0) {
+         currentX.current = 0;
+         if (rowRef.current) {
+           rowRef.current.style.transition = 'transform 0.2s ease-out';
+           rowRef.current.style.transform = `translateX(0px)`;
+           setTimeout(() => { if(rowRef.current) rowRef.current.style.transition = ''; }, 200);
+         }
+      }
+      return;
+    }
+    
+    const dx = e.changedTouches[0].clientX - (startX.current || 0);
+    let finalX = currentX.current + dx;
+
+    if (finalX > 40) {
+      currentX.current = 80;
+    } else if (finalX < -40) {
+      currentX.current = -80;
+    } else {
+      currentX.current = 0;
+    }
+
+    if (rowRef.current) {
+      rowRef.current.style.transition = 'transform 0.2s ease-out';
+      rowRef.current.style.transform = `translateX(${currentX.current}px)`;
+      setTimeout(() => {
+        if (rowRef.current) rowRef.current.style.transition = '';
+      }, 200);
+    }
+    
+    startX.current = null;
+    startY.current = null;
+    isSwiping.current = false;
+  };
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className={["group relative flex flex-col md:flex-row items-start md:items-center gap-3 rounded-2xl border p-4 shadow-sm transition-all select-none", isDragging ? "border-emerald-400 ring-2 ring-emerald-400/20 shadow-xl scale-[1.02] z-50 bg-white" : "border-slate-100 bg-white hover:border-emerald-200 hover:shadow-md", inactive ? "bg-slate-50 opacity-60 grayscale-[0.5]" : ""].join(" ")} title="按住卡片空白處拖曳排序">
-      <div className="absolute right-3 top-3 md:static md:top-auto md:right-auto md:left-auto flex h-8 w-6 items-center justify-center rounded-md text-slate-300 group-hover:text-emerald-500 cursor-grab active:cursor-grabbing touch-none"><GripVertical className="h-5 w-5" /></div>
-      <div className="min-w-0 flex-1 w-full pr-8 md:pr-0">
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-4 items-center">
-          <div className="md:col-span-4"><div className="md:hidden text-[10px] font-bold text-slate-400 uppercase mb-0.5">名稱</div><Input value={row.name || ""} onChange={(e) => onPatchLocal({ name: e.target.value })} onBlur={onBlurCommit} placeholder="帳戶名稱" className={["h-9 border-transparent bg-transparent px-2 text-base font-bold shadow-none transition-all p-0 md:p-2", "focus-visible:border-slate-300 focus-visible:bg-white focus-visible:ring-2 focus-visible:ring-emerald-500/20 rounded-lg", inactive ? "text-slate-500 line-through decoration-slate-300" : "text-slate-900"].join(" ")} onPointerDown={stopDrag} onKeyDown={stopDrag} /></div>
-          <div className="md:col-span-4"><div className="md:hidden text-[10px] font-bold text-slate-400 uppercase mb-0.5 mt-2 md:mt-0">備註/帳號</div><Input value={row.note || ""} onChange={(e) => onPatchLocal({ note: e.target.value })} onBlur={onBlurCommit} placeholder="備註 / 末四碼" className={["h-9 border-transparent bg-transparent px-2 text-sm font-mono shadow-none transition-all p-0 md:p-2", "focus-visible:border-slate-300 focus-visible:bg-white focus-visible:ring-2 focus-visible:ring-emerald-500/20 rounded-lg", "text-slate-500 placeholder:text-slate-300"].join(" ")} onPointerDown={stopDrag} onKeyDown={stopDrag} /></div>
-          <div className="md:col-span-2"><div className="md:hidden text-[10px] font-bold text-slate-400 uppercase mb-0.5 mt-2 md:mt-0">持有人</div><Input value={row.owner_name || ""} onChange={(e) => onPatchLocal({ owner_name: e.target.value })} onBlur={onBlurCommit} placeholder="持有人" className={["h-9 border-transparent bg-transparent px-2 text-sm font-bold text-left md:text-center shadow-none transition-all p-0 md:p-2", "focus-visible:border-slate-300 focus-visible:bg-white focus-visible:ring-2 focus-visible:ring-emerald-500/20 rounded-lg", inactive ? "text-slate-400" : "text-emerald-600"].join(" ")} onPointerDown={stopDrag} onKeyDown={stopDrag} /></div>
-          <div className="md:col-span-2 flex items-center justify-between md:justify-end gap-2 mt-3 md:mt-0 pt-3 md:pt-0 border-t border-slate-100 md:border-0 w-full">
-            <span className="md:hidden text-[10px] font-bold text-slate-300 uppercase">狀態與操作</span>
-            <div className="flex items-center gap-1">
-                <span className="hidden md:inline-block font-mono text-[10px] text-slate-200 select-none mr-2">#{n(row.sort_order)}</span>
-                <Button type="button" size="sm" variant="ghost" className={["h-8 px-2.5 text-xs font-bold rounded-lg border transition-all", inactive ? "border-slate-200 text-slate-400 bg-transparent hover:bg-slate-100" : "border-emerald-100 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700"].join(" ")} onClick={(e) => { e.stopPropagation(); onToggleActive(); }} onPointerDown={stopDrag}><Power className="w-3.5 h-3.5 mr-1" />{inactive ? "停用" : "啟用"}</Button>
-                <Button type="button" size="sm" variant="ghost" className="h-8 w-8 p-0 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors" onClick={(e) => { e.stopPropagation(); onDelete(); }} onPointerDown={stopDrag} title="刪除"><Trash2 className="w-4 h-4" /></Button>
-            </div>
-          </div>
-        </div>
+    <div className="relative overflow-hidden group touch-pan-y border-b border-slate-100 last:border-b-0 bg-slate-50">
+      <div 
+        className="absolute inset-y-0 left-0 w-20 bg-emerald-500 flex flex-col items-center justify-center text-white md:hidden cursor-pointer" 
+        onClick={() => { currentX.current = 0; if(rowRef.current) rowRef.current.style.transform = 'translateX(0px)'; onEdit(); }}
+      >
+        <Edit3 className="w-5 h-5 mb-1" />
+        <span className="text-[10px] font-bold tracking-widest">編輯</span>
+      </div>
+      
+      <div 
+        className="absolute inset-y-0 right-0 w-20 bg-rose-500 flex flex-col items-center justify-center text-white md:hidden cursor-pointer" 
+        onClick={() => { currentX.current = 0; if(rowRef.current) rowRef.current.style.transform = 'translateX(0px)'; onDelete(); }}
+      >
+        <Trash2 className="w-5 h-5 mb-1" />
+        <span className="text-[10px] font-bold tracking-widest">刪除</span>
+      </div>
+      
+      <div 
+        ref={rowRef}
+        className="bg-white relative z-10 w-full"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+        {children}
       </div>
     </div>
   );
 }
 
-export default function AccountsSettingsPage() {
-  const router = useRouter();
-  const [rows, setRows] = useState<AccountRow[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [newType, setNewType] = useState<AccountType>("credit_card");
-  const [newName, setNewName] = useState("");
-  const [newOwner, setNewOwner] = useState("");
-  const [newNote, setNewNote] = useState("");
+export default function AccountsPage() {
+  const { toast } = useToast();
+  const [list, setList] = useState<AccountRow[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
+  // New Form
+  const [formType, setFormType] = useState("bank");
+  const [formName, setFormName] = useState("");
+  const [formAccNum, setFormAccNum] = useState("");
+  const [formOwner, setFormOwner] = useState("");
+  const [formNote, setFormNote] = useState("");
+  const [saving, setSaving] = useState(false);
 
-  const byType = useMemo(() => {
-    const m: Record<AccountType, AccountRow[]> = { credit_card: [], bank: [], cash: [] };
-    for (const r of rows) { const tp = (r.type || "credit_card") as AccountType; m[tp].push(r); }
-    for (const tp of Object.keys(m) as AccountType[]) { m[tp] = m[tp].slice().sort((a, b) => n(a.sort_order) - n(b.sort_order) || String(a.name).localeCompare(String(b.name), "zh-Hant")); }
-    return m;
-  }, [rows]);
+  // Edit Modal
+  const [editing, setEditing] = useState<AccountRow | null>(null);
+  const [editForm, setEditForm] = useState({
+    type: "bank",
+    name: "",
+    account_number: "",
+    owner: "",
+    note: "",
+  });
 
   async function load() {
-    if (!WORKSPACE_ID) return;
+    if (!WORKSPACE_ID) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
-      const j = await apiGetAccounts({ workspace_id: WORKSPACE_ID, include_inactive: 1 });
-      setRows(Array.isArray(j?.data) ? j.data : []);
-    } catch (e: any) { alert(e?.message || "讀取失敗"); } finally { setLoading(false); }
+      const res = await fetch(`/api/accounts?workspace_id=${WORKSPACE_ID}`, { cache: "no-store" });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(j.error || "讀取失敗");
+      setList(Array.isArray(j.data) ? j.data : []);
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "讀取失敗", description: e.message });
+      setList([]);
+    } finally {
+      setLoading(false);
+    }
   }
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  async function patch(id: string, patchBody: any) {
+  async function submitNew() {
     if (!WORKSPACE_ID) return;
-    try { await apiPatchAccount({ workspace_id: WORKSPACE_ID, id, ...patchBody }); } catch (e: any) { alert(e?.message || "更新失敗"); }
-  }
-
-  async function add() {
-    if (!WORKSPACE_ID) return alert("未設定 WORKSPACE_ID");
-    const nm = newName.trim(); const ow = newOwner.trim();
-    if (!nm) return alert("請輸入帳戶名稱"); if (!ow) return alert("請輸入持有人");
+    const n = formName.trim();
+    if (!n) {
+      toast({ variant: "destructive", title: "失敗", description: "名稱不可空白" });
+      return;
+    }
+    setSaving(true);
     try {
-      await apiPostAccount({ workspace_id: WORKSPACE_ID, type: newType, name: nm, owner_name: ow, note: newNote.trim() ? newNote.trim() : null });
-      setNewName(""); setNewOwner(""); setNewNote(""); await load();
-    } catch (e: any) { alert(e?.message || "新增失敗"); }
+      const res = await fetch("/api/accounts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          workspace_id: WORKSPACE_ID,
+          type: formType,
+          name: n,
+          account_number: formAccNum || null,
+          owner: formOwner || null,
+          note: formNote || null,
+        }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(j.error || "新增失敗");
+
+      setFormName("");
+      setFormAccNum("");
+      setFormOwner("");
+      setFormNote("");
+      toast({ title: "已新增帳戶/卡片" });
+      load();
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "新增失敗", description: e.message });
+    } finally {
+      setSaving(false);
+    }
   }
 
-  async function del(id: string, name: string) {
-    if (!WORKSPACE_ID) return;
-    if (!confirm(`確定刪除帳戶「${name}」？`)) return;
-    try { await apiDeleteAccount({ workspace_id: WORKSPACE_ID, id }); await load(); } catch (e: any) { alert(e?.message || "刪除失敗"); }
-  }
+  async function submitEdit() {
+    if (!WORKSPACE_ID || !editing) return;
+    const n = editForm.name.trim();
+    if (!n) {
+      toast({ variant: "destructive", title: "失敗", description: "名稱不可空白" });
+      return;
+    }
 
-  async function fixSort(tp: AccountType) {
-    if (!WORKSPACE_ID) return;
-    setLoading(true);
     try {
-      const base = byType[tp] || [];
-      for (let i = 0; i < base.length; i++) {
-        const desired = (i + 1) * 10;
-        if (n(base[i].sort_order) !== desired) { await patch(base[i].id, { sort_order: desired }); }
-      }
-      await load();
-    } finally { setLoading(false); }
+      const res = await fetch("/api/accounts", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          workspace_id: WORKSPACE_ID,
+          id: editing.id,
+          type: editForm.type,
+          name: n,
+          account_number: editForm.account_number || null,
+          owner: editForm.owner || null,
+          note: editForm.note || null,
+        }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(j.error || "修改失敗");
+
+      toast({ title: "已儲存修改" });
+      setEditing(null);
+      load();
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "修改失敗", description: e.message });
+    }
   }
 
-  async function handleDragEnd(tp: AccountType, e: DragEndEvent) {
-    const activeId = String(e.active.id);
-    const overId = e.over ? String(e.over.id) : null;
-    if (!overId || activeId === overId) return;
-    const ordered = byType[tp] || [];
-    const ids = ordered.map((r) => r.id);
-    const oldIndex = ids.indexOf(activeId);
-    const newIndex = ids.indexOf(overId);
-    if (oldIndex < 0 || newIndex < 0) return;
-    const next = arrayMove(ordered, oldIndex, newIndex);
-    const nextRows = next.map((r, i) => ({ ...r, sort_order: (i + 1) * 10 }));
-    setRows((prev) => { const other = prev.filter((x) => (x.type as AccountType) !== tp); return [...other, ...nextRows]; });
-    try { for (let i = 0; i < nextRows.length; i++) { await patch(nextRows[i].id, { sort_order: (i + 1) * 10 }); } } finally { await load(); }
+  async function deleteRow(id: string) {
+    if (!WORKSPACE_ID) return;
+    if (!confirm("確定刪除此紀錄嗎？")) return;
+    try {
+      const res = await fetch("/api/accounts", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ workspace_id: WORKSPACE_ID, id }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(j.error || "刪除失敗");
+      toast({ title: "已刪除" });
+      load();
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "刪除失敗", description: e.message });
+    }
   }
 
-  const sections: { tp: AccountType; title: string; desc: string }[] = [
-    { tp: "credit_card", title: "信用卡", desc: "可記錄卡片名稱、持有人與末四碼。" },
-    { tp: "bank", title: "銀行帳戶", desc: "可記錄銀行/戶名/備註。" },
-    { tp: "cash", title: "現金", desc: "可記錄現金類別。" },
-  ];
+  function openEdit(r: AccountRow) {
+    setEditing(r);
+    setEditForm({
+      type: r.type || "bank",
+      name: r.name || "",
+      account_number: r.account_number || "",
+      owner: r.owner || "",
+      note: r.note || "",
+    });
+  }
 
   return (
-    <main className="min-h-screen bg-slate-50 p-4 md:p-6 lg:p-8">
-      <div className="mx-auto max-w-6xl space-y-6">
+    <main className="min-h-screen bg-slate-50 px-0 py-4 sm:p-4 md:p-6 lg:p-8 pb-24 md:pb-8">
+      <div className="mx-auto max-w-5xl space-y-4 sm:space-y-6">
         
-        {/* ✅ Header: Sticky & Compact - Emerald Theme */}
-        <div className="card bg-white/90 backdrop-blur-md shadow-sm border border-slate-200 rounded-2xl sticky top-0 z-40">
-          <div className="card-body p-3 flex flex-row items-center justify-between gap-3">
+        {/* Header */}
+        <div className="card bg-white/90 backdrop-blur-md shadow-none sm:shadow-sm border-b sm:border border-slate-200 rounded-none sm:rounded-3xl sticky top-0 z-40">
+          <div className="card-body p-3 px-4 sm:p-4 flex flex-row items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="bg-emerald-50 text-emerald-600 p-2 rounded-lg border border-emerald-100"><Wallet className="w-5 h-5" /></div>
-              <div className="flex items-center gap-2"><h1 className="text-lg font-black tracking-tight text-slate-800">帳戶總覽</h1><div className="badge badge-sm bg-emerald-100 text-emerald-700 border-none font-bold hidden sm:inline-flex">Accounts</div></div>
-            </div>
-            <div className="flex gap-2">
-                <button className="btn btn-ghost btn-sm h-9 min-h-0 rounded-xl font-bold text-slate-500 hover:bg-slate-100" onClick={() => router.push("/")}>回首頁</button>
-                <button className="btn btn-outline btn-sm h-9 min-h-0 rounded-xl font-bold border-slate-300 hover:bg-slate-100 hover:text-slate-700 gap-2" onClick={() => router.push("/ledger")}><ArrowLeft className="w-4 h-4" /> 記帳本</button>
-            </div>
-          </div>
-          {!WORKSPACE_ID && (<div className="px-4 pb-3"><div className="alert alert-warning rounded-2xl py-3 text-sm"><span>未設定 WORKSPACE_ID（請檢查 .env.local）</span></div></div>)}
-        </div>
-
-        <Card className="overflow-hidden border-none shadow-none sm:border sm:bg-white sm:shadow-sm sm:rounded-3xl">
-          <CardHeader className="border-b border-slate-100 bg-white/50 px-6 py-4 backdrop-blur-sm rounded-t-3xl">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg font-black text-slate-800 flex items-center gap-2"><div className="bg-emerald-500 text-white p-1 rounded-lg"><Plus className="w-4 h-4" /></div>新增帳戶資料</CardTitle>
-              <Button variant="ghost" size="sm" onClick={load} disabled={loading} className="h-8 px-3 text-slate-400 hover:text-emerald-600 rounded-xl">{loading ? "讀取中..." : "重新整理"}</Button>
-            </div>
-          </CardHeader>
-          <CardContent className="p-4 sm:p-6 bg-slate-50/50 sm:bg-white rounded-b-3xl">
-            <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 p-4 sm:p-5">
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-12 items-end">
-                <div className="md:col-span-2"><label className="label py-1"><span className="label-text font-bold text-slate-400 text-xs uppercase">類型</span></label><select className="select select-bordered select-sm w-full rounded-xl font-bold focus:border-emerald-500 h-10" value={newType} onChange={(e) => setNewType(e.target.value as AccountType)}><option value="credit_card">信用卡</option><option value="bank">銀行帳戶</option><option value="cash">現金</option></select></div>
-                <div className="md:col-span-3"><label className="label py-1"><span className="label-text font-bold text-slate-400 text-xs uppercase">名稱</span></label><Input className="h-10 border-slate-200 bg-white shadow-sm rounded-xl focus:border-emerald-500" placeholder="例如：玉山 UBear" value={newName} onChange={(e) => setNewName(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") add(); }} /></div>
-                <div className="md:col-span-2"><label className="label py-1"><span className="label-text font-bold text-slate-400 text-xs uppercase">持有人</span></label><Input className="h-10 border-slate-200 bg-white shadow-sm rounded-xl focus:border-emerald-500" placeholder="例如：媽媽" value={newOwner} onChange={(e) => setNewOwner(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") add(); }} /></div>
-                <div className="md:col-span-3"><label className="label py-1"><span className="label-text font-bold text-slate-400 text-xs uppercase">備註</span></label><Input className="h-10 border-slate-200 bg-white shadow-sm rounded-xl focus:border-emerald-500" placeholder="例如：末四碼 1234" value={newNote} onChange={(e) => setNewNote(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") add(); }} /></div>
-                <div className="md:col-span-2"><Button onClick={add} className="h-10 w-full rounded-xl bg-emerald-600 font-black text-white hover:bg-emerald-700 shadow-md shadow-emerald-200/50 hover:scale-[1.02] active:scale-95 transition-all">新增</Button></div>
+              <div className="bg-emerald-50 text-emerald-600 p-2 rounded-xl border border-emerald-100">
+                <ShieldCheck className="w-5 h-5 sm:w-6 sm:h-6" />
+              </div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-lg sm:text-xl font-black text-slate-800 tracking-tight">帳戶與卡片備忘</h1>
+                <div className="badge badge-sm bg-emerald-100 text-emerald-700 border-none font-bold hidden sm:inline-flex">
+                  Accounts
+                </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
+            <div>
+              <Link
+                href="/"
+                className="btn btn-ghost btn-sm h-8 sm:h-9 min-h-0 rounded-xl font-bold text-slate-500 hover:bg-slate-100 hidden sm:inline-flex"
+              >
+                回首頁
+              </Link>
+            </div>
+          </div>
+        </div>
 
-        {loading && <div className="flex justify-center py-8"><span className="loading loading-spinner loading-lg text-emerald-500"></span></div>}
+        {/* New Form */}
+        <div className="card bg-white shadow-none sm:shadow-md border-y sm:border border-slate-200 rounded-none sm:rounded-3xl">
+          <div className="bg-slate-50/50 px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-200 flex items-center gap-2 sm:rounded-t-3xl">
+            <div className="bg-emerald-500 text-white p-1 rounded-md sm:rounded-lg">
+              <Plus className="w-4 h-4" />
+            </div>
+            <h2 className="font-black text-base sm:text-lg text-slate-800">新增紀錄</h2>
+          </div>
+          <div className="card-body p-4 sm:p-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+              <div className="col-span-1">
+                <label className="label py-0.5 sm:py-1 mb-0.5"><span className="label-text font-bold text-slate-400 text-xs uppercase">類型</span></label>
+                <select className="select select-sm sm:select-md select-bordered w-full rounded-xl focus:border-emerald-500 font-bold" value={formType} onChange={(e) => setFormType(e.target.value)}>
+                  {ACCOUNT_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                </select>
+              </div>
+              <div className="col-span-1">
+                <label className="label py-0.5 sm:py-1 mb-0.5"><span className="label-text font-bold text-slate-400 text-xs uppercase">持有人</span></label>
+                <input className="input input-sm sm:input-md input-bordered w-full rounded-xl focus:border-emerald-500" value={formOwner} onChange={(e) => setFormOwner(e.target.value)} placeholder="如：自己、老公" />
+              </div>
+              <div className="col-span-2">
+                <label className="label py-0.5 sm:py-1 mb-0.5"><span className="label-text font-bold text-slate-400 text-xs uppercase">名稱</span></label>
+                <input className="input input-sm sm:input-md input-bordered w-full rounded-xl font-bold focus:border-emerald-500" value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="如：國泰世華銀行" />
+              </div>
+              <div className="col-span-2">
+                <label className="label py-0.5 sm:py-1 mb-0.5"><span className="label-text font-bold text-slate-400 text-xs uppercase">帳號 / 卡號</span></label>
+                <input className="input input-sm sm:input-md input-bordered w-full rounded-xl font-mono focus:border-emerald-500" value={formAccNum} onChange={(e) => setFormAccNum(e.target.value)} placeholder="000-0000-0000" />
+              </div>
+              <div className="col-span-2">
+                <label className="label py-0.5 sm:py-1 mb-0.5"><span className="label-text font-bold text-slate-400 text-xs uppercase">備註</span></label>
+                <input className="input input-sm sm:input-md input-bordered w-full rounded-xl focus:border-emerald-500" value={formNote} onChange={(e) => setFormNote(e.target.value)} placeholder="繳費帳戶、綁定街口..." />
+              </div>
+            </div>
+            <div className="mt-4 flex justify-end">
+              <button className="btn bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl sm:rounded-2xl px-8 font-black border-none w-full sm:w-auto" onClick={submitNew} disabled={saving}>
+                儲存紀錄
+              </button>
+            </div>
+          </div>
+        </div>
 
-        <div className="space-y-6">
-          {sections.map((s) => {
-            const list = byType[s.tp] || [];
-            return (
-              <Card key={s.tp} className="overflow-hidden sm:rounded-3xl border-slate-200 shadow-sm">
-                <CardHeader className="border-b border-slate-100 bg-white px-6 py-5">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="flex items-center gap-3"><div className="p-2 bg-slate-50 rounded-xl border border-slate-100"><TypeIcon type={s.tp} /></div><div><CardTitle className="text-lg font-bold text-slate-800 flex items-center gap-2">{s.title}<span className="badge badge-sm bg-slate-100 text-slate-500 border-none font-mono">{list.length}</span></CardTitle><p className="text-xs text-slate-400 mt-0.5">{s.desc}</p></div></div>
-                    <Button variant="outline" size="sm" className="h-8 text-xs rounded-xl border-slate-200 text-slate-500 hover:border-emerald-200 hover:text-emerald-700 hover:bg-emerald-50 gap-2" onClick={() => fixSort(s.tp)} disabled={loading || list.length === 0}><ArrowUpDown className="w-3 h-3" />重置排序</Button>
+        {/* List */}
+        <div className="card bg-white shadow-none sm:shadow-sm border-y sm:border border-slate-200 rounded-none sm:rounded-3xl overflow-hidden">
+          <div className="px-4 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+            <h2 className="text-sm font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
+              <Building2 className="w-4 h-4" /> 備忘清單
+            </h2>
+            {loading && <span className="loading loading-spinner loading-xs text-emerald-500"></span>}
+          </div>
+
+          <div className="flex flex-col">
+            {!loading && list.length === 0 ? (
+              <div className="p-16 text-center text-slate-300 font-bold">目前沒有任何紀錄</div>
+            ) : (
+              list.map((r) => (
+                <SwipeableRow key={r.id} onEdit={() => openEdit(r)} onDelete={() => deleteRow(r.id)}>
+                  <div className="group relative px-4 py-3 sm:px-6 sm:py-4 hover:bg-slate-50 transition-colors">
+                    
+                    {/* PC 端按鈕 */}
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 hidden sm:flex flex-row gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button className="btn btn-ghost btn-xs h-8 w-8 p-0 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50" onClick={() => openEdit(r)}>
+                        <Edit3 className="w-4 h-4" />
+                      </button>
+                      <button className="btn btn-ghost btn-xs h-8 w-8 p-0 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50" onClick={() => deleteRow(r.id)}>
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    <div className="flex items-start gap-3 sm:gap-4 pr-0 sm:pr-24">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 shrink-0 border border-slate-200">
+                        {r.type === 'credit_card' ? <CreditCard className="w-5 h-5 sm:w-6 sm:h-6" /> : <Building2 className="w-5 h-5 sm:w-6 sm:h-6" />}
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 mb-1">
+                          <h3 className="font-black text-slate-900 text-sm sm:text-base leading-tight truncate">{r.name}</h3>
+                          <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-500 font-bold text-[10px] sm:text-xs">
+                            {getTypeLabel(r.type)}
+                          </span>
+                          {r.owner && (
+                            <span className="px-2 py-0.5 rounded bg-sky-50 text-sky-700 font-bold text-[10px] sm:text-xs border border-sky-100">
+                              {r.owner}
+                            </span>
+                          )}
+                        </div>
+                        
+                        <div className="mt-1.5">
+                          {r.account_number ? (
+                            <div className="font-mono text-xs sm:text-sm text-slate-600 font-medium select-all">
+                              {r.account_number}
+                            </div>
+                          ) : (
+                            <div className="text-xs text-slate-400 italic">無號碼紀錄</div>
+                          )}
+                        </div>
+
+                        {r.note && (
+                          <div className="mt-1 text-[11px] sm:text-xs text-slate-500 leading-snug">
+                            備註：{r.note}
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </CardHeader>
-                <CardContent className="p-4 sm:p-6 bg-slate-50/30 min-h-[100px]">
-                  {list.length === 0 ? (<div className="flex flex-col items-center justify-center py-10 text-slate-400 text-sm"><div className="text-4xl mb-2 opacity-20">📭</div>尚無資料</div>) : (
-                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(e) => handleDragEnd(s.tp, e)}>
-                      <SortableContext items={list.map((r) => r.id)} strategy={verticalListSortingStrategy}>
-                        <div className="space-y-3">{list.map((r) => (<SortableAccountCard key={r.id} row={r} onPatchLocal={(p) => setRows((prev) => prev.map((x) => (x.id === r.id ? { ...x, ...p } : x)))} onBlurCommit={() => { const current = rows.find((x) => x.id === r.id); patch(r.id, { name: (current?.name ?? r.name ?? "").toString(), owner_name: (current?.owner_name ?? r.owner_name ?? "").toString(), note: String(current?.note ?? r.note ?? "").trim() ? String(current?.note ?? r.note) : null }); }} onToggleActive={async () => { await patch(r.id, { is_active: r.is_active === false }); await load(); }} onDelete={() => del(r.id, r.name)} />))}</div>
-                      </SortableContext>
-                    </DndContext>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })}
+                </SwipeableRow>
+              ))
+            )}
+          </div>
         </div>
       </div>
+
+      {/* Edit Modal */}
+      {editing && (
+        <div className="modal modal-open bg-slate-900/40 backdrop-blur-sm p-2 sm:p-0">
+          <div className="modal-box w-full max-w-md rounded-2xl sm:rounded-3xl p-0 shadow-2xl">
+            <div className="bg-slate-50 px-5 sm:px-6 py-4 flex items-center justify-between border-b border-slate-200">
+              <h3 className="text-lg font-black text-slate-800">修改紀錄</h3>
+              <button className="btn btn-sm btn-circle btn-ghost" onClick={() => setEditing(null)}>✕</button>
+            </div>
+            
+            <div className="p-5 sm:p-6 space-y-4 bg-white">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-1">
+                  <label className="label py-0 mb-1"><span className="label-text font-bold text-[10px] text-slate-400 uppercase">類型</span></label>
+                  <select className="select select-bordered w-full rounded-xl focus:border-emerald-500 font-bold" value={editForm.type} onChange={(e) => setEditForm({ ...editForm, type: e.target.value })}>
+                    {ACCOUNT_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                  </select>
+                </div>
+                <div className="col-span-1">
+                  <label className="label py-0 mb-1"><span className="label-text font-bold text-[10px] text-slate-400 uppercase">持有人</span></label>
+                  <input className="input input-bordered w-full rounded-xl focus:border-emerald-500" value={editForm.owner} onChange={(e) => setEditForm({ ...editForm, owner: e.target.value })} />
+                </div>
+                <div className="col-span-2">
+                  <label className="label py-0 mb-1"><span className="label-text font-bold text-[10px] text-slate-400 uppercase">名稱</span></label>
+                  <input className="input input-bordered w-full rounded-xl font-bold focus:border-emerald-500" value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} />
+                </div>
+                <div className="col-span-2">
+                  <label className="label py-0 mb-1"><span className="label-text font-bold text-[10px] text-slate-400 uppercase">帳號 / 卡號</span></label>
+                  <input className="input input-bordered w-full rounded-xl font-mono focus:border-emerald-500" value={editForm.account_number} onChange={(e) => setEditForm({ ...editForm, account_number: e.target.value })} />
+                </div>
+                <div className="col-span-2">
+                  <label className="label py-0 mb-1"><span className="label-text font-bold text-[10px] text-slate-400 uppercase">備註</span></label>
+                  <input className="input input-bordered w-full rounded-xl focus:border-emerald-500" value={editForm.note} onChange={(e) => setEditForm({ ...editForm, note: e.target.value })} />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-slate-50 px-5 py-4 flex justify-end gap-3 border-t border-slate-200">
+              <button className="btn btn-ghost rounded-xl text-slate-600 font-bold" onClick={() => setEditing(null)}>取消</button>
+              <button className="btn bg-emerald-600 hover:bg-emerald-700 text-white border-none rounded-xl px-6 font-black" onClick={submitEdit}>確認修改</button>
+            </div>
+          </div>
+          <div className="modal-backdrop" onClick={() => setEditing(null)}></div>
+        </div>
+      )}
     </main>
   );
 }
