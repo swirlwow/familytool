@@ -16,6 +16,8 @@ type LedgerEntry = {
   note: string | null;
   payer_id: string | null;
   created_at: string;
+  // ✅ 補上拆帳的型別
+  ledger_splits?: Array<{ payer_id: string; amount: number }>;
 };
 
 function ymd(d: Date) {
@@ -184,7 +186,6 @@ export default function LedgerDashboardPage() {
     const group = c?.group_name || "未分類";
     const cat = c?.name || "未分類";
     const payer = x.payer_id ? maps.payerMap.get(x.payer_id) || "" : "";
-    // ✅ 修正：允許直接讀取存下來的名稱
     const pm = x.pay_method ? maps.pmMap.get(x.pay_method) || x.pay_method : "";
     return [
       x.entry_date,
@@ -315,7 +316,6 @@ export default function LedgerDashboardPage() {
         const group = c?.group_name || "未分類";
         const cat = c?.name || "未分類";
         const payer = x.payer_id ? maps.payerMap.get(x.payer_id) || "" : "";
-        // ✅ 修正
         const pm = x.pay_method ? maps.pmMap.get(x.pay_method) || x.pay_method : "";
         return [
           toCsvCell(x.entry_date),
@@ -362,6 +362,65 @@ export default function LedgerDashboardPage() {
     const a = document.createElement("a");
     a.href = url;
     a.download = `ledger_summary_${from}_${to}_${typeFilter}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // ✅ 新增：匯出拆帳明細 CSV 功能
+  function exportSplitsCsv() {
+    const header = [
+      "日期",
+      "大分類",
+      "小分類",
+      "店家",
+      "總金額",
+      "代墊/付款人",
+      "應付/分攤人",
+      "分攤金額",
+      "備註",
+      "交易ID",
+    ].join(",");
+
+    const lines: string[] = [];
+
+    filteredRows.forEach((x) => {
+      const sp = Array.isArray(x.ledger_splits) ? x.ledger_splits : [];
+      if (sp.length === 0) return; // 只匯出有拆帳的資料
+
+      const c = x.category_id ? maps.catMap.get(x.category_id) : null;
+      const group = c?.group_name || "未分類";
+      const cat = c?.name || "未分類";
+      const payer = x.payer_id ? maps.payerMap.get(x.payer_id) || "" : "";
+
+      sp.forEach((split) => {
+        const splitPayer = split.payer_id ? maps.payerMap.get(split.payer_id) || split.payer_id : "";
+        lines.push([
+          toCsvCell(x.entry_date),
+          toCsvCell(group),
+          toCsvCell(cat),
+          toCsvCell(x.merchant || ""),
+          toCsvCell(x.amount),
+          toCsvCell(payer),
+          toCsvCell(splitPayer),
+          toCsvCell(split.amount),
+          toCsvCell(x.note || ""),
+          toCsvCell(x.id),
+        ].join(","));
+      });
+    });
+
+    if (lines.length === 0) {
+      alert("此搜尋條件下，沒有任何包含「拆帳」的明細資料。");
+      return;
+    }
+
+    const blob = new Blob([header + "\n" + lines.join("\n")], {
+      type: "text/csv;charset=utf-8;",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `ledger_splits_detail_${from}_${to}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -413,7 +472,6 @@ export default function LedgerDashboardPage() {
     const group = c?.group_name || "未分類";
     const cat = c?.name || "未分類";
     const payer = x.payer_id ? maps.payerMap.get(x.payer_id) || "" : "";
-    // ✅ 修正
     const pm = x.pay_method ? maps.pmMap.get(x.pay_method) || x.pay_method : "";
     const text = [
       x.entry_date,
@@ -487,10 +545,22 @@ export default function LedgerDashboardPage() {
             </span>
           ) : null}
 
+          {/* ✅ 新增的匯出拆帳明細按鈕 */}
+          <button
+            onClick={exportSplitsCsv}
+            className={cn(
+              "px-4 py-2 rounded-lg font-bold shadow-sm",
+              "bg-amber-500 text-white hover:bg-amber-600 border-none",
+              "disabled:opacity-60"
+            )}
+            disabled={loading || masterLoading}
+          >
+            匯出拆帳明細 CSV
+          </button>
           <button
             onClick={exportSummaryCsv}
             className={cn(
-              "px-4 py-2 rounded-lg font-bold",
+              "px-4 py-2 rounded-lg font-bold shadow-sm",
               "bg-slate-900 text-white hover:bg-slate-800",
               "disabled:opacity-60"
             )}
@@ -501,7 +571,7 @@ export default function LedgerDashboardPage() {
           <button
             onClick={exportDetailCsv}
             className={cn(
-              "px-4 py-2 rounded-lg font-bold",
+              "px-4 py-2 rounded-lg font-bold shadow-sm",
               "bg-blue-600 text-white hover:bg-blue-500",
               "disabled:opacity-60"
             )}
@@ -859,7 +929,6 @@ export default function LedgerDashboardPage() {
                     const group = c?.group_name || "未分類";
                     const cat = c?.name || "未分類";
                     const payer = x.payer_id ? maps.payerMap.get(x.payer_id) || "" : "";
-                    // ✅ 修正
                     const pm = x.pay_method ? maps.pmMap.get(x.pay_method) || x.pay_method : "";
                     const isIncome = x.type === "income";
 
@@ -975,7 +1044,6 @@ export default function LedgerDashboardPage() {
                         const group = c?.group_name || "未分類";
                         const cat = c?.name || "未分類";
                         const payer = x.payer_id ? maps.payerMap.get(x.payer_id) || "" : "";
-                        // ✅ 修正
                         const pm = x.pay_method ? maps.pmMap.get(x.pay_method) || x.pay_method : "";
                         const isIncome = x.type === "income";
 
