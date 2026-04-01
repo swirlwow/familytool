@@ -31,7 +31,7 @@ const OWNER_STYLE: Record<
     barBg: "bg-indigo-200/70 text-indigo-900 border-indigo-200",
   },
   爸媽: {
-    chip: "bg-orange-200 text-orange-800",
+    chip: "bg-orange-300 text-orange-800",
     ring: "ring-orange-300",
     itemBg: "bg-orange-50 text-orange-800 border-orange-100",
     barBg: "bg-orange-200/70 text-orange-900 border-orange-200",
@@ -43,7 +43,7 @@ const OWNER_STYLE: Record<
     barBg: "bg-rose-200/70 text-rose-900 border-rose-200",
   },
   昱元: {
-    chip: "bg-blue-100 text-blue-700",
+    chip: "bg-blue-200 text-blue-700",
     ring: "ring-blue-200",
     itemBg: "bg-blue-50 text-blue-700 border-blue-100",
     barBg: "bg-blue-200/70 text-blue-900 border-blue-200",
@@ -55,7 +55,7 @@ const OWNER_STYLE: Record<
     barBg: "bg-emerald-200/70 text-emerald-900 border-emerald-200",
   },
   英茵: {
-    chip: "bg-amber-100 text-amber-800",
+    chip: "bg-amber-300 text-amber-800",
     ring: "ring-amber-200",
     itemBg: "bg-amber-50 text-amber-800 border-amber-100",
     barBg: "bg-amber-200/70 text-amber-900 border-amber-200",
