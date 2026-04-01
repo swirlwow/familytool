@@ -667,13 +667,13 @@ export default function CalendarPage() {
                         })}
                       </div>
 
-                      <div className="pointer-events-none absolute inset-x-0 top-[34px] px-1.5">
+                      <div className="pointer-events-none absolute inset-x-0 top-[34px] px-1">
                         <div className="grid grid-cols-7 gap-x-px">
                           {lanes.map((lane, li) => (
                             <div
                               key={`lane-${wi}-${li}`}
                               className="col-span-7 grid grid-cols-7 gap-x-px"
-                              style={{ marginTop: li === 0 ? 0 : 6 }}
+                              style={{ marginTop: li === 0 ? 0 : 4 }}
                             >
                               {lane.map((seg) => {
                                 const owner = primaryOwner(seg.note.owner);
@@ -694,7 +694,7 @@ export default function CalendarPage() {
                                     key={`${seg.id}-${seg.segFrom}-${seg.segTo}-${li}`}
                                     type="button"
                                     className={cn(
-                                      "pointer-events-auto h-5 border text-[10px] font-black truncate px-2 text-left relative",
+                                      "pointer-events-auto h-[18px] border text-[9px] font-black truncate px-1.5 text-left leading-[18px] relative",
                                       st.barBg,
                                       continuesFromPrev && "rounded-r-md rounded-l-none pl-2.5",
                                       continuesToNext && "rounded-l-md rounded-r-none pr-2.5",
