@@ -102,8 +102,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_OUT") {
         setUser(null);
-        router.push("/login");
-        router.refresh();
+        window.location.href = "/login";
       } else if (event === "SIGNED_IN") {
         setUser(session?.user ?? null);
       }

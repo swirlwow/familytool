@@ -1,5 +1,5 @@
 import { createClient as createSupabaseClient, SupabaseClient } from "@supabase/supabase-js";
-import { createServerClient } from "@supabase/ssr";
+import { createServerClient, createBrowserClient } from "@supabase/ssr";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder-url.supabase.co";
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "placeholder-key";
@@ -10,7 +10,7 @@ let clientSideSupabase: any = null;
 function getActiveClient() {
   if (typeof window !== "undefined") {
     if (!clientSideSupabase) {
-      clientSideSupabase = createSupabaseClient(supabaseUrl, supabaseAnonKey);
+      clientSideSupabase = createBrowserClient(supabaseUrl, supabaseAnonKey);
     }
     return clientSideSupabase;
   }

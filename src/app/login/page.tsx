@@ -87,8 +87,7 @@ export default function LoginPage() {
         });
         
         // 強制重新導向首頁並重整狀態
-        router.push("/");
-        router.refresh();
+        window.location.href = "/";
       }
     } catch (err: any) {
       toast({
