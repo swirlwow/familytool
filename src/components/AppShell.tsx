@@ -1,10 +1,10 @@
-// src/components/AppShell.tsx
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
+import { supabase } from "@/lib/supabaseClient";
 import {
-  Menu,
   LayoutDashboard,
   Calculator,
   History,
@@ -15,7 +15,9 @@ import {
   CalendarDays,
   StickyNote,
   NotebookPen,
-  DatabaseBackup, // ✅ 補上資料備份的圖示引入，解決 Vercel Error
+  DatabaseBackup,
+  LogOut,
+  User,
 } from "lucide-react";
 // ✅ 引入 BottomNav
 import BottomNav from "./BottomNav";
@@ -85,7 +87,44 @@ function getIconStyles(theme: string, active: boolean) {
 }
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
   const pathname = usePathname();
+  const [user, setUser] = useState<any>(null);
+  const [workspaceId, setWorkspaceId] = useState<string>("");
+
+  useEffect(() => {
+    // 獲取當前登入使用者資訊
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUser(user);
+    });
+
+    // 監聽認證狀態變化
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_OUT") {
+        setUser(null);
+        router.push("/login");
+        router.refresh();
+      } else if (event === "SIGNED_IN") {
+        setUser(session?.user ?? null);
+      }
+    });
+
+    // 設定 workspace id
+    setWorkspaceId(process.env.NEXT_PUBLIC_WORKSPACE_ID || "");
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [router]);
+
+  const handleLogout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+    } catch (err: any) {
+      console.error("登出失敗:", err.message);
+    }
+  };
 
   const isActive = (href: string) => {
     if (pathname === href) return true;
@@ -93,6 +132,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     if (href !== "/" && pathname.startsWith(href + "/")) return true;
     return false;
   };
+
+  // 登入頁面直接渲染 children，不套用 AppShell 的導航與外框
+  if (pathname === "/login") {
+    return <>{children}</>;
+  }
 
   return (
     <div className="drawer lg:drawer-open bg-slate-50">
@@ -154,13 +198,34 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             ))}
           </nav>
           
-          {/* Footer Info */}
-          <div className="mt-auto px-2 pt-4 border-t border-slate-100">
-            <div className="flex items-center gap-2 text-xs text-slate-400 font-medium">
-              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              System Online
+          {/* 使用者資訊與登出 */}
+          {user ? (
+            <div className="mt-auto pt-4 border-t border-slate-100 flex flex-col gap-3">
+              <div className="flex items-center gap-3 px-2 py-1.5 rounded-xl bg-slate-50 border border-slate-100">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 shrink-0">
+                  <User className="h-5 w-5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-bold text-slate-800 truncate" title={user.email}>{user.email}</p>
+                  <p className="text-[10px] text-slate-400 font-semibold truncate">WS: {workspaceId || "Default"}</p>
+                </div>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="group flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 active:scale-95 text-xs font-bold transition-all duration-200"
+              >
+                <LogOut className="h-4 w-4" strokeWidth={2.5} />
+                安全登出
+              </button>
             </div>
-          </div>
+          ) : (
+            <div className="mt-auto px-2 pt-4 border-t border-slate-100">
+              <div className="flex items-center gap-2 text-xs text-slate-400 font-medium">
+                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                System Online
+              </div>
+            </div>
+          )}
         </aside>
       </div>
     </div>
