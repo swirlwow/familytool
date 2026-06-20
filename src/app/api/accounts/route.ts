@@ -63,7 +63,7 @@ export async function PATCH(request: Request) {
     }
 
     // 動態組成要更新的資料，有傳進來才更新
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     const updateData: any = {};
     if (type !== undefined) updateData.type = type;
     if (name !== undefined) updateData.name = name;

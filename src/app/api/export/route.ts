@@ -28,14 +28,14 @@ export async function GET(request: Request) {
     "settlement_history_items"
   ];
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const backupData: Record<string, any> = {};
 
   for (const table of tables) {
     try {
       // ✅ 使用 import 進來的 supabase
       const { data, error } = await supabase
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+         
         .from(table as any)
         .select("*")
         .eq("workspace_id", workspace_id);
@@ -43,7 +43,7 @@ export async function GET(request: Request) {
       if (!error && data) {
         backupData[table] = data;
       }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     } catch (err: any) {
       console.error(`Error exporting table ${table}:`, err.message);
     }

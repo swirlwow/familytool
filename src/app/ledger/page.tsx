@@ -113,7 +113,7 @@ function SwipeableRow({ children, onEdit, onDelete }: { children: React.ReactNod
     }
     
     const dx = e.changedTouches[0].clientX - (startX.current || 0);
-    let finalX = currentX.current + dx;
+    const finalX = currentX.current + dx;
 
     // 決定滑動超過多少門檻要停靠 (Snap)
     if (finalX > 40) {

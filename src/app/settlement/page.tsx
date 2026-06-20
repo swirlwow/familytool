@@ -238,7 +238,7 @@ export default function SettlementPage() {
 
   useEffect(() => {
     loadPayers();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
 
   useEffect(() => {

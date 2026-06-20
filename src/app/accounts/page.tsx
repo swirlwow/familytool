@@ -107,7 +107,7 @@ function SwipeableRow({ children, onEdit, onDelete }: { children: React.ReactNod
     }
     
     const dx = e.changedTouches[0].clientX - (startX.current || 0);
-    let finalX = currentX.current + dx;
+    const finalX = currentX.current + dx;
 
     if (finalX > 40) {
       currentX.current = 80;
