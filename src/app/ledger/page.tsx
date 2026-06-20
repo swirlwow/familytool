@@ -580,7 +580,15 @@ export default function LedgerPage() {
                     className="input input-bordered w-full pl-8 sm:pl-10 text-lg sm:text-xl font-black tabular-nums rounded-xl h-11 sm:h-12 focus:border-sky-500"
                     value={amount}
                     placeholder="0"
-                    onChange={(e) => setAmount(e.target.value ? Number(e.target.value) : "")}
+                    onChange={(e) => {
+                      const val = e.target.value ? Number(e.target.value) : "";
+                      setAmount(val);
+                      if (useSplit && splits.length === 1) {
+                        const other = payerId ? payers.find((p) => p.id !== payerId)?.id || "" : "";
+                        const half = val ? Math.round((Number(val) / 2) * 100) / 100 : 0;
+                        setSplits([{ payer_id: other, amount: half }]);
+                      }
+                    }}
                   />
                 </div>
               </div>
@@ -707,7 +715,8 @@ export default function LedgerPage() {
                           if (!e.target.checked) setSplits([]);
                           else {
                             const other = payerId ? payers.find((p) => p.id !== payerId)?.id || "" : "";
-                            setSplits([{ payer_id: other, amount: 0 }]);
+                            const half = amount ? Math.round((Number(amount) / 2) * 100) / 100 : 0;
+                            setSplits([{ payer_id: other, amount: half }]);
                           }
                         }}
                       />
@@ -998,7 +1007,13 @@ export default function LedgerPage() {
                     type="number"
                     className="input input-bordered w-full text-2xl sm:text-3xl font-black tabular-nums h-14 sm:h-16 rounded-xl focus:border-sky-500"
                     value={editForm.amount || ""}
-                    onChange={(e) => setEditForm({ ...editForm, amount: Number(e.target.value) })}
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      const nextSplits = (editForm.useSplit && (editForm.splits || []).length === 1)
+                        ? [{ payer_id: editForm.splits[0].payer_id, amount: val ? Math.round((val / 2) * 100) / 100 : 0 }]
+                        : editForm.splits;
+                      setEditForm({ ...editForm, amount: val, splits: nextSplits });
+                    }}
                   />
                 </div>
 
@@ -1123,10 +1138,11 @@ export default function LedgerPage() {
                       }
                       const payer = editForm.payer_id || "";
                       const other = payer ? payers.find((p) => p.id !== payer)?.id || "" : "";
+                      const half = editForm.amount ? Math.round((Number(editForm.amount) / 2) * 100) / 100 : 0;
                       setEditForm({
                         ...editForm,
                         useSplit: true,
-                        splits: (editForm.splits || []).length ? editForm.splits : [{ payer_id: other, amount: 0 }],
+                        splits: (editForm.splits || []).length ? editForm.splits : [{ payer_id: other, amount: half }],
                       });
                     }}
                   />

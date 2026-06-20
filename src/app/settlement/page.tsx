@@ -148,6 +148,7 @@ export default function SettlementPage() {
   const [recent, setRecent] = useState<any[]>([]);
   const [splits, setSplits] = useState<SplitLine[]>([]);
   const [settledItems, setSettledItems] = useState<any[]>([]);
+  const [suggestions, setSuggestions] = useState<any[]>([]);
 
   // 每筆 split 的「這次要結清多少」
   const [settleInput, setSettleInput] = useState<Record<string, number>>({});
@@ -218,6 +219,7 @@ export default function SettlementPage() {
       setRecent(Array.isArray(j.recent_settlements) ? j.recent_settlements : []);
       setSplits(Array.isArray(j.splits) ? j.splits : []);
       setSettledItems(Array.isArray(j.settled_items) ? j.settled_items : []);
+      setSuggestions(Array.isArray(j.suggestions) ? j.suggestions : []);
 
       const next: Record<string, number> = {};
       for (const s of (Array.isArray(j.splits) ? j.splits : []) as SplitLine[]) {
@@ -230,6 +232,7 @@ export default function SettlementPage() {
       setRecent([]);
       setSplits([]);
       setSettledItems([]);
+      setSuggestions([]);
       setSettleInput({});
     } finally {
       setLoading(false);
@@ -283,6 +286,49 @@ export default function SettlementPage() {
       await loadSettlement();
     } catch (e: any) {
       showError("清除草稿失敗", e?.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function doLumpSumRepayment(sug: { debtor_id: string; creditor_id: string; amount: number }) {
+    const debtor = nameOf(sug.debtor_id);
+    const creditor = nameOf(sug.creditor_id);
+    const inputAmt = window.prompt(
+      `【整筆結算還款】\n成員：${debtor} 還款給 ${creditor}\n\n請輸入還款金額 (最大額為 $${sug.amount})：`,
+      String(sug.amount)
+    );
+    if (inputAmt === null) return; // 使用者取消
+    
+    const amt = Number(inputAmt);
+    if (isNaN(amt) || amt <= 0) {
+      return showError("還款失敗", { error: "還款金額必須大於 0" });
+    }
+    
+    setLoading(true);
+    try {
+      const payload = {
+        workspace_id: WORKSPACE_ID,
+        from,
+        to,
+        debtor_id: sug.debtor_id,
+        creditor_id: sug.creditor_id,
+        amount: amt,
+        note: `${month}${cumulative ? "（累計）" : ""} 整筆還款結清`,
+      };
+      const res = await fetch("/api/settlement", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      
+      const j = await fetchJson(res);
+      if (!j.ok) return showError("還款失敗", j.data);
+      
+      showOk("還款成功", `${debtor} 已成功還款給 ${creditor}：$${amt}`);
+      await loadSettlement();
+    } catch (e: any) {
+      showError("還款失敗", { error: e.message });
     } finally {
       setLoading(false);
     }
@@ -722,6 +768,61 @@ export default function SettlementPage() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Suggested Repayments */}
+        <div className="card bg-white shadow-sm border border-slate-200 rounded-3xl overflow-hidden">
+          <div className="bg-slate-50/50 px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-1.5 h-1.5 rounded-full bg-slate-800"></div>
+              <h3 className="text-lg font-black text-slate-800 tracking-tight">
+                建議還款對帳 (Suggested Repayments)
+              </h3>
+            </div>
+            <span className="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-lg">
+              Optimal Transfers
+            </span>
+          </div>
+
+          <div className="p-6">
+            {suggestions.length === 0 ? (
+              <div className="text-center py-6 text-slate-400 text-sm opacity-60">
+                本期帳務已完全結清，無需進行任何還款。
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {suggestions.map((sug, idx) => (
+                  <div
+                    key={idx}
+                    className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-2xl border border-slate-100 bg-slate-50/50 hover:bg-slate-50 transition-colors gap-3"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="bg-rose-100 text-rose-700 font-bold px-3 py-1 rounded-xl text-sm">
+                        {nameOf(sug.debtor_id)}
+                      </div>
+                      <div className="text-slate-400 font-medium text-xs">應還款給</div>
+                      <div className="bg-emerald-100 text-emerald-700 font-bold px-3 py-1 rounded-xl text-sm">
+                        {nameOf(sug.creditor_id)}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-4 justify-between sm:justify-end">
+                      <div className="font-mono font-black text-lg text-slate-800">
+                        ${sug.amount.toLocaleString()}
+                      </div>
+                      <button
+                        className="btn btn-sm bg-amber-500 hover:bg-amber-600 border-none text-white font-bold rounded-xl shadow-sm px-4"
+                        onClick={() => doLumpSumRepayment(sug)}
+                        disabled={loading}
+                      >
+                        整筆還款 / 結清
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
