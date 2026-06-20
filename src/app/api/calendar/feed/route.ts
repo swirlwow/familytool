@@ -81,6 +81,8 @@ export async function GET(req: Request) {
       "METHOD:PUBLISH",
       "X-WR-CALNAME:家庭生活行事曆",
       "X-WR-TIMEZONE:Asia/Taipei",
+      "X-PUBLISHED-TTL:PT1H",
+      "REFRESH-INTERVAL;VALUE=DURATION:PT1H",
     ];
 
     for (const note of notes) {

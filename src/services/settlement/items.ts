@@ -89,9 +89,6 @@ export async function createSettlementByDebtorCreditor(params: {
     .filter((x) => x.debtor_id === debtor_id && x.creditor_id === creditor_id && x.remaining_amount > 0)
     .sort((a, b) => a.entry_date.localeCompare(b.entry_date));
 
-  const totalRemain = round2(candidates.reduce((s, x) => s + x.remaining_amount, 0));
-  if (amt > totalRemain) throw new Error(`結清金額不可大於待結清（最多 ${totalRemain}）`);
-
   const header = await insertSettlementHeader({
     workspace_id,
     debtor_id,
@@ -120,8 +117,9 @@ export async function createSettlementByDebtorCreditor(params: {
     remain = round2(remain - take);
   }
 
-  if (remain > 0) throw new Error("分配結清明細失敗（remain > 0）");
-
-  await insertSettlementItems({ items });
+  // 僅在有可折抵的拆帳明細時才寫入 settlement_items，多餘的溢付款會留存在 header 中並透過計算引擎進行反向折抵
+  if (items.length > 0) {
+    await insertSettlementItems({ items });
+  }
   return { success: true, settlement_id: header.id };
 }

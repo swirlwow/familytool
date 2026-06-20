@@ -57,9 +57,51 @@ export function applySettlements(edges: SplitEdge[], settlements: SettlementRow[
     m.set(k, round2((m.get(k) ?? 0) - amt));
   }
 
-  // 轉回 edges，並濾掉 <=0
-  const out: SplitEdge[] = [];
+  // 用一個新 Map 來合併反向與正向的欠款，確保最終 debtor -> creditor 唯一且皆為正數
+  const combined = new Map<string, number>();
+
   for (const [k, v] of m.entries()) {
+    const amount = round2(v);
+    if (amount === 0) continue;
+
+    const p = parseKey(k);
+    if (!p) continue;
+
+    if (amount > 0) {
+      const key = keyPair(p.debtor_id, p.creditor_id);
+      combined.set(key, round2((combined.get(key) ?? 0) + amount));
+    } else {
+      // 負值代表反方向欠款 (債務人多付了，等同於債權人反過來欠債務人)
+      const key = keyPair(p.creditor_id, p.debtor_id);
+      combined.set(key, round2((combined.get(key) ?? 0) - amount));
+    }
+  }
+
+  // 雙向抵消處理，確保如果 A 欠 B 且 B 欠 A 時，最終只有一條淨額邊
+  const finalMap = new Map<string, number>();
+  for (const [k, v] of combined.entries()) {
+    const amount = round2(v);
+    if (amount <= 0) continue;
+
+    const p = parseKey(k);
+    if (!p) continue;
+
+    const revKey = keyPair(p.creditor_id, p.debtor_id);
+    const revVal = round2(combined.get(revKey) ?? 0);
+
+    if (revVal > 0) {
+      if (amount > revVal) {
+        finalMap.set(keyPair(p.debtor_id, p.creditor_id), round2(amount - revVal));
+      } else if (amount < revVal) {
+        finalMap.set(keyPair(p.creditor_id, p.debtor_id), round2(revVal - amount));
+      }
+    } else {
+      finalMap.set(k, amount);
+    }
+  }
+
+  const out: SplitEdge[] = [];
+  for (const [k, v] of finalMap.entries()) {
     const amount = round2(v);
     if (amount <= 0) continue;
 
