@@ -72,16 +72,14 @@ export async function POST(req: Request, { params }: any) {
         `
         amount,
         settlements!inner(
-          from_date,
-          to_date,
+          settled_date,
           workspace_id
         )
       `
       )
       .eq("workspace_id", workspace_id)
       .eq("split_id", split_id)
-      .eq("settlements.from_date", from)
-      .eq("settlements.to_date", to);
+      .lte("settlements.settled_date", to);
 
     if (itErr) return NextResponse.json({ error: itErr.message }, { status: 500 });
 

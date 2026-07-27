@@ -4,6 +4,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { WORKSPACE_ID } from "@/lib/appConfig";
 import { useMasterData } from "@/hooks/useMasterData";
+import {
+  settlementStatusLabel,
+  type SettlementStatus,
+} from "@/lib/settlementStatus";
 
 type LedgerEntry = {
   id: string;
@@ -16,7 +20,16 @@ type LedgerEntry = {
   note: string | null;
   payer_id: string | null;
   created_at: string;
-  ledger_splits?: Array<{ payer_id: string; amount: number }>;
+  ledger_splits?: Array<{
+    id: string;
+    payer_id: string;
+    amount: number;
+    settled_amount: number;
+    settlement_status: SettlementStatus;
+  }>;
+  settlement_split_amount: number;
+  settlement_settled_amount: number;
+  settlement_status: SettlementStatus;
 };
 
 function ymd(d: Date) {
@@ -41,6 +54,25 @@ function toCsvCell(v: any) {
 }
 function cn(...xs: Array<string | false | null | undefined>) {
   return xs.filter(Boolean).join(" ");
+}
+
+function SettlementBadge({ status }: { status: SettlementStatus }) {
+  const label =
+    status === "not_applicable" ? "無需結算" : settlementStatusLabel(status);
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center px-2 py-1 rounded-md text-[11px] font-black whitespace-nowrap",
+        status === "settled" && "bg-emerald-100 text-emerald-700",
+        status === "partial" && "bg-amber-100 text-amber-800",
+        status === "overallocated" && "bg-rose-100 text-rose-700",
+        status === "unsettled" && "bg-slate-100 text-slate-600",
+        status === "not_applicable" && "bg-blue-50 text-blue-600"
+      )}
+    >
+      {label}
+    </span>
+  );
 }
 
 function rangeLastNDays(n: number) {
@@ -331,6 +363,8 @@ export default function LedgerDashboardPage() {
       "代墊/付款人",
       "應付/分攤人",
       "分攤金額",
+      "已結清金額",
+      "結清狀態",
       "備註",
       "交易ID",
     ].join(",");
@@ -367,7 +401,13 @@ export default function LedgerDashboardPage() {
             toCsvCell(pm),
             toCsvCell(payer),
             toCsvCell(splitPayer),
-            toCsvCell(splitAmount), 
+            toCsvCell(splitAmount),
+            toCsvCell(split.settled_amount || 0),
+            toCsvCell(
+              splitAmount === 0
+                ? "無需結算"
+                : settlementStatusLabel(split.settlement_status)
+            ),
             toCsvCell(x.note || ""),
             toCsvCell(x.id),
           ].join(","));
@@ -385,6 +425,8 @@ export default function LedgerDashboardPage() {
           toCsvCell(payer),
           toCsvCell(payer || "—"), // 應付人同付款人
           toCsvCell(0), // 沒有拆帳代表自己付自己的，分攤金額為 0
+          toCsvCell(0),
+          toCsvCell("無需結算"),
           toCsvCell(x.note || ""),
           toCsvCell(x.id),
         ].join(","));
@@ -934,6 +976,9 @@ export default function LedgerDashboardPage() {
                               >
                                 {isIncome ? "收入" : "支出"}
                               </span>
+                              <span className="ml-2">
+                                <SettlementBadge status={r.settlement_status} />
+                              </span>
                             </div>
                           </div>
 
@@ -1023,6 +1068,7 @@ export default function LedgerDashboardPage() {
                       <th className="px-2 py-2 w-[100px]">分類</th>
                       <th className="px-2 py-2 w-[160px]">店家</th>
                       <th className="px-2 py-2 w-[100px]">付款</th>
+                      <th className="px-2 py-2 w-[90px]">結清狀態</th>
                       <th className="px-2 py-2">備註</th>
                     </tr>
                   </thead>
@@ -1088,6 +1134,17 @@ export default function LedgerDashboardPage() {
                                 <div className="font-bold text-slate-700">{payer || "—"}</div>
                                 <div className="text-slate-500 text-xs font-bold mt-1">{pm || "—"}</div>
                               </div>
+                            </td>
+
+                            <td className="px-4 py-3 text-center">
+                              <SettlementBadge status={x.settlement_status} />
+                              {x.settlement_status !== "not_applicable" && (
+                                <div className="mt-1 text-[10px] text-slate-400 tabular-nums">
+                                  {Number(x.settlement_settled_amount || 0).toLocaleString()}
+                                  {" / "}
+                                  {Number(x.settlement_split_amount || 0).toLocaleString()}
+                                </div>
+                              )}
                             </td>
 
                             <td className="px-4 py-3 text-slate-500 break-words">

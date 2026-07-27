@@ -11,6 +11,8 @@ import {
   Calendar,
   ArrowLeft,
   Layers,
+  Download,
+  AlertTriangle,
 } from "lucide-react";
 
 import { useToast } from "@/hooks/use-toast";
@@ -26,14 +28,12 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const WORKSPACE_ID = process.env.NEXT_PUBLIC_WORKSPACE_ID || "";
-const DRAFT_PREFIX = "[DRAFT] ";
 
-function monthRange(ym: string) {
-  const [y, m] = ym.split("-").map(Number);
-  const from = `${y}-${String(m).padStart(2, "0")}-01`;
-  const lastDay = new Date(y, m, 0).getDate();
-  const to = `${y}-${String(m).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
-  return { from, to };
+function localDateString(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 type Payer = { id: string; name: string };
@@ -69,69 +69,12 @@ function safeJsonParse(text: string) {
   }
 }
 
-async function createDraft(workspace_id: string, from: string, to: string) {
-  const res = await fetch("/api/settlement/draft", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ workspace_id, from, to, replace: 1 }),
-  });
-  const text = await res.text();
-  const j = safeJsonParse(text) ?? { error: text || `HTTP ${res.status}` };
-  if (!res.ok) throw new Error(j?.error || "產生草稿失敗");
-  return j;
-}
-
-async function clearDraft(workspace_id: string, from: string, to: string) {
-  const res = await fetch("/api/settlement/draft/clear", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ workspace_id, from, to }),
-  });
-
-  const text = await res.text();
-  let j: any = null;
-  try {
-    j = JSON.parse(text);
-  } catch {
-    j = { error: text || `HTTP ${res.status}` };
-  }
-
-  if (!res.ok) throw new Error(j?.error || "清除草稿失敗");
-  return j;
-}
-
-async function confirmDraft(workspace_id: string, from: string, to: string) {
-  const res = await fetch("/api/settlement/draft/confirm", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ workspace_id, from, to }),
-  });
-
-  const text = await res.text();
-  let j: any = null;
-  try {
-    j = JSON.parse(text);
-  } catch {
-    j = { error: text || `HTTP ${res.status}` };
-  }
-
-  if (!res.ok) throw new Error(j?.error || "確認草稿失敗");
-  return j;
-}
-
 export default function SettlementPage() {
   const router = useRouter();
   const { toast } = useToast();
 
-  const today = new Date();
-  const [month, setMonth] = useState(
-    `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`
-  );
-  const [cumulative, setCumulative] = useState(false);
-
-  const baseRange = useMemo(() => monthRange(month), [month]);
-  const from = cumulative ? "2000-01-01" : baseRange.from;
-  const to = baseRange.to;
+  const from = "2000-01-01";
+  const to = localDateString(new Date());
 
   const [loading, setLoading] = useState(false);
 
@@ -149,6 +92,17 @@ export default function SettlementPage() {
   const [splits, setSplits] = useState<SplitLine[]>([]);
   const [settledItems, setSettledItems] = useState<any[]>([]);
   const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [preSettlementSuggestions, setPreSettlementSuggestions] = useState<any[]>([]);
+  const [totals, setTotals] = useState({
+    split_amount: 0,
+    pre_settlement_amount: 0,
+    settled_amount: 0,
+    remaining_amount: 0,
+  });
+  const [diagnostics, setDiagnostics] = useState({
+    overallocated_split_count: 0,
+    overallocated_amount: 0,
+  });
 
   // 每筆 split 的「這次要結清多少」
   const [settleInput, setSettleInput] = useState<Record<string, number>>({});
@@ -211,6 +165,7 @@ export default function SettlementPage() {
         setRecent([]);
         setSplits([]);
         setSettledItems([]);
+        setTotals({ split_amount: 0, pre_settlement_amount: 0, settled_amount: 0, remaining_amount: 0 });
         setSettleInput({});
         return;
       }
@@ -220,6 +175,19 @@ export default function SettlementPage() {
       setSplits(Array.isArray(j.splits) ? j.splits : []);
       setSettledItems(Array.isArray(j.settled_items) ? j.settled_items : []);
       setSuggestions(Array.isArray(j.suggestions) ? j.suggestions : []);
+      setPreSettlementSuggestions(
+        Array.isArray(j.pre_settlement_suggestions) ? j.pre_settlement_suggestions : []
+      );
+      setTotals({
+        split_amount: Number(j?.totals?.split_amount || 0),
+        pre_settlement_amount: Number(j?.totals?.pre_settlement_amount || 0),
+        settled_amount: Number(j?.totals?.settled_amount || 0),
+        remaining_amount: Number(j?.totals?.remaining_amount || 0),
+      });
+      setDiagnostics({
+        overallocated_split_count: Number(j?.diagnostics?.overallocated_split_count || 0),
+        overallocated_amount: Number(j?.diagnostics?.overallocated_amount || 0),
+      });
 
       const next: Record<string, number> = {};
       for (const s of (Array.isArray(j.splits) ? j.splits : []) as SplitLine[]) {
@@ -233,6 +201,9 @@ export default function SettlementPage() {
       setSplits([]);
       setSettledItems([]);
       setSuggestions([]);
+      setPreSettlementSuggestions([]);
+      setTotals({ split_amount: 0, pre_settlement_amount: 0, settled_amount: 0, remaining_amount: 0 });
+      setDiagnostics({ overallocated_split_count: 0, overallocated_amount: 0 });
       setSettleInput({});
     } finally {
       setLoading(false);
@@ -247,48 +218,17 @@ export default function SettlementPage() {
   useEffect(() => {
     loadSettlement();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [month, cumulative, payers.length]);
+  }, [payers.length]);
 
-  async function doCreateDraft() {
-    if (!WORKSPACE_ID) return;
-    try {
-      setLoading(true);
-      await createDraft(WORKSPACE_ID, from, to);
-      showOk("已產生本期草稿", "可在「近期結算紀錄」看到 DRAFT 標記");
-      await loadSettlement();
-    } catch (e: any) {
-      showError("產生草稿失敗", e?.message);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function doConfirmDraft() {
-    if (!WORKSPACE_ID) return;
-    try {
-      setLoading(true);
-      const j = await confirmDraft(WORKSPACE_ID, from, to);
-      showOk("已確認草稿", `共 ${j?.confirmed ?? 0} 筆`);
-      await loadSettlement();
-    } catch (e: any) {
-      showError("確認草稿失敗", e?.message);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function doClearDraft() {
-    if (!WORKSPACE_ID) return;
-    try {
-      setLoading(true);
-      const j = await clearDraft(WORKSPACE_ID, from, to);
-      showOk("已清除草稿", `共刪除 ${j?.deleted ?? 0} 筆`);
-      await loadSettlement();
-    } catch (e: any) {
-      showError("清除草稿失敗", e?.message);
-    } finally {
-      setLoading(false);
-    }
+  function exportReconciliation(settlementId?: string) {
+    const qs = new URLSearchParams({
+      workspace_id: WORKSPACE_ID,
+      from,
+      to,
+      format: "csv",
+    });
+    if (settlementId) qs.set("settlement_id", settlementId);
+    window.location.href = `/api/settlement/reconciliation?${qs.toString()}`;
   }
 
   async function doLumpSumRepayment(sug: { debtor_id: string; creditor_id: string; amount: number }) {
@@ -314,7 +254,7 @@ export default function SettlementPage() {
         debtor_id: sug.debtor_id,
         creditor_id: sug.creditor_id,
         amount: amt,
-        note: `${month}${cumulative ? "（累計）" : ""} 整筆還款結清`,
+        note: `跨月累計至 ${to} 整筆還款結清`,
       };
       const res = await fetch("/api/settlement", {
         method: "POST",
@@ -363,7 +303,7 @@ export default function SettlementPage() {
             to,
             split_id: line.split_id,
             amount: amt,
-            note: `${month}${cumulative ? "（累計）" : ""} split 結清`,
+            note: `跨月累計至 ${to} split 結清`,
           };
 
           const res = await fetch(`/api/settlement/${line.split_id}/items`, {
@@ -467,16 +407,6 @@ export default function SettlementPage() {
     });
   }
 
-  const sumSplit = useMemo(() => splits.reduce((s, x) => s + Number(x.split_amount || 0), 0), [splits]);
-  const sumSettled = useMemo(
-    () => splits.reduce((s, x) => s + Number(x.settled_amount || 0), 0),
-    [splits]
-  );
-  const sumRemaining = useMemo(
-    () => splits.reduce((s, x) => s + Number(x.remaining_amount || 0), 0),
-    [splits]
-  );
-
   const netCards = useMemo(() => {
     // net: + = 應收, - = 應付
     return (net ?? []).map((n) => {
@@ -493,7 +423,7 @@ export default function SettlementPage() {
   const dialogBusy = !!(confirmState?.actionKey && busy[confirmState.actionKey]);
 
   return (
-    <main className="min-h-screen bg-slate-50 p-4 md:p-6 lg:p-8 pb-24 md:pb-8">
+    <main className="min-h-screen bg-slate-50 p-4 md:p-6 lg:p-8 pb-8">
       <div className="mx-auto max-w-7xl space-y-6">
         {/* ✅ Header：改為「黏住頂部 + 縮小」(對齊記帳頁) */}
         <div className="card bg-white/90 backdrop-blur-md shadow-sm border border-slate-200 rounded-2xl sticky top-0 z-40">
@@ -511,6 +441,13 @@ export default function SettlementPage() {
             </div>
 
             <div className="flex gap-2">
+              <button
+                className="btn btn-outline btn-sm h-9 min-h-0 rounded-xl font-bold border-emerald-200 text-emerald-700 hover:bg-emerald-50 gap-2"
+                onClick={() => exportReconciliation()}
+                title="匯出完整結算對帳明細"
+              >
+                <Download className="w-4 h-4" /> 匯出對帳
+              </button>
               <button
                 className="btn btn-ghost btn-sm h-9 min-h-0 rounded-xl font-bold text-slate-500 hover:bg-slate-100"
                 onClick={() => router.push("/")}
@@ -547,12 +484,10 @@ export default function SettlementPage() {
                 </span>
               </div>
 
-              <input
-                type="month"
-                className="input input-bordered w-full font-bold text-lg bg-slate-50 border-slate-200 focus:border-amber-500 rounded-xl"
-                value={month}
-                onChange={(e) => setMonth(e.target.value)}
-              />
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                <div className="font-black text-slate-800">跨月累計</div>
+                <div className="mt-1 text-xs text-slate-500">自最早紀錄累計至今日</div>
+              </div>
 
               <div className="mt-2 flex items-center justify-between text-[10px] text-slate-400 font-mono">
                 <span>
@@ -568,108 +503,98 @@ export default function SettlementPage() {
                 </button>
               </div>
 
-              <div className="mt-1">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    className="toggle toggle-warning toggle-xs"
-                    checked={cumulative}
-                    onChange={(e) => setCumulative(e.target.checked)}
-                  />
-                  <span className="text-xs font-bold text-slate-500">跨月累計</span>
-                </label>
-              </div>
-
-              {/* ✅ 桌機維持原位；手機改到底部 sticky bar */}
-              <div className="mt-3 grid grid-cols-1 gap-2 hidden md:grid">
-                <button
-                  className="btn btn-sm bg-amber-600 hover:bg-amber-700 border-none text-white font-bold rounded-xl"
-                  disabled={loading || !WORKSPACE_ID}
-                  onClick={doCreateDraft}
-                >
-                  一鍵產生草稿
-                </button>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    className="btn btn-sm bg-emerald-600 hover:bg-emerald-700 border-none text-white font-bold rounded-xl"
-                    disabled={loading || !WORKSPACE_ID}
-                    onClick={doConfirmDraft}
-                  >
-                    確認草稿
-                  </button>
-
-                  <button
-                    className="btn btn-sm bg-slate-200 hover:bg-slate-300 border-none text-slate-700 font-bold rounded-xl"
-                    disabled={loading || !WORKSPACE_ID}
-                    onClick={doClearDraft}
-                  >
-                    清除草稿
-                  </button>
-                </div>
-
-                <div className="mt-2 text-[10px] text-slate-400">
-                  草稿會以 <span className="font-mono">{DRAFT_PREFIX}</span> 標記在 note（不影響既有結清功能）
-                </div>
-              </div>
-
-              {/* ✅ 手機：只保留提示文字（按鈕移到底部） */}
-              <div className="mt-3 md:hidden text-[10px] text-slate-400">
-                草稿會以 <span className="font-mono">{DRAFT_PREFIX}</span> 標記在 note（不影響既有結清功能）
-              </div>
             </div>
           </div>
 
           {/* Stats Cards */}
           <div className="card bg-white shadow-sm border border-slate-200 rounded-3xl md:col-span-3">
             <div className="card-body p-5">
-              <div className="grid grid-cols-3 gap-4 h-full">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 h-full">
                 <div className="flex flex-col justify-center">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-                      拆帳總額
+                      雙向拆帳流水
                     </span>
                     <span className="badge badge-xs bg-slate-100 text-slate-500 border-none hidden lg:inline-flex">
                       Total
                     </span>
                   </div>
                   <div className="text-2xl lg:text-3xl font-black tabular-nums text-slate-800">
-                    ${sumSplit.toLocaleString()}
+                    ${totals.split_amount.toLocaleString()}
                   </div>
                   <div className="text-xs text-slate-400 mt-1">{splits.length} 筆記錄</div>
                 </div>
 
                 <div className="flex flex-col justify-center border-l border-slate-100 pl-4">
                   <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-bold text-blue-600 uppercase tracking-widest">
+                      結算前淨欠款
+                    </span>
+                    <span className="badge badge-xs bg-blue-100 text-blue-700 border-none hidden lg:inline-flex">
+                      Net debt
+                    </span>
+                  </div>
+                  <div className="text-2xl lg:text-3xl font-black tabular-nums text-blue-700">
+                    ${totals.pre_settlement_amount.toLocaleString()}
+                  </div>
+                  <div className="text-xs text-slate-400 mt-1">
+                    {preSettlementSuggestions[0]
+                      ? `${nameOf(preSettlementSuggestions[0].debtor_id)} → ${nameOf(preSettlementSuggestions[0].creditor_id)}`
+                      : "雙向互抵後"}
+                  </div>
+                </div>
+
+                <div className="flex flex-col justify-center border-l border-slate-100 pl-4">
+                  <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-bold text-emerald-500 uppercase tracking-widest">
-                      已結清
+                      實際還款
                     </span>
                     <span className="badge badge-xs bg-emerald-100 text-emerald-600 border-none hidden lg:inline-flex">
                       Settled
                     </span>
                   </div>
                   <div className="text-2xl lg:text-3xl font-black tabular-nums text-emerald-500">
-                    ${sumSettled.toLocaleString()}
+                    ${totals.settled_amount.toLocaleString()}
                   </div>
+                  <div className="text-xs text-slate-400 mt-1">依結算紀錄加總</div>
                 </div>
 
                 <div className="flex flex-col justify-center border-l border-slate-100 pl-4">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-bold text-amber-500 uppercase tracking-widest">
-                      待結清
+                      目前淨額
                     </span>
                     <span className="badge badge-xs bg-amber-100 text-amber-600 border-none hidden lg:inline-flex">
                       Remaining
                     </span>
                   </div>
                   <div className="text-2xl lg:text-3xl font-black tabular-nums text-amber-500">
-                    ${sumRemaining.toLocaleString()}
+                    ${totals.remaining_amount.toLocaleString()}
+                  </div>
+                  <div className="text-xs text-slate-400 mt-1">
+                    {suggestions[0]
+                      ? `${nameOf(suggestions[0].debtor_id)} → ${nameOf(suggestions[0].creditor_id)}`
+                      : "已互抵完成"}
                   </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
+
+        {diagnostics.overallocated_split_count > 0 && (
+          <div className="alert border border-rose-200 bg-rose-50 text-rose-900 rounded-2xl">
+            <AlertTriangle className="w-5 h-5 text-rose-600" />
+            <div>
+              <div className="font-black">歷史結算明細需要對帳</div>
+              <div className="text-sm">
+                發現 {diagnostics.overallocated_split_count} 筆拆帳被重複或超額分配，
+                超額連結合計 ${diagnostics.overallocated_amount.toLocaleString()}。
+                目前淨額以結算批次總額計算，既有資料未被修改；請用「匯出對帳」查看明細。
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Net Status */}
         <div className="card bg-white shadow-sm border border-slate-200 rounded-3xl overflow-hidden">
@@ -939,7 +864,7 @@ export default function SettlementPage() {
             <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-500" />
               <h3 className="font-bold text-slate-700 text-sm uppercase tracking-wide">
-                本期已結清項目
+                累計已結清項目
               </h3>
             </div>
             <div className="overflow-x-auto max-h-96">
@@ -1021,9 +946,6 @@ export default function SettlementPage() {
                       const actionKey = `undoSet:${r.id}`;
                       const isBusy = !!busy[actionKey];
 
-                      const note = String(r.note || "");
-                      const isDraft = note.startsWith("[DRAFT]");
-
                       return (
                         <tr key={r.id} className="border-slate-50 hover:bg-slate-50">
                           <td className="pl-6 text-xs text-slate-400 whitespace-nowrap font-mono">
@@ -1035,12 +957,6 @@ export default function SettlementPage() {
                               {nameOf(r.debtor_id)}
                               <ArrowRight className="w-3 h-3 text-slate-300" />
                               {nameOf(r.creditor_id)}
-
-                              {isDraft && (
-                                <span className="badge badge-xs bg-slate-200 text-slate-600 border-none ml-2">
-                                  DRAFT
-                                </span>
-                              )}
                             </div>
 
                             <div className="text-[10px] text-slate-400">
@@ -1053,34 +969,22 @@ export default function SettlementPage() {
                           </td>
 
                           <td className="text-right pr-6">
+                            <div className="flex justify-end gap-1">
+                            <button
+                              className="btn btn-xs rounded-lg bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700"
+                              onClick={() => exportReconciliation(r.id)}
+                              title="匯出此筆結算明細"
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                            </button>
                             <button
                               className="btn btn-xs rounded-lg bg-rose-100 hover:bg-rose-200 border-none text-rose-700 font-bold disabled:opacity-60"
                               disabled={isBusy}
-                              onClick={() => {
-                                if (isDraft) {
-                                  openConfirm({
-                                    title: "清除本期草稿？",
-                                    description:
-                                      "會刪除本期所有 DRAFT 結算與明細。\n此動作無法復原。",
-                                    confirmText: "確認清除",
-                                    cancelText: "取消",
-                                    danger: true,
-                                    actionKey: `clearDraft:${from}:${to}`,
-                                    onConfirm: async () => {
-                                      try {
-                                        await doClearDraft();
-                                      } catch (e: any) {
-                                        showError("清除失敗", e?.message);
-                                      }
-                                    },
-                                  });
-                                } else {
-                                  requestUndoWholeSettlement(r);
-                                }
-                              }}
+                              onClick={() => requestUndoWholeSettlement(r)}
                             >
-                              {isBusy ? "..." : isDraft ? "刪除草稿" : "整筆撤銷"}
+                              {isBusy ? "..." : "整筆撤銷"}
                             </button>
+                            </div>
                           </td>
                         </tr>
                       );
@@ -1150,36 +1054,6 @@ export default function SettlementPage() {
         </AlertDialog>
       </div>
 
-      {/* ✅ 手機底部 Sticky Bar：三顆大按鈕更好按 */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40">
-        <div className="bg-white/95 backdrop-blur border-t border-slate-200 px-3 pt-3 pb-[calc(env(safe-area-inset-bottom)+12px)]">
-          <div className="grid grid-cols-3 gap-2">
-            <button
-              className="btn h-12 min-h-0 rounded-2xl bg-amber-600 hover:bg-amber-700 border-none text-white font-black disabled:bg-slate-200 disabled:text-slate-400"
-              disabled={loading || !WORKSPACE_ID}
-              onClick={doCreateDraft}
-            >
-              產生草稿
-            </button>
-
-            <button
-              className="btn h-12 min-h-0 rounded-2xl bg-emerald-600 hover:bg-emerald-700 border-none text-white font-black disabled:bg-slate-200 disabled:text-slate-400"
-              disabled={loading || !WORKSPACE_ID}
-              onClick={doConfirmDraft}
-            >
-              確認草稿
-            </button>
-
-            <button
-              className="btn h-12 min-h-0 rounded-2xl bg-slate-200 hover:bg-slate-300 border-none text-slate-700 font-black disabled:bg-slate-200 disabled:text-slate-400"
-              disabled={loading || !WORKSPACE_ID}
-              onClick={doClearDraft}
-            >
-              清除草稿
-            </button>
-          </div>
-        </div>
-      </div>
     </main>
   );
 }

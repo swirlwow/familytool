@@ -3,7 +3,7 @@ import { round2 } from "@/lib/settlementCalc";
 import { r2, toNum } from "./utils";
 import {
   getSplitById,
-  getSettlementItemsOfSplitInPeriod,
+  getSettlementItemsOfSplitThroughDate,
   insertSettlementHeader,
   insertSettlementItems,
 } from "./repo";
@@ -38,7 +38,7 @@ export async function createItemForSplit(params: {
   if (debtor_id === creditor_id) throw new Error("split debtor/creditor 不可相同");
   if (splitAmount <= 0) throw new Error("split amount 異常");
 
-  const items = await getSettlementItemsOfSplitInPeriod({ workspace_id, split_id, from, to });
+  const items = await getSettlementItemsOfSplitThroughDate({ workspace_id, split_id, to });
   const settled = r2((items ?? []).reduce((s: number, r: any) => s + r2(r.amount), 0));
   const remaining = r2(Math.max(0, splitAmount - settled));
 

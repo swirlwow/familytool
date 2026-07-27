@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { apiError } from "@/lib/api/http";
 import { validateSplits } from "@/lib/ledger/splits";
 import { supabase } from "@/lib/supabaseClient";
+import { settlementStatus } from "@/lib/settlementStatus";
 
 
 export async function GET(req: Request) {
@@ -29,6 +30,7 @@ export async function GET(req: Request) {
   payer_id,
   created_at,
   ledger_splits (
+    id,
     payer_id,
     amount
   )
@@ -41,7 +43,77 @@ export async function GET(req: Request) {
       .order("created_at", { ascending: false });
 
     if (error) return NextResponse.json({ error: error.message, data: [] }, { status: 500 });
-    return NextResponse.json({ data: data || [] });
+
+    const entries = (data || []) as any[];
+    const splitIds = entries.flatMap((entry) =>
+      (entry.ledger_splits || [])
+        .filter(
+          (split: any) =>
+            split.id &&
+            split.payer_id !== entry.payer_id &&
+            Number(split.amount || 0) > 0
+        )
+        .map((split: any) => split.id)
+    );
+
+    const allocatedBySplit = new Map<string, number>();
+    if (splitIds.length > 0) {
+      const { data: items, error: itemError } = await supabase
+        .from("settlement_items")
+        .select("split_id, amount")
+        .eq("workspace_id", workspace_id)
+        .in("split_id", splitIds);
+
+      if (itemError) {
+        return NextResponse.json({ error: itemError.message, data: [] }, { status: 500 });
+      }
+
+      for (const item of items || []) {
+        const splitId = String((item as any).split_id || "");
+        allocatedBySplit.set(
+          splitId,
+          (allocatedBySplit.get(splitId) || 0) + Number((item as any).amount || 0)
+        );
+      }
+    }
+
+    const enriched = entries.map((entry) => {
+      const relevantSplits = (entry.ledger_splits || []).filter(
+        (split: any) =>
+          split.payer_id !== entry.payer_id && Number(split.amount || 0) > 0
+      );
+
+      const splits = (entry.ledger_splits || []).map((split: any) => {
+        const splitAmount =
+          split.payer_id === entry.payer_id ? 0 : Number(split.amount || 0);
+        const settledAmount = allocatedBySplit.get(String(split.id || "")) || 0;
+        return {
+          ...split,
+          settled_amount: settledAmount,
+          settlement_status: settlementStatus(splitAmount, settledAmount),
+        };
+      });
+
+      const splitAmount = relevantSplits.reduce(
+        (sum: number, split: any) => sum + Number(split.amount || 0),
+        0
+      );
+      const settledAmount = relevantSplits.reduce(
+        (sum: number, split: any) =>
+          sum + (allocatedBySplit.get(String(split.id || "")) || 0),
+        0
+      );
+
+      return {
+        ...entry,
+        ledger_splits: splits,
+        settlement_split_amount: splitAmount,
+        settlement_settled_amount: settledAmount,
+        settlement_status: settlementStatus(splitAmount, settledAmount),
+      };
+    });
+
+    return NextResponse.json({ data: enriched });
   } catch (e: any) {
     return NextResponse.json({ error: e.message, data: [] }, { status: 500 });
   }

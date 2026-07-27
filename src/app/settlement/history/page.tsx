@@ -1,9 +1,18 @@
 // src/app/settlement/history/page.tsx
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, History, RefreshCw, Trash2, AlertCircle, CalendarDays } from "lucide-react";
+import {
+  ArrowLeft,
+  History,
+  RefreshCw,
+  Trash2,
+  AlertCircle,
+  CalendarDays,
+  ChevronDown,
+  Download,
+} from "lucide-react";
 
 const WORKSPACE_ID = process.env.NEXT_PUBLIC_WORKSPACE_ID || "";
 
@@ -39,6 +48,8 @@ export default function SettlementHistoryPage() {
   const nameOf = (id: string) => payerMap.get(id) || id;
 
   const [rows, setRows] = useState<any[]>([]);
+  const [detailRows, setDetailRows] = useState<any[]>([]);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   async function loadPayers() {
     if (!WORKSPACE_ID) return;
@@ -64,9 +75,22 @@ export default function SettlementHistoryPage() {
       if (!res.ok) throw new Error(j?.error || "讀取失敗");
 
       setRows(Array.isArray(j?.data) ? j.data : []);
+      const detailQs = new URLSearchParams({
+        workspace_id: WORKSPACE_ID,
+        from,
+        to,
+      });
+      const detailRes = await fetch(
+        `/api/settlement/reconciliation?${detailQs.toString()}`,
+        { cache: "no-store" }
+      );
+      const detailJson = await detailRes.json().catch(() => ({}));
+      if (!detailRes.ok) throw new Error(detailJson?.error || "讀取結算明細失敗");
+      setDetailRows(Array.isArray(detailJson?.rows) ? detailJson.rows : []);
     } catch (e: any) {
       setError(e.message);
       setRows([]);
+      setDetailRows([]);
     } finally {
       setLoading(false);
     }
@@ -74,6 +98,17 @@ export default function SettlementHistoryPage() {
 
   useEffect(() => { loadPayers(); }, []);
   useEffect(() => { loadHistory(); }, [from, to, limit, payers.length]);
+
+  function exportReconciliation(settlementId?: string) {
+    const qs = new URLSearchParams({
+      workspace_id: WORKSPACE_ID,
+      from,
+      to,
+      format: "csv",
+    });
+    if (settlementId) qs.set("settlement_id", settlementId);
+    window.location.href = `/api/settlement/reconciliation?${qs.toString()}`;
+  }
 
   async function undoWholeSettlement(row: any) {
     const id = String(row?.id || "");
@@ -186,7 +221,7 @@ export default function SettlementHistoryPage() {
                   onChange={(e) => setLimit(Number(e.target.value || 50))}
                 />
               </div>
-              <div>
+              <div className="flex gap-2">
                 <button
                   className="btn bg-violet-600 hover:bg-violet-700 text-white w-full rounded-xl font-black shadow-md shadow-violet-500/20 border-none gap-2"
                   onClick={loadHistory}
@@ -194,6 +229,14 @@ export default function SettlementHistoryPage() {
                 >
                   <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
                   重新查詢
+                </button>
+                <button
+                  className="btn btn-outline rounded-xl font-black border-emerald-200 text-emerald-700 gap-2"
+                  onClick={() => exportReconciliation()}
+                  title="匯出目前日期範圍的完整結算明細"
+                >
+                  <Download className="w-4 h-4" />
+                  匯出
                 </button>
               </div>
             </div>
@@ -227,8 +270,13 @@ export default function SettlementHistoryPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((r) => (
-                    <tr key={r.id} className="group hover:bg-violet-50/30 border-b border-slate-50 last:border-0 transition-colors">
+                  {rows.map((r) => {
+                    const details = detailRows.filter(
+                      (item) => String(item.settlement_id) === String(r.id)
+                    );
+                    return (
+                    <Fragment key={r.id}>
+                    <tr className="group hover:bg-violet-50/30 border-b border-slate-50 transition-colors">
                       <td className="pl-8 font-medium text-slate-600 whitespace-nowrap font-mono text-sm">
                         {String(r.created_at || "").replace("T", " ").slice(0, 16)}
                       </td>
@@ -247,6 +295,27 @@ export default function SettlementHistoryPage() {
                       </td>
                       <td className="text-right pr-8">
                         <button
+                          className="btn btn-xs bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 rounded-lg mr-1"
+                          onClick={() =>
+                            setExpandedId(expandedId === r.id ? null : r.id)
+                          }
+                          title="查看這筆結算包含哪些帳"
+                        >
+                          <ChevronDown
+                            className={`w-3.5 h-3.5 transition-transform ${
+                              expandedId === r.id ? "rotate-180" : ""
+                            }`}
+                          />
+                          明細
+                        </button>
+                        <button
+                          className="btn btn-xs bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 rounded-lg mr-1"
+                          onClick={() => exportReconciliation(r.id)}
+                          title="匯出此筆結算"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                        </button>
+                        <button
                           className="btn btn-xs bg-white border border-slate-200 text-slate-400 hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50 rounded-lg gap-1 transition-all"
                           onClick={() => undoWholeSettlement(r)}
                           title="撤銷整筆結算"
@@ -256,7 +325,69 @@ export default function SettlementHistoryPage() {
                         </button>
                       </td>
                     </tr>
-                  ))}
+                    {expandedId === r.id && (
+                      <tr className="bg-slate-50/70">
+                        <td colSpan={5} className="px-8 py-4">
+                          {details.length === 0 ? (
+                            <div className="text-sm text-slate-500">
+                              此結算沒有連結到帳務明細，可能是溢付款或舊資料未建立明細連結。
+                            </div>
+                          ) : (
+                            <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+                              <table className="table table-sm w-full">
+                                <thead>
+                                  <tr className="text-slate-500">
+                                    <th>帳務日期</th>
+                                    <th>店家 / 備註</th>
+                                    <th className="text-right">原拆帳</th>
+                                    <th className="text-right">本次分配</th>
+                                    <th>狀態</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {details.map((item) => (
+                                    <tr key={item.settlement_item_id}>
+                                      <td className="font-mono whitespace-nowrap">
+                                        {item.entry_date || "—"}
+                                      </td>
+                                      <td>
+                                        <div className="font-bold text-slate-700">
+                                          {item.merchant || "未填店家"}
+                                        </div>
+                                        <div className="text-xs text-slate-400">
+                                          {item.entry_note || "—"}
+                                        </div>
+                                      </td>
+                                      <td className="text-right font-mono">
+                                        ${Number(item.split_amount || 0).toLocaleString()}
+                                      </td>
+                                      <td className="text-right font-mono font-bold">
+                                        ${Number(item.allocated_amount || 0).toLocaleString()}
+                                      </td>
+                                      <td>
+                                        <span
+                                          className={`badge badge-sm border-none font-bold ${
+                                            item.status === "overallocated"
+                                              ? "bg-rose-100 text-rose-700"
+                                              : item.status === "settled"
+                                                ? "bg-emerald-100 text-emerald-700"
+                                                : "bg-amber-100 text-amber-800"
+                                          }`}
+                                        >
+                                          {item.status_label}
+                                        </span>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    )}
+                    </Fragment>
+                  )})}
                 </tbody>
               </table>
             )}

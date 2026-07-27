@@ -29,33 +29,8 @@ export async function getSplitsInRange(params: { workspace_id: string; from: str
   return data ?? [];
 }
 
-export async function getSettlementItemsByPeriod(params: { workspace_id: string; from: string; to: string }) {
-  const { workspace_id, from, to } = params;
-
-  const { data, error } = await supabase
-    .from("settlement_items")
-    .select(
-      `
-      split_id,
-      amount,
-      settlements!inner(
-        id,
-        workspace_id,
-        from_date,
-        to_date
-      )
-    `
-    )
-    .eq("workspace_id", workspace_id)
-    .eq("settlements.from_date", from)
-    .eq("settlements.to_date", to);
-
-  if (error) throw new Error(error.message);
-  return data ?? [];
-}
-
-export async function getSettledItemsForUI(params: { workspace_id: string; from: string; to: string }) {
-  const { workspace_id, from, to } = params;
+export async function getSettledItemsForUI(params: { workspace_id: string; to: string }) {
+  const { workspace_id, to } = params;
 
   const { data, error } = await supabase
     .from("settlement_items")
@@ -72,14 +47,14 @@ export async function getSettledItemsForUI(params: { workspace_id: string; from:
         amount,
         note,
         created_at,
+        settled_date,
         from_date,
         to_date
       )
     `
     )
     .eq("workspace_id", workspace_id)
-    .eq("settlements.from_date", from)
-    .eq("settlements.to_date", to)
+    .lte("settlements.settled_date", to)
     .order("created_at", { ascending: false });
 
   if (error) throw new Error(error.message);
@@ -97,7 +72,22 @@ export async function getRecentSettlementHeaders(params: { workspace_id: string;
     .limit(limit);
 
   if (error) throw new Error(error.message);
-  return data ?? [];
+  return (data ?? []).filter((row: any) => !String(row.note || "").startsWith("[DRAFT]"));
+}
+
+export async function getSettlementHeadersThroughDate(params: { workspace_id: string; to: string }) {
+  const { workspace_id, to } = params;
+
+  const { data, error } = await supabase
+    .from("settlements")
+    .select("id, debtor_id, creditor_id, amount, note, created_at, settled_date")
+    .eq("workspace_id", workspace_id)
+    .lte("settled_date", to)
+    .order("settled_date", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  if (error) throw new Error(error.message);
+  return (data ?? []).filter((row: any) => !String(row.note || "").startsWith("[DRAFT]"));
 }
 
 export async function getSplitById(params: { workspace_id: string; split_id: string }) {
@@ -128,13 +118,12 @@ export async function getSplitById(params: { workspace_id: string; split_id: str
   return data;
 }
 
-export async function getSettlementItemsOfSplitInPeriod(params: {
+export async function getSettlementItemsOfSplitThroughDate(params: {
   workspace_id: string;
   split_id: string;
-  from: string;
   to: string;
 }) {
-  const { workspace_id, split_id, from, to } = params;
+  const { workspace_id, split_id, to } = params;
 
   const { data, error } = await supabase
     .from("settlement_items")
@@ -142,16 +131,14 @@ export async function getSettlementItemsOfSplitInPeriod(params: {
       `
       amount,
       settlements!inner(
-        from_date,
-        to_date,
+        settled_date,
         workspace_id
       )
     `
     )
     .eq("workspace_id", workspace_id)
     .eq("split_id", split_id)
-    .eq("settlements.from_date", from)
-    .eq("settlements.to_date", to);
+    .lte("settlements.settled_date", to);
 
   if (error) throw new Error(error.message);
   return data ?? [];

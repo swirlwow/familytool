@@ -14,19 +14,116 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isRegister, setIsRegister] = useState(false);
+  const [isRecovery, setIsRecovery] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
   // 取得環境變數設定的預設 WORKSPACE_ID
   const defaultWorkspaceId = process.env.NEXT_PUBLIC_WORKSPACE_ID || "";
 
-  // 檢查是否已登入，若已登入直接跳轉首頁
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        router.push("/");
+    const recoveryUrl =
+      window.location.hash.includes("type=recovery") ||
+      new URLSearchParams(window.location.search).get("type") === "recovery";
+
+    if (recoveryUrl) setIsRecovery(true);
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY") {
+        setIsRecovery(true);
+        return;
       }
+
+      if (session && !recoveryUrl) router.push("/");
     });
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session && !recoveryUrl) router.push("/");
+    });
+
+    return () => subscription.unsubscribe();
   }, [router]);
+
+  async function handleRecovery(e: React.FormEvent) {
+    e.preventDefault();
+
+    if (newPassword.length < 8) {
+      toast({
+        variant: "destructive",
+        title: "密碼長度不足",
+        description: "新密碼至少需要 8 個字元。",
+      });
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast({
+        variant: "destructive",
+        title: "密碼不一致",
+        description: "請重新確認兩次輸入的新密碼。",
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+
+      await supabase.auth.signOut();
+      window.history.replaceState({}, "", "/login");
+      setIsRecovery(false);
+      setNewPassword("");
+      setConfirmPassword("");
+      toast({
+        title: "密碼已更新",
+        description: "請使用新密碼重新登入。",
+      });
+    } catch (err: any) {
+      toast({
+        variant: "destructive",
+        title: "更新密碼失敗",
+        description: err.message || "重設連結可能已失效，請重新寄送。",
+      });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function sendRecoveryEmail() {
+    if (!email.trim()) {
+      toast({
+        variant: "destructive",
+        title: "請先輸入 Email",
+        description: "系統會將密碼重設信寄到這個信箱。",
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: `${window.location.origin}/login`,
+      });
+      if (error) throw error;
+
+      toast({
+        title: "重設信已寄出",
+        description: "請檢查收件匣及垃圾郵件匣。",
+      });
+    } catch (err: any) {
+      toast({
+        variant: "destructive",
+        title: "寄送失敗",
+        description: err.message || "請稍後再試。",
+      });
+    } finally {
+      setLoading(false);
+    }
+  }
 
   async function handleAuth(e: React.FormEvent) {
     e.preventDefault();
@@ -118,10 +215,66 @@ export default function LoginPage() {
             家庭生活工具
           </h1>
           <p className="text-xs sm:text-sm font-medium text-slate-400">
-            {isRegister ? "建立新帳號以加入您的家庭工作區" : "登入以管理收支、拆帳與行程規劃"}
+            {isRecovery
+              ? "設定新的登入密碼"
+              : isRegister
+              ? "建立新帳號以加入您的家庭工作區"
+              : "登入以管理收支、拆帳與行程規劃"}
           </p>
         </div>
 
+        {isRecovery ? (
+          <form onSubmit={handleRecovery} className="space-y-4">
+            <div className="space-y-1">
+              <label className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider block pl-1">
+                新密碼
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                  <Lock className="w-4 h-4" />
+                </span>
+                <input
+                  type="password"
+                  required
+                  minLength={8}
+                  className="input input-bordered w-full pl-10 bg-slate-800/60 border-slate-700 focus:border-sky-500 rounded-2xl text-white text-sm sm:text-base placeholder-slate-500"
+                  placeholder="至少 8 個字元"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider block pl-1">
+                再次確認
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                  <Lock className="w-4 h-4" />
+                </span>
+                <input
+                  type="password"
+                  required
+                  minLength={8}
+                  className="input input-bordered w-full pl-10 bg-slate-800/60 border-slate-700 focus:border-sky-500 rounded-2xl text-white text-sm sm:text-base placeholder-slate-500"
+                  placeholder="再次輸入新密碼"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn w-full h-12 rounded-2xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 border-none text-white font-black shadow-lg shadow-sky-500/10 mt-4 disabled:opacity-55"
+            >
+              {loading ? <span className="loading loading-spinner loading-sm"></span> : "更新密碼"}
+            </button>
+          </form>
+        ) : (
+        <>
         {/* Form */}
         <form onSubmit={handleAuth} className="space-y-4">
           <div className="space-y-1">
@@ -182,7 +335,17 @@ export default function LoginPage() {
         </form>
 
         {/* Footer Mode Switcher */}
-        <div className="text-center border-t border-slate-700/40 pt-4 mt-2">
+        <div className="text-center border-t border-slate-700/40 pt-4 mt-2 space-y-3">
+          {!isRegister && (
+            <button
+              type="button"
+              className="block w-full text-xs sm:text-sm font-semibold text-slate-300 hover:text-white transition-colors"
+              onClick={sendRecoveryEmail}
+              disabled={loading}
+            >
+              忘記密碼？
+            </button>
+          )}
           <button
             type="button"
             className="text-xs sm:text-sm font-semibold text-sky-400 hover:text-sky-300 transition-colors"
@@ -191,6 +354,8 @@ export default function LoginPage() {
             {isRegister ? "已有帳號？立即登入" : "沒有帳號？註冊新帳號"}
           </button>
         </div>
+        </>
+        )}
 
       </div>
     </main>
