@@ -17,7 +17,8 @@ import {
   CheckCircle2,
   FilePenLine,
   LayoutList,
-  Settings2
+  Settings2,
+  ChevronDown
 } from "lucide-react";
 
 type BillInstance = {
@@ -364,41 +365,35 @@ export default function BillsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 p-4 md:p-6 lg:p-8 pb-24 md:pb-8">
-      <div className="mx-auto max-w-7xl space-y-6">
+    <main data-theme="light" className="min-h-screen bg-slate-50 px-3 py-3 pb-24 sm:px-4 md:px-6 md:py-5 md:pb-8">
+      <div className="mx-auto max-w-7xl space-y-4">
 
-        {/* ✅ Header：Sticky & Compact - Rose Theme */}
-        <div className="card bg-white/90 backdrop-blur-md shadow-sm border border-slate-200 rounded-2xl sticky top-0 z-40">
-          <div className="card-body p-3 flex flex-row items-center justify-between gap-3">
+        <div className="sticky top-0 z-40 rounded-lg border border-slate-200 bg-white/95 shadow-sm backdrop-blur-md">
+          <div className="flex min-h-14 flex-row items-center justify-between gap-3 px-3 py-2 sm:px-4">
             <div className="flex items-center gap-3">
-              <div className="bg-rose-50 text-rose-500 p-2 rounded-lg border border-rose-100">
+              <div className="rounded-lg border border-rose-100 bg-rose-50 p-2 text-rose-500">
                 <Receipt className="w-5 h-5" />
               </div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-lg font-black tracking-tight text-slate-800">帳單管理</h1>
-                <div className="badge badge-sm bg-rose-100 text-rose-700 border-none font-bold hidden sm:inline-flex">Bills</div>
-              </div>
+              <h1 className="text-base font-black text-slate-800 sm:text-lg">帳單管理</h1>
             </div>
 
-            <div className="flex gap-2">
-              <button className="btn btn-ghost btn-sm h-9 min-h-0 rounded-xl font-bold text-slate-500 hover:bg-slate-100" onClick={() => router.push("/")}>回首頁</button>
-            </div>
+            <button className="btn btn-ghost btn-sm h-9 min-h-0 rounded-lg font-bold text-slate-500 hover:bg-slate-100" onClick={() => router.push("/")}>回首頁</button>
           </div>
           {!WORKSPACE_ID && (
             <div className="px-4 pb-3">
-              <div className="alert alert-warning rounded-2xl py-3 text-sm"><span>未設定 WORKSPACE_ID（請檢查 .env.local）</span></div>
+              <div className="alert alert-warning rounded-lg py-3 text-sm"><span>未設定 WORKSPACE_ID（請檢查 .env.local）</span></div>
             </div>
           )}
         </div>
 
-        <div className="inline-flex w-full rounded-lg border border-slate-200 bg-white p-1 shadow-sm sm:w-auto">
+        <div className="grid w-full grid-cols-2 rounded-lg border border-slate-200 bg-white p-1 shadow-sm sm:w-fit sm:min-w-64">
           <button
             type="button"
             className={`btn btn-sm flex-1 rounded-lg border-none sm:flex-none ${view === "bills" ? "bg-slate-800 text-white hover:bg-slate-800" : "btn-ghost text-slate-500"}`}
             onClick={() => setView("bills")}
           >
             <LayoutList className="h-4 w-4" />
-            本月帳單
+            帳單
           </button>
           <button
             type="button"
@@ -406,84 +401,81 @@ export default function BillsPage() {
             onClick={() => setView("templates")}
           >
             <Settings2 className="h-4 w-4" />
-            自動模板
+            固定帳單
           </button>
         </div>
 
         {view === "bills" ? (
           <>
-        {/* Month / Summary */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="card bg-white shadow-sm border border-slate-200 rounded-3xl">
-            <div className="card-body p-5">
-              <div className="flex items-center gap-2 mb-3">
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-[280px_minmax(0,1fr)]">
+          <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+              <div className="mb-2 flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-rose-500" />
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">統計月份</span>
+                <span className="text-xs font-bold text-slate-500">查看月份</span>
               </div>
-              <input type="month" className="input input-bordered w-full font-bold text-lg bg-slate-50 border-slate-200 focus:border-rose-500 rounded-xl" value={ym} onChange={(e) => setYm(e.target.value)} />
-              <div className="mt-2 flex items-center justify-between text-[10px] text-slate-400 font-mono">
+              <input type="month" className="input input-bordered h-10 min-h-0 w-full rounded-lg border-slate-200 bg-slate-50 font-bold focus:border-rose-500" value={ym} onChange={(e) => setYm(e.target.value)} />
+              <div className="mt-2 flex items-center justify-between gap-2 text-[11px] text-slate-400">
                 <span>{from} ~ {to}</span>
-                <button className="flex items-center gap-1 text-rose-500 hover:text-rose-600 font-bold transition-colors" onClick={loadBills} disabled={loading}>
-                  <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} /> 重新載入
+                <button className="btn btn-ghost btn-xs h-7 min-h-0 rounded-lg px-2 font-bold text-rose-500 hover:bg-rose-50 hover:text-rose-600" onClick={loadBills} disabled={loading} title="重新載入">
+                  <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} /> <span className="sr-only">重新載入</span>
+                </button>
+              </div>
+          </section>
+
+          <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
+              <div className="grid h-full grid-cols-2 sm:grid-cols-4">
+                <div className="flex min-h-20 flex-col justify-center px-4 py-3">
+                  <div className="mb-1 text-xs font-bold text-slate-400">應繳</div>
+                  <div className="text-xl font-black tabular-nums text-slate-800">${summary.due.toLocaleString()}</div>
+                </div>
+                <div className="flex min-h-20 flex-col justify-center border-l border-slate-100 px-4 py-3">
+                  <div className="mb-1 text-xs font-bold text-emerald-600">已付</div>
+                  <div className="text-xl font-black tabular-nums text-emerald-600">${summary.paid.toLocaleString()}</div>
+                </div>
+                <div className="flex min-h-20 flex-col justify-center border-t border-slate-100 px-4 py-3 sm:border-l sm:border-t-0">
+                  <div className="mb-1 text-xs font-bold text-rose-500">待付</div>
+                  <div className="text-xl font-black tabular-nums text-rose-500">${summary.remain.toLocaleString()}</div>
+                </div>
+                <div className="flex min-h-20 flex-col justify-center border-l border-t border-slate-100 px-4 py-3 sm:border-t-0">
+                  <div className="mb-1 text-xs font-bold text-sky-600">待補資料</div>
+                  <div className="text-xl font-black tabular-nums text-sky-700">{summary.awaiting}</div>
+                </div>
+              </div>
+          </section>
+        </div>
+
+        <details className="group overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+          <summary className="flex cursor-pointer list-none items-center justify-between bg-slate-50/70 px-4 py-3 sm:px-5">
+            <h2 className="flex items-center gap-2 text-sm font-black text-slate-800 sm:text-base">
+              <Plus className="h-4 w-4 text-rose-500" />
+              手動新增帳單
+            </h2>
+            <ChevronDown className="h-4 w-4 text-slate-400 transition-transform group-open:rotate-180" />
+          </summary>
+
+          <div className="space-y-3 border-t border-slate-200 p-4 sm:p-5">
+            <div className="grid gap-3 md:grid-cols-[minmax(220px,2fr)_minmax(150px,1fr)_minmax(130px,1fr)_112px]">
+              <div>
+                <label className="label py-1"><span className="label-text text-xs font-bold text-slate-500">帳單名稱</span></label>
+                <input className="input input-bordered h-10 min-h-0 w-full rounded-lg focus:border-rose-500" placeholder="例如：房貸、保費" value={newBill.name_snapshot} onChange={(e) => setNewBill((p) => ({ ...p, name_snapshot: e.target.value }))} />
+              </div>
+              <div>
+                <label className="label py-1"><span className="label-text text-xs font-bold text-slate-500">到期日</span></label>
+                <input type="date" className="input input-bordered h-10 min-h-0 w-full rounded-lg font-medium focus:border-rose-500" value={newBill.due_date} onChange={(e) => setNewBill((p) => ({ ...p, due_date: e.target.value }))} />
+              </div>
+              <div>
+                <label className="label py-1"><span className="label-text text-xs font-bold text-slate-500">金額</span></label>
+                <input type="number" className="input input-bordered h-10 min-h-0 w-full rounded-lg font-bold focus:border-rose-500" value={newBill.amount_due || ""} onChange={(e) => setNewBill((p) => ({ ...p, amount_due: Number(e.target.value) }))} />
+              </div>
+              <div className="flex items-end">
+                <button className="btn h-10 min-h-0 w-full rounded-lg border-none bg-rose-500 font-black text-white hover:bg-rose-600" onClick={createBill} disabled={loading}>
+                  <Plus className="h-4 w-4" />新增
                 </button>
               </div>
             </div>
-          </div>
 
-          <div className="card bg-white shadow-sm border border-slate-200 rounded-3xl md:col-span-2">
-            <div className="card-body p-5">
-              <div className="grid h-full grid-cols-2 gap-4 sm:grid-cols-4">
-                <div className="flex flex-col justify-center">
-                  <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">本期應繳</div>
-                  <div className="text-2xl lg:text-3xl font-black tabular-nums text-slate-800">${summary.due.toLocaleString()}</div>
-                </div>
-                <div className="flex flex-col justify-center border-l border-slate-100 pl-4">
-                  <div className="text-xs font-bold text-emerald-500 uppercase tracking-widest mb-1">本期已付</div>
-                  <div className="text-2xl lg:text-3xl font-black tabular-nums text-emerald-500">${summary.paid.toLocaleString()}</div>
-                </div>
-                <div className="flex flex-col justify-center border-l border-slate-100 pl-4">
-                  <div className="text-xs font-bold text-rose-500 uppercase tracking-widest mb-1">本期待付</div>
-                  <div className="text-2xl lg:text-3xl font-black tabular-nums text-rose-500">${summary.remain.toLocaleString()}</div>
-                </div>
-                <div className="flex flex-col justify-center border-l border-slate-100 pl-4">
-                  <div className="mb-1 text-xs font-bold uppercase tracking-widest text-sky-600">待填資料</div>
-                  <div className="text-2xl font-black tabular-nums text-sky-700">{summary.awaiting}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Create Bill */}
-        <div className="card bg-white shadow-md border border-slate-200 rounded-3xl overflow-hidden">
-          <div className="bg-slate-50/50 px-6 py-4 border-b border-slate-200 flex items-center justify-between">
-            <h2 className="font-black text-lg text-slate-800 flex items-center gap-2">
-              <div className="bg-rose-500 text-white p-1 rounded-lg"><Plus className="w-4 h-4" /></div>
-              新增本期帳單
-            </h2>
-          </div>
-
-          <div className="card-body p-6 space-y-4">
-            <div className="grid md:grid-cols-5 gap-3">
-              <div className="md:col-span-2">
-                <label className="label py-1"><span className="label-text font-bold text-slate-400 text-xs uppercase">帳單名稱</span></label>
-                <input className="input input-bordered w-full rounded-xl focus:border-rose-500" placeholder="例如：房貸、保費" value={newBill.name_snapshot} onChange={(e) => setNewBill((p) => ({ ...p, name_snapshot: e.target.value }))} />
-              </div>
-              <div>
-                <label className="label py-1"><span className="label-text font-bold text-slate-400 text-xs uppercase">到期日</span></label>
-                <input type="date" className="input input-bordered w-full rounded-xl focus:border-rose-500 font-medium" value={newBill.due_date} onChange={(e) => setNewBill((p) => ({ ...p, due_date: e.target.value }))} />
-              </div>
-              <div>
-                <label className="label py-1"><span className="label-text font-bold text-slate-400 text-xs uppercase">金額</span></label>
-                <input type="number" className="input input-bordered w-full rounded-xl font-black focus:border-rose-500" value={newBill.amount_due || ""} onChange={(e) => setNewBill((p) => ({ ...p, amount_due: Number(e.target.value) }))} />
-              </div>
-              <div className="flex items-end">
-                <button className="btn bg-rose-500 hover:bg-rose-600 text-white border-none w-full rounded-xl font-black shadow-lg shadow-rose-500/30 hover:scale-[1.02] active:scale-95 transition-all" onClick={createBill} disabled={loading}>新增</button>
-              </div>
-            </div>
-
-            <details className="collapse collapse-arrow bg-slate-50 border border-slate-100 rounded-xl">
-              <summary className="collapse-title text-xs font-bold text-slate-500 uppercase tracking-wide">進階：帳期區間（選填）</summary>
+            <details className="collapse collapse-arrow rounded-lg border border-slate-100 bg-slate-50">
+              <summary className="collapse-title min-h-10 py-3 text-xs font-bold text-slate-500">帳期區間（選填）</summary>
               <div className="collapse-content">
                 <div className="grid md:grid-cols-2 gap-3 pt-2">
                   <div>
@@ -498,19 +490,19 @@ export default function BillsPage() {
               </div>
             </details>
           </div>
-        </div>
+        </details>
 
-        {/* List */}
-        <div className="card bg-white shadow-sm border border-slate-200 rounded-3xl overflow-hidden">
-          <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-1.5 h-1.5 rounded-full bg-slate-800"></div>
-              <h2 className="text-xl font-black tracking-tight text-slate-800">本月帳單</h2>
+        <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+          <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3 sm:px-5">
+            <div className="flex items-center gap-2">
+              <LayoutList className="h-4 w-4 text-slate-400" />
+              <h2 className="text-base font-black text-slate-800">帳單明細</h2>
             </div>
+            <span className="text-xs font-bold text-slate-400">{rows.length} 筆</span>
           </div>
 
           {rows.length === 0 ? (
-            <div className="p-16 text-center text-sm font-bold text-slate-400">本期尚無帳單</div>
+            <div className="px-4 py-10 text-center text-sm font-bold text-slate-400">這個月份沒有帳單</div>
           ) : (
             <>
               <div className="divide-y divide-slate-100 md:hidden">
@@ -519,7 +511,7 @@ export default function BillsPage() {
                   const paid = round2(n(b.paid_total));
                   const remain = round2(due - paid);
                   return (
-                    <article key={b.id} className="space-y-4 p-4">
+                    <article key={b.id} className="space-y-3 p-4">
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
                           <h3 className="truncate font-bold text-slate-800">{b.name_snapshot}</h3>
@@ -530,18 +522,18 @@ export default function BillsPage() {
                         </div>
                         <span className={statusBadge(b.status)}>{statusLabel(b.status)}</span>
                       </div>
-                      <div className="grid grid-cols-3 gap-2 rounded-lg bg-slate-50 p-3">
+                      <div className="grid grid-cols-3 divide-x divide-slate-200 rounded-lg bg-slate-50 py-2">
                         <div>
-                          <div className="text-[11px] font-bold text-slate-400">應繳</div>
-                          <div className="mt-1 font-mono text-sm font-black text-slate-800">{b.amount_due == null ? "待填" : `$${due.toLocaleString()}`}</div>
+                          <div className="px-3 text-[11px] font-bold text-slate-400">應繳</div>
+                          <div className="mt-1 px-3 font-mono text-sm font-black text-slate-800">{b.amount_due == null ? "待填" : `$${due.toLocaleString()}`}</div>
                         </div>
                         <div>
-                          <div className="text-[11px] font-bold text-slate-400">已付</div>
-                          <div className="mt-1 font-mono text-sm font-bold text-emerald-600">${paid.toLocaleString()}</div>
+                          <div className="px-3 text-[11px] font-bold text-slate-400">已付</div>
+                          <div className="mt-1 px-3 font-mono text-sm font-bold text-emerald-600">${paid.toLocaleString()}</div>
                         </div>
                         <div>
-                          <div className="text-[11px] font-bold text-slate-400">待付</div>
-                          <div className="mt-1 font-mono text-sm font-black text-rose-500">${remain.toLocaleString()}</div>
+                          <div className="px-3 text-[11px] font-bold text-slate-400">待付</div>
+                          <div className="mt-1 px-3 font-mono text-sm font-black text-rose-500">${remain.toLocaleString()}</div>
                         </div>
                       </div>
                       {billActions(b)}
@@ -553,14 +545,14 @@ export default function BillsPage() {
               <div className="hidden overflow-x-auto md:block">
                 <table className="table w-full">
                 <thead>
-                  <tr className="bg-white border-b border-slate-100 text-slate-400 text-xs font-bold uppercase tracking-wide">
-                    <th className="pl-8 py-4">到期日</th>
+                  <tr className="border-b border-slate-100 bg-white text-xs font-bold text-slate-400">
+                    <th className="py-3 pl-5">到期日</th>
                     <th>帳單名稱</th>
                     <th className="text-right">應繳金額</th>
                     <th className="text-right">已付金額</th>
                     <th className="text-right">待付金額</th>
                     <th>狀態</th>
-                    <th className="text-right pr-8">操作</th>
+                    <th className="pr-5 text-right">操作</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -569,8 +561,8 @@ export default function BillsPage() {
                     const paid = round2(n(b.paid_total));
                     const remain = round2(due - paid);
                     return (
-                      <tr key={b.id} className="group border-b border-slate-50 last:border-0 hover:bg-rose-50/10 transition-colors">
-                        <td className="pl-8 whitespace-nowrap text-sm font-medium text-slate-600 font-mono">
+                      <tr key={b.id} className="group border-b border-slate-50 last:border-0 hover:bg-slate-50/80 transition-colors">
+                        <td className="whitespace-nowrap py-3 pl-5 font-mono text-sm font-medium text-slate-600">
                           <div className="flex items-center gap-2"><Clock className="w-3.5 h-3.5 text-slate-300" />{b.due_date || "待填"}</div>
                         </td>
                         <td className="font-bold text-slate-700 text-base">
@@ -581,7 +573,7 @@ export default function BillsPage() {
                         <td className="text-right font-mono font-medium text-emerald-600">${paid.toLocaleString()}</td>
                         <td className={`text-right font-mono font-black ${remain > 0 ? "text-rose-500" : "text-slate-300"}`}>${remain.toLocaleString()}</td>
                         <td><span className={statusBadge(b.status)}>{statusLabel(b.status)}</span></td>
-                        <td className="text-right pr-8">
+                        <td className="pr-5 text-right">
                           {billActions(b)}
                         </td>
                       </tr>
@@ -592,7 +584,7 @@ export default function BillsPage() {
               </div>
             </>
           )}
-        </div>
+        </section>
 
           </>
         ) : (
@@ -602,19 +594,19 @@ export default function BillsPage() {
         {/* Pay Modal */}
         {paying && (
           <div className="modal modal-open bg-slate-900/40 backdrop-blur-sm">
-            <div className="modal-box max-w-2xl rounded-3xl p-0 shadow-2xl border border-white/20">
-              <div className="bg-slate-50 px-8 py-6 border-b border-slate-200">
+            <div className="modal-box max-w-2xl rounded-lg border border-white/20 p-0 shadow-2xl">
+              <div className="border-b border-slate-200 bg-slate-50 px-5 py-4 sm:px-6">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-rose-100 text-rose-600 rounded-lg"><Wallet className="w-5 h-5" /></div>
                   <div>
-                    <h3 className="text-xl font-black text-slate-800">付款/記帳</h3>
-                    <div className="text-xs font-bold text-slate-400 mt-0.5 uppercase tracking-widest">TARGET: {paying.name_snapshot}</div>
+                    <h3 className="text-lg font-black text-slate-800">付款並記帳</h3>
+                    <div className="mt-0.5 text-sm font-medium text-slate-500">{paying.name_snapshot}</div>
                   </div>
                 </div>
               </div>
 
-              <div className="p-8 space-y-5 bg-white max-h-[70vh] overflow-y-auto">
-                <div className="grid md:grid-cols-2 gap-5">
+              <div className="max-h-[70vh] space-y-4 overflow-y-auto bg-white p-5 sm:p-6">
+                <div className="grid gap-4 md:grid-cols-2">
                   <div><label className="label py-1"><span className="label-text font-bold text-slate-400 text-xs uppercase">付款日期</span></label><input type="date" className="input input-bordered w-full rounded-xl focus:border-rose-500" value={payForm.entry_date} onChange={(e) => setPayForm((p) => ({ ...p, entry_date: e.target.value }))} /></div>
                   <div><label className="label py-1"><span className="label-text font-bold text-slate-400 text-xs uppercase">付款金額</span></label><input type="number" className="input input-bordered w-full font-black text-lg rounded-xl focus:border-rose-500" value={payForm.pay_amount || ""} onChange={(e) => setPayForm((p) => ({ ...p, pay_amount: Number(e.target.value) }))} /></div>
                   <div><label className="label py-1"><span className="label-text font-bold text-slate-400 text-xs uppercase">誰先付錢</span></label><select className="select select-bordered w-full rounded-xl font-bold focus:border-rose-500" value={payForm.payer_id} onChange={(e) => setPayForm((p) => ({ ...p, payer_id: e.target.value }))}><option value="">（選擇）</option>{payers.map((p) => (<option key={p.id} value={p.id}>{p.name}</option>))}</select></div>
@@ -625,7 +617,7 @@ export default function BillsPage() {
                   <div className="md:col-span-2"><label className="label py-1"><span className="label-text font-bold text-slate-400 text-xs uppercase">備註</span></label><input className="input input-bordered w-full rounded-xl focus:border-rose-500" value={payForm.note} onChange={(e) => setPayForm((p) => ({ ...p, note: e.target.value }))} /></div>
                 </div>
 
-                <div className={`mt-4 p-5 rounded-2xl border transition-colors ${payForm.useSplit ? 'bg-rose-50 border-rose-100' : 'bg-slate-50 border-slate-100'}`}>
+                <div className={`mt-4 rounded-lg border p-4 transition-colors ${payForm.useSplit ? 'bg-rose-50 border-rose-100' : 'bg-slate-50 border-slate-100'}`}>
                   <label className="flex items-center gap-3 cursor-pointer">
                     <input type="checkbox" className="toggle toggle-error" checked={payForm.useSplit} onChange={(e) => { const on = e.target.checked; if (!on) return setPayForm((p) => ({ ...p, useSplit: false, splits: [] })); const other = payForm.payer_id ? payers.find((x) => x.id !== payForm.payer_id)?.id || "" : ""; setPayForm((p) => ({ ...p, useSplit: true, splits: [{ payer_id: other, amount: 0 }] })); }} />
                     <span className={`font-bold ${payForm.useSplit ? 'text-rose-700' : 'text-slate-500'}`}>啟用分帳功能</span>
@@ -645,9 +637,9 @@ export default function BillsPage() {
                 </div>
               </div>
 
-              <div className="bg-slate-50 px-8 py-5 flex justify-end gap-3 border-t border-slate-200">
+              <div className="flex justify-end gap-2 border-t border-slate-200 bg-slate-50 px-5 py-4 sm:px-6">
                 <button className="btn btn-ghost font-bold text-slate-400" onClick={() => setPaying(null)}>取消</button>
-                <button className="btn bg-rose-500 hover:bg-rose-600 text-white border-none rounded-2xl px-8 font-black shadow-lg shadow-rose-500/30 hover:scale-[1.02] active:scale-95 transition-all" onClick={payToLedger}>確認付款</button>
+                <button className="btn rounded-lg border-none bg-rose-500 px-6 font-black text-white hover:bg-rose-600" onClick={payToLedger}>確認付款</button>
               </div>
             </div>
             <div className="modal-backdrop" onClick={() => setPaying(null)} />

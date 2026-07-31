@@ -168,10 +168,10 @@ export function BillTemplateManager({ workspaceId }: { workspaceId: string | nul
 
   return (
     <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-4 py-4 md:px-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-4 py-3 sm:px-5">
         <div>
-          <h2 className="text-base font-black text-slate-800">自動帳單模板</h2>
-          <p className="mt-1 text-xs font-medium text-slate-400">{activeCount} 個啟用中</p>
+          <h2 className="text-base font-black text-slate-800">固定帳單</h2>
+          <p className="mt-0.5 text-xs font-medium text-slate-400">{activeCount} 個使用中，共 {rows.length} 個</p>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -185,7 +185,7 @@ export function BillTemplateManager({ workspaceId }: { workspaceId: string | nul
           </button>
           <button type="button" className="btn btn-sm rounded-lg border-none bg-rose-500 text-white hover:bg-rose-600" onClick={openCreate}>
             <Plus className="h-4 w-4" />
-            新增模板
+            新增
           </button>
         </div>
       </div>
@@ -193,27 +193,27 @@ export function BillTemplateManager({ workspaceId }: { workspaceId: string | nul
       {error ? <div className="m-4 rounded-lg bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{error}</div> : null}
 
       {rows.length === 0 && !loading ? (
-        <div className="px-6 py-14 text-center text-sm font-medium text-slate-400">尚未建立自動帳單模板</div>
+        <div className="px-6 py-10 text-center text-sm font-medium text-slate-400">還沒有固定帳單</div>
       ) : (
         <div className="divide-y divide-slate-100">
           {rows.map((template) => (
             <article
               key={template.id}
-              className={`grid gap-3 px-4 py-4 md:grid-cols-[minmax(180px,1.4fr)_minmax(150px,1fr)_minmax(130px,0.8fr)_auto] md:items-center md:px-6 ${
+              className={`grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-2 px-4 py-3 sm:px-5 md:grid-cols-[minmax(190px,1.4fr)_minmax(170px,1fr)_minmax(110px,0.65fr)_auto] md:items-center ${
                 template.active ? "" : "bg-slate-50 opacity-60"
               }`}
             >
-              <div className="min-w-0">
+              <div className="col-span-2 min-w-0 md:col-span-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <h3 className="truncate font-bold text-slate-800">{template.name}</h3>
                   <span className={`badge badge-sm border-none ${template.payment_mode === "status_only" ? "bg-sky-100 text-sky-700" : "bg-emerald-100 text-emerald-700"}`}>
-                    {template.payment_mode === "status_only" ? "只標記已繳" : "付款寫入記帳"}
+                    {template.payment_mode === "status_only" ? "只更新狀態" : "連動記帳"}
                   </span>
                 </div>
-                <div className="mt-1 text-xs text-slate-400">自 {template.starts_on.slice(0, 7)} 起</div>
+                <div className="mt-1 text-xs text-slate-400">{template.starts_on.slice(0, 7)} 起</div>
               </div>
 
-              <div className="flex items-center gap-2 text-sm font-medium text-slate-600">
+              <div className="col-span-2 flex min-w-0 items-center gap-2 text-sm font-medium text-slate-600 md:col-span-1">
                 <CalendarRange className="h-4 w-4 text-slate-400" />
                 <span>{scheduleLabel(template)}</span>
                 <span className="text-slate-300">·</span>
@@ -227,8 +227,9 @@ export function BillTemplateManager({ workspaceId }: { workspaceId: string | nul
               </div>
 
               <div className="flex items-center justify-end gap-2">
-                <button type="button" className="btn btn-ghost btn-sm rounded-lg" onClick={() => openEdit(template)} title="編輯模板">
+                <button type="button" className="btn btn-ghost btn-sm rounded-lg" onClick={() => openEdit(template)} title="編輯">
                   <Pencil className="h-4 w-4" />
+                  <span className="sr-only">編輯</span>
                 </button>
                 <button
                   type="button"
@@ -236,7 +237,7 @@ export function BillTemplateManager({ workspaceId }: { workspaceId: string | nul
                   onClick={() => void toggleActive(template)}
                 >
                   {template.active ? <X className="h-4 w-4" /> : <Check className="h-4 w-4" />}
-                  {template.active ? "停用" : "啟用"}
+                  {template.active ? "停用" : "使用"}
                 </button>
               </div>
             </article>
@@ -248,7 +249,7 @@ export function BillTemplateManager({ workspaceId }: { workspaceId: string | nul
         <div className="modal modal-open bg-slate-900/40">
           <div className="modal-box max-w-2xl rounded-lg p-0">
             <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-              <h3 className="font-black text-slate-800">{editing ? "編輯模板" : "新增模板"}</h3>
+              <h3 className="font-black text-slate-800">{editing ? "編輯固定帳單" : "新增固定帳單"}</h3>
               <button type="button" className="btn btn-ghost btn-sm rounded-lg" onClick={() => setShowForm(false)} title="關閉">
                 <X className="h-4 w-4" />
               </button>
