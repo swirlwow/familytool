@@ -304,17 +304,16 @@ export default function StickyDetailPage() {
   // id 還沒出來 → 只顯示載入中，不吐「缺少ID」
   if (!id) {
     return (
-      <main className="min-h-screen bg-slate-50 p-6">
+      <main className="app-page">
         <div className="mx-auto max-w-4xl text-center text-slate-400 py-16">載入中…</div>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 p-4 md:p-6 lg:p-8">
-      <div className="mx-auto max-w-4xl space-y-6">
-        <div className="card bg-white shadow-sm border border-slate-200 rounded-3xl">
-          <div className="card-body p-6 flex items-center justify-between gap-3">
+    <main className="app-page">
+      <div className="app-page-inner max-w-4xl">
+        <div className="app-header">
             <div className="flex items-center gap-2">
               <button className="btn btn-ghost btn-sm" onClick={() => router.push("/stickies")}>
                 <ArrowLeft className="w-4 h-4" /> 返回
@@ -331,15 +330,13 @@ export default function StickyDetailPage() {
               </button>
             </div>
           </div>
-        </div>
 
         {loading && <div className="text-center text-slate-400 py-10">載入中…</div>}
 
         {!loading && !sticky && <div className="text-center text-slate-400 py-16">找不到這張便條紙（可能已刪除）</div>}
 
         {!loading && sticky && (
-          <div className="card bg-white shadow-sm border border-slate-200 rounded-3xl">
-            <div className="card-body p-6 space-y-4">
+          <section className="app-panel space-y-4 p-4 sm:p-5">
               {/* owner 按鈕 */}
               <div className="flex flex-wrap gap-2">
                 {OWNERS.map((o) => {
@@ -434,9 +431,8 @@ export default function StickyDetailPage() {
                 </SortableContext>
               </DndContext>
 
-              {items.length === 0 && <div className="text-center text-slate-400 py-10">目前沒有項目，先輸入一個項目按 Enter 🙂</div>}
-            </div>
-          </div>
+              {items.length === 0 && <div className="py-10 text-center text-slate-400">目前沒有項目</div>}
+          </section>
         )}
       </div>
     </main>

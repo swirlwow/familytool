@@ -75,14 +75,14 @@ export default function SettlementPage() {
   const totalOutstanding = rows.reduce((a, r) => a + Number(r.amount || 0), 0);
 
   return (
-    <main className="min-h-screen bg-gray-50 p-4">
-      <div className="mx-auto max-w-3xl space-y-4">
-        <div className="flex items-start justify-between gap-3">
+    <main className="app-page">
+      <div className="app-page-inner max-w-3xl">
+        <div className="app-header">
           <div>
-            <h1 className="text-2xl font-bold">拆帳結算</h1>
-            <div className="text-sm text-gray-500">區間內「欠款 - 已結清」後的未結清淨額</div>
+            <h1 className="text-lg font-black text-slate-800">拆帳結算設定</h1>
+            <div className="text-xs text-slate-500">查看指定期間的未結清淨額</div>
           </div>
-          <div className="flex gap-2">
+          <div className="hidden gap-2 sm:flex">
             <a href="/" className="rounded-lg border bg-white px-4 py-2 text-sm hover:bg-gray-50">回帳單</a>
             <a href="/ledger" className="rounded-lg border bg-white px-4 py-2 text-sm hover:bg-gray-50">回記帳</a>
           </div>

@@ -121,8 +121,8 @@ export default function NotesPage() {
 
       const rows: NoteRow[] = Array.isArray(j.data) ? j.data : [];
       setList(rows.filter((x) => String(x?.id || "").trim()));
-    } catch (e: any) {
-      toast({ variant: "destructive", title: "讀取記事失敗", description: e.message });
+    } catch {
+      toast({ variant: "destructive", title: "記事暫時無法讀取", description: "請稍後重新整理。" });
       setList([]);
     } finally {
       setLoading(false);
@@ -237,8 +237,8 @@ export default function NotesPage() {
         closeDraft();
         await load();
       }
-    } catch (e: any) {
-      toast({ variant: "destructive", title: "儲存失敗", description: e.message });
+    } catch {
+      toast({ variant: "destructive", title: "儲存失敗", description: "請稍後再試。" });
     } finally {
       setSaving(false);
     }
@@ -257,45 +257,39 @@ export default function NotesPage() {
       toast({ title: "已刪除" });
       setList((prev) => prev.filter((x) => x.id !== id));
       if (draft?.mode === "edit" && draft.id === id) closeDraft();
-    } catch (e: any) {
-      toast({ variant: "destructive", title: "刪除失敗", description: e.message });
+    } catch {
+      toast({ variant: "destructive", title: "刪除失敗", description: "請稍後再試。" });
     }
   }
 
   const countText = useMemo(() => `共 ${list.length} 則`, [list]);
 
   return (
-    <main className="min-h-screen bg-slate-50 p-4 md:p-6 lg:p-8 pb-24 md:pb-8 relative">
-      <div className="mx-auto max-w-6xl space-y-6">
+    <main className="app-page relative">
+      <div className="app-page-inner max-w-6xl">
         {/* Header */}
-        <div className="card bg-white/90 backdrop-blur-md shadow-sm border border-slate-200 rounded-2xl sticky top-0 z-30">
-          <div className="card-body p-3 flex flex-row items-center justify-between gap-3">
+        <div className="app-header">
+          <div className="flex w-full flex-row items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="bg-pink-50 text-pink-600 p-2 rounded-lg border border-pink-100">
                 <NotebookPen className="w-5 h-5" />
               </div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-lg font-black tracking-tight text-slate-800">記事本</h1>
-                <div className="badge badge-sm bg-pink-100 text-pink-700 border-none font-bold hidden sm:inline-flex">Notes</div>
-              </div>
+              <h1 className="text-lg font-black text-slate-800">記事本</h1>
             </div>
             <div className="flex gap-2">
-              <button className="btn btn-ghost btn-sm h-9 min-h-0 rounded-xl font-bold text-slate-500 hover:bg-slate-100" onClick={() => router.push("/")}>
+              <button className="btn btn-ghost btn-sm hidden h-9 min-h-0 rounded-lg font-bold text-slate-500 hover:bg-slate-100 sm:inline-flex" onClick={() => router.push("/")}>
                 回首頁
               </button>
               <button
-                className="btn btn-outline btn-sm h-9 min-h-0 rounded-xl font-bold border-slate-200 hover:bg-slate-100 hover:text-slate-700 text-slate-500 gap-2"
+                className="btn btn-outline btn-sm h-9 min-h-0 rounded-lg border-slate-200 font-bold text-slate-500 hover:bg-slate-100 hover:text-slate-700"
                 onClick={() => router.push("/calendar")}
               >
                 <CalendarDays className="w-4 h-4" /> <span className="hidden sm:inline">去行事曆</span>
               </button>
-              <button className="hidden md:inline-flex btn h-9 min-h-0 bg-pink-600 hover:bg-pink-700 text-white border-none rounded-xl px-4 font-black shadow-md shadow-pink-200/30 gap-2" onClick={openNewDraft}>
+              <button className="btn hidden h-9 min-h-0 rounded-lg border-none bg-pink-600 px-4 font-black text-white hover:bg-pink-700 md:inline-flex" onClick={openNewDraft}>
                 <Plus className="w-4 h-4" /> 新增
               </button>
             </div>
-          </div>
-          <div className="px-4 pb-3 -mt-1">
-            <p className="text-[11px] font-medium text-slate-400">記錄生活點滴與待辦事項，支援多人分類（Owner 可多選）與日期區間。</p>
           </div>
           {!WORKSPACE_ID && (
             <div className="px-4 pb-3">
@@ -307,8 +301,7 @@ export default function NotesPage() {
         </div>
 
         {/* Controls */}
-        <div className="card bg-white shadow-sm border border-slate-200 rounded-3xl">
-          <div className="card-body p-5">
+        <section className="app-panel p-4 sm:p-5">
             <div className="flex flex-col gap-4">
               <div className="flex items-center gap-2">
                 <div className="relative flex-1">
@@ -328,8 +321,8 @@ export default function NotesPage() {
 
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-slate-50">
                 <div className="flex items-center gap-2 overflow-x-auto pb-2 sm:pb-0 scrollbar-hide">
-                  <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-widest mr-2">
-                    <Filter className="w-3 h-3" /> 過濾
+                  <div className="mr-2 flex items-center gap-2 text-xs font-bold text-slate-400">
+                    <Filter className="w-3 h-3" /> 篩選
                   </div>
                   {FILTER_OWNERS.map((o) => {
                     const active = ownerFilter === o;
@@ -352,14 +345,12 @@ export default function NotesPage() {
                 <div className="text-xs font-medium text-slate-400 text-right shrink-0">{loading ? <span className="loading loading-spinner loading-xs text-pink-500"></span> : countText}</div>
               </div>
             </div>
-          </div>
-        </div>
+        </section>
 
         {/* List */}
         {!loading && list.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-20 opacity-50">
-            <div className="text-6xl mb-4">📝</div>
-            <div className="font-bold text-slate-400">目前沒有記事</div>
+          <div className="app-empty">
+            目前沒有記事
           </div>
         )}
 
@@ -371,8 +362,8 @@ export default function NotesPage() {
               const dateText = rangeText(n);
 
               return (
-                <div key={id || Math.random()} className="card bg-white border border-slate-200 rounded-3xl shadow-sm hover:shadow-md transition-all duration-200 group flex flex-col h-full hover:border-pink-200">
-                  <div className="card-body p-6 flex-1 flex flex-col">
+                <article key={id || Math.random()} className="group flex h-full flex-col rounded-lg border border-slate-200 bg-white shadow-sm transition-colors hover:border-pink-200">
+                  <div className="flex flex-1 flex-col p-4 sm:p-5">
                     <div className="flex items-start justify-between gap-4 mb-2">
                       <div className="min-w-0 flex-1 space-y-1">
                         <div className="flex flex-wrap items-center gap-2 mb-1">
@@ -395,7 +386,7 @@ export default function NotesPage() {
                         </h3>
                       </div>
 
-                      <div className="flex flex-col gap-2 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex shrink-0 flex-col gap-2 opacity-100 md:opacity-0 md:transition-opacity md:group-hover:opacity-100">
                         <button className="btn btn-ghost btn-sm btn-square rounded-xl text-slate-400 hover:text-pink-600 hover:bg-pink-50" onClick={() => openEditDraft(n)} title="編輯">
                           <Pencil className="w-4 h-4" />
                         </button>
@@ -409,7 +400,7 @@ export default function NotesPage() {
                       {String(n.content || "").trim() ? n.content : <span className="text-slate-300 italic">（尚無內容）</span>}
                     </div>
                   </div>
-                </div>
+                </article>
               );
             })}
           </div>

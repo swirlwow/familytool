@@ -205,17 +205,16 @@ export default function NoteDetailPage() {
   // ✅ id 還沒就緒
   if (!noteId) {
     return (
-      <main className="min-h-screen bg-slate-50 p-6">
+      <main className="app-page">
         <div className="mx-auto max-w-4xl text-center text-slate-400 py-16">載入中…</div>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 p-4 md:p-6 lg:p-8">
-      <div className="mx-auto max-w-4xl space-y-6">
-        <div className="card bg-white shadow-sm border border-slate-200 rounded-3xl">
-          <div className="card-body p-6 flex items-center justify-between gap-3">
+    <main className="app-page">
+      <div className="app-page-inner max-w-4xl">
+        <div className="app-header">
             <button className="btn btn-ghost btn-sm" onClick={() => router.push("/notes")}>
               <ArrowLeft className="w-4 h-4" /> 返回
             </button>
@@ -229,7 +228,6 @@ export default function NoteDetailPage() {
               </button>
             </div>
           </div>
-        </div>
 
         {loading && <div className="text-center text-slate-400 py-10">載入中…</div>}
 
@@ -238,8 +236,7 @@ export default function NoteDetailPage() {
         )}
 
         {!loading && note && (
-          <div className="card bg-white shadow-sm border border-slate-200 rounded-3xl">
-            <div className="card-body p-6 space-y-5">
+          <section className="app-panel space-y-5 p-4 sm:p-5">
               {/* ✅ OWNER 多選 chips */}
               <div className="flex flex-wrap gap-2">
                 {OWNERS.map((o) => {
@@ -366,8 +363,7 @@ export default function NoteDetailPage() {
               <div className="text-xs text-slate-400">
                 更新：{fmt10(note.updated_at)}
               </div>
-            </div>
-          </div>
+          </section>
         )}
       </div>
     </main>

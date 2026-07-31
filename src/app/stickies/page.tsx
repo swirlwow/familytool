@@ -65,8 +65,8 @@ export default function StickiesPage() {
 
       const rows: StickyRow[] = Array.isArray(j.data) ? j.data : [];
       setList(rows.filter((x) => String(x?.id || "").trim()));
-    } catch (e: any) {
-      toast({ variant: "destructive", title: "讀取便條紙失敗", description: e.message });
+    } catch {
+      toast({ variant: "destructive", title: "便條紙暫時無法讀取", description: "請稍後重新整理。" });
       setList([]);
     } finally {
       setLoading(false);
@@ -107,8 +107,8 @@ export default function StickiesPage() {
           };
         beginEdit(row);
       }, 100);
-    } catch (e: any) {
-      toast({ variant: "destructive", title: "新增便條紙失敗", description: e.message });
+    } catch {
+      toast({ variant: "destructive", title: "新增便條紙失敗", description: "請稍後再試。" });
     }
   }
 
@@ -164,8 +164,8 @@ export default function StickiesPage() {
 
       toast({ title: "已儲存" });
       cancelEdit();
-    } catch (e: any) {
-      toast({ variant: "destructive", title: "儲存失敗", description: e.message });
+    } catch {
+      toast({ variant: "destructive", title: "儲存失敗", description: "請稍後再試。" });
     } finally {
       setSaving(false);
     }
@@ -186,8 +186,8 @@ export default function StickiesPage() {
       toast({ title: "已刪除" });
       setList((prev) => prev.filter((x) => x.id !== id));
       if (editingId === id) cancelEdit();
-    } catch (e: any) {
-      toast({ variant: "destructive", title: "刪除失敗", description: e.message });
+    } catch {
+      toast({ variant: "destructive", title: "刪除失敗", description: "請稍後再試。" });
     }
   }
 
@@ -207,46 +207,35 @@ export default function StickiesPage() {
 
   return (
     // ✅ 手機版 px-0 滿版，電腦版 md:p-6 lg:p-8
-    <main className="min-h-screen bg-slate-50 px-0 py-4 md:p-6 lg:p-8 pb-24 md:pb-8">
-      <div className="mx-auto max-w-7xl space-y-4 md:space-y-6">
+    <main className="app-page">
+      <div className="app-page-inner">
         
         {/* ✅ Header：手機滿版無外框，電腦版圓角外框 */}
-        <div className="bg-white/90 backdrop-blur-md shadow-none md:shadow-sm border-b md:border border-slate-200 md:rounded-3xl sticky top-0 z-40">
-          <div className="p-3 px-4 md:p-4 flex flex-row items-center justify-between gap-3">
+        <div className="app-header">
+          <div className="flex w-full flex-row items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="bg-amber-50 text-amber-700 p-1.5 md:p-2 rounded-lg border border-amber-100">
                 <StickyNote className="w-5 h-5" />
               </div>
 
-              <div className="flex items-center gap-2">
-                <h1 className="text-lg md:text-xl font-black tracking-tight text-slate-800">便條紙</h1>
-                <div className="badge badge-sm bg-amber-100 text-amber-700 border-none font-bold hidden md:inline-flex">
-                  Stickies
-                </div>
-              </div>
+              <h1 className="text-lg font-black text-slate-800 md:text-xl">便條紙</h1>
             </div>
 
             <div className="flex gap-2">
               <button
-                className="btn btn-ghost btn-sm h-8 md:h-9 min-h-0 rounded-xl font-bold text-slate-500 hover:bg-slate-100 hidden sm:inline-flex"
+                className="btn btn-ghost btn-sm hidden h-9 min-h-0 rounded-lg font-bold text-slate-500 hover:bg-slate-100 sm:inline-flex"
                 onClick={() => router.push("/")}
               >
                 回首頁
               </button>
 
               <button
-                className="hidden md:inline-flex btn h-9 min-h-0 bg-amber-500 hover:bg-amber-600 text-white border-none rounded-xl px-4 font-black shadow-md shadow-amber-200/30 gap-2"
+                className="btn hidden h-9 min-h-0 rounded-lg border-none bg-amber-500 px-4 font-black text-white hover:bg-amber-600 md:inline-flex"
                 onClick={createNew}
               >
                 <Plus className="w-4 h-4" /> 新增
               </button>
             </div>
-          </div>
-
-          <div className="px-4 pb-3 -mt-1 hidden md:block">
-            <p className="text-[11px] font-medium text-slate-400">
-              隨手紀錄、清單備忘，像牆上的便利貼一樣直觀。
-            </p>
           </div>
 
           {!WORKSPACE_ID && (
@@ -259,7 +248,7 @@ export default function StickiesPage() {
         </div>
 
         {/* Controls：手機版滿版無外框 */}
-        <div className="bg-white shadow-none md:shadow-sm border-y md:border border-slate-200 md:rounded-3xl">
+        <section className="app-panel">
           <div className="p-4 md:p-5">
             <div className="flex flex-col gap-4">
               {/* Search Bar */}
@@ -286,8 +275,8 @@ export default function StickiesPage() {
               {/* Owner Filters */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-slate-50">
                 <div className="flex items-center gap-2 overflow-x-auto pb-2 sm:pb-0 scrollbar-hide">
-                  <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-widest mr-2">
-                    <Filter className="w-3 h-3" /> 過濾
+                  <div className="mr-2 flex items-center gap-2 text-xs font-bold text-slate-400">
+                    <Filter className="w-3 h-3" /> 篩選
                   </div>
                   {OWNERS.map((o) => {
                     const active = owner === o;
@@ -315,24 +304,19 @@ export default function StickiesPage() {
               </div>
             </div>
           </div>
-        </div>
+        </section>
 
         {/* Stickies Wall */}
         {!loading && list.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-20 opacity-50">
-            <div className="bg-amber-100 p-6 rounded-full mb-4">
-              <StickyNote className="w-12 h-12 text-amber-400" />
-            </div>
-            <div className="font-bold text-slate-400 text-lg">目前沒有便條紙</div>
-            <p className="text-slate-400 text-sm mt-1">點擊新增建立第一張便利貼吧！</p>
+          <div className="app-empty">
+            目前沒有便條紙
           </div>
         )}
 
         {!loading && list.length > 0 && (
           // ✅ 手機版 px-3 避免卡片直接貼緊螢幕邊緣
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 items-start px-3 md:px-0">
+          <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {list.map((s) => {
-              const st = OWNER_STYLE[s.owner] || OWNER_STYLE["家庭"];
               const isEditing = editingId === s.id;
               const rotationClass = isEditing ? "rotate-0 scale-105 z-20" : getRotation(s.id);
 

@@ -283,7 +283,10 @@ export default function CalendarPage() {
   const [compact, setCompact] = useState(false);
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 639px)");
-    const update = () => setCompact(mq.matches);
+    const update = () => {
+      setCompact(mq.matches);
+      if (mq.matches) setMode((current) => current === "month" ? "week" : current);
+    };
     update();
     mq.addEventListener?.("change", update);
     return () => mq.removeEventListener?.("change", update);
@@ -301,8 +304,8 @@ export default function CalendarPage() {
       if (!res.ok) throw new Error(j.error || "讀取失敗");
       const rows: NoteRow[] = Array.isArray(j.data) ? j.data : [];
       setNotes(rows.filter((x) => String(x?.id || "").trim()));
-    } catch (e: any) {
-      toast({ variant: "destructive", title: "讀取行事曆資料失敗", description: e.message });
+    } catch {
+      toast({ variant: "destructive", title: "行事曆暫時無法讀取", description: "請稍後重新整理。" });
       setNotes([]);
     } finally {
       setLoading(false);
@@ -418,8 +421,8 @@ export default function CalendarPage() {
 
       closeDraft();
       await load();
-    } catch (e: any) {
-      toast({ variant: "destructive", title: "儲存失敗", description: e.message });
+    } catch {
+      toast({ variant: "destructive", title: "儲存失敗", description: "請稍後再試。" });
     } finally {
       setSaving(false);
     }
@@ -499,7 +502,7 @@ export default function CalendarPage() {
 
   return (
     // ✅ 修正高度：確保能完美避開 AppShell 的底部導覽列 (pb-24 即 96px) 並完整顯示於螢幕中
-    <main className="flex flex-col bg-white overflow-hidden h-[calc(100dvh-96px)] md:h-[calc(100dvh-32px)] border-t border-slate-200 md:border-none md:rounded-2xl md:shadow-sm">
+    <main className="flex h-[calc(100dvh-96px)] flex-col overflow-hidden border-t border-slate-200 bg-white md:h-screen md:border-none">
       
       {/* ===== Header ===== */}
       <header className="shrink-0 border-b border-slate-200 bg-white">
@@ -515,12 +518,9 @@ export default function CalendarPage() {
               <div className="min-w-0 flex flex-col justify-center">
                 <div className="flex items-center gap-2">
                   <h1 className="font-black text-[16px] sm:text-[20px] text-slate-900 truncate">行事曆</h1>
-                  <span className="hidden sm:inline-flex px-2 py-0.5 rounded-full text-[11px] font-black bg-orange-100 text-orange-700">
-                    Calendar
-                  </span>
                 </div>
                 <p className="text-[10px] sm:text-[12px] font-medium text-slate-400 truncate -mt-0.5">
-                  {mode === "month" ? "月視圖：多日橫跨" : "週視圖：左右滑動"}
+                  {mode === "month" ? "月曆" : "本週行程"}
                   {loading ? "（載入中…）" : ""}
                 </p>
               </div>
@@ -587,7 +587,7 @@ export default function CalendarPage() {
                 className="sm:hidden h-8 px-2.5 mr-2 rounded-xl border border-slate-200 bg-slate-50 text-[11px] font-black text-slate-600"
                 onClick={() => setMode(mode === "month" ? "week" : "month")}
               >
-                切換{mode === "month" ? "週" : "月"}
+                {mode === "month" ? "週" : "月"}
               </button>
               
               <button
@@ -612,16 +612,18 @@ export default function CalendarPage() {
         </div>
 
         {/* Weekday Row */}
-        <div className="grid grid-cols-7 border-t border-slate-200 bg-slate-50 max-w-6xl mx-auto w-full">
-          {["日", "一", "二", "三", "四", "五", "六"].map((w) => (
-            <div
-              key={w}
-              className="py-1.5 text-center text-[10px] font-black tracking-widest text-slate-500 border-r border-slate-200 last:border-r-0"
-            >
-              {w}
-            </div>
-          ))}
-        </div>
+        {mode === "month" && (
+          <div className="grid grid-cols-7 border-t border-slate-200 bg-slate-50 max-w-6xl mx-auto w-full">
+            {["日", "一", "二", "三", "四", "五", "六"].map((w) => (
+              <div
+                key={w}
+                className="py-1.5 text-center text-[10px] font-black tracking-widest text-slate-500 border-r border-slate-200 last:border-r-0"
+              >
+                {w}
+              </div>
+            ))}
+          </div>
+        )}
       </header>
 
       {/* ===== Body ===== */}
@@ -759,7 +761,7 @@ export default function CalendarPage() {
           {/* ===== Week view ===== */}
           {mode === "week" && (
             <div
-              className="flex-1 bg-slate-200 overflow-x-auto relative"
+              className="relative flex-1 overflow-y-auto bg-slate-200 sm:overflow-x-auto sm:overflow-y-hidden"
               onTouchStart={onWeekTouchStart}
               onTouchMove={onWeekTouchMove}
               onTouchEnd={onWeekTouchEnd}
@@ -769,7 +771,7 @@ export default function CalendarPage() {
                 <span className="tabular-nums">{weekLabelAuto(weekRange.from, weekRange.to, compact)}</span>
               </div>
 
-              <div className="grid grid-cols-7 h-[calc(100%-36px)] gap-px">
+              <div className="grid grid-cols-1 gap-px sm:h-[calc(100%-36px)] sm:grid-cols-7">
                 {weekDays.map((d) => {
                   const isToday = d === ymd(new Date());
                   const todays = notes
@@ -800,7 +802,7 @@ export default function CalendarPage() {
                         }
                       }}
                       className={cn(
-                        "bg-white p-2 flex flex-col outline-none hover:bg-orange-50/40 active:bg-orange-50/60 transition-colors h-full",
+                        "min-h-24 bg-white p-3 flex flex-col outline-none hover:bg-orange-50/40 active:bg-orange-50/60 transition-colors sm:h-full sm:min-h-0 sm:p-2",
                         isToday && "bg-orange-50/70"
                       )}
                     >
@@ -815,11 +817,14 @@ export default function CalendarPage() {
                         >
                           {d.slice(8, 10)}
                         </div>
-                        <div className="text-[10px] font-bold text-slate-400 hidden sm:block">{d.slice(5, 10)}</div>
+                        <div className="text-[11px] font-bold text-slate-500">
+                          <span className="sm:hidden">週{["日", "一", "二", "三", "四", "五", "六"][new Date(`${d}T00:00:00`).getDay()]} · </span>
+                          {d.slice(5, 10)}
+                        </div>
                       </div>
 
                       {/* ✅ 修正被遮擋：加入 pb-24 以確保能滑動超過下方的導覽列 / FAB */}
-                      <div className="flex-1 overflow-y-auto space-y-2 pr-1 pb-24 scrollbar-hide">
+                      <div className="flex-1 space-y-2 pr-1 pb-2 sm:overflow-y-auto sm:pb-24 scrollbar-hide">
                         {todays.length === 0 && (
                           <div className="text-[11px] font-bold text-slate-300 mt-4 text-center">
                             無
@@ -829,8 +834,6 @@ export default function CalendarPage() {
                         {todays.map((n) => {
                           const owner = primaryOwner(n.owner);
                           const st = OWNER_STYLE[owner] || OWNER_STYLE["家庭"];
-                          const r = noteRange(n);
-
                           return (
                             <button
                               key={n.id}

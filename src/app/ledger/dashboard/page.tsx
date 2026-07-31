@@ -4,6 +4,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { WORKSPACE_ID } from "@/lib/appConfig";
 import { useMasterData } from "@/hooks/useMasterData";
+import { ChevronDown, Download, Filter } from "lucide-react";
 import {
   settlementStatusLabel,
   type SettlementStatus,
@@ -129,6 +130,7 @@ export default function LedgerDashboardPage() {
   const [rows, setRows] = useState<LedgerEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string>("");
+  const [showFilters, setShowFilters] = useState(false);
 
   async function fetchLedger() {
     setLoading(true);
@@ -552,19 +554,17 @@ export default function LedgerDashboardPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-end justify-between gap-4 flex-wrap">
+    <main className="app-page">
+      <div className="app-page-inner">
+      <header className="app-header flex-wrap">
         <div>
-          <h1 className="text-2xl font-black tracking-tight text-slate-900">
+          <h1 className="text-lg font-black text-slate-900 sm:text-xl">
             財務儀表板
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            依日期區間與分類篩選，提供統計與明細（可匯出 CSV）
-          </p>
+          <p className="mt-0.5 hidden text-xs text-slate-500 sm:block">查看收支與匯出明細</p>
         </div>
 
-        <div className="flex gap-2 flex-wrap items-center">
+        <div className="flex flex-wrap items-center justify-end gap-2">
           {copied ? (
             <span className="text-xs font-black bg-slate-900 text-white px-3 py-1.5 rounded-lg">
               {copied}
@@ -574,56 +574,58 @@ export default function LedgerDashboardPage() {
           <button
             onClick={exportSummaryCsv}
             className={cn(
-              "px-4 py-2 rounded-lg font-bold shadow-sm",
+              "btn btn-sm h-9 min-h-0 rounded-lg border-none px-3 font-bold",
               "bg-slate-900 text-white hover:bg-slate-800",
               "disabled:opacity-60"
             )}
             disabled={loading || masterLoading}
           >
-            匯出分類彙總 CSV
+            <Download className="h-4 w-4" />
+            分類彙總
           </button>
           <button
             onClick={exportAllDetailCsv}
             className={cn(
-              "px-4 py-2 rounded-lg font-bold shadow-sm",
+              "btn btn-sm h-9 min-h-0 rounded-lg border-none px-3 font-bold",
               "bg-blue-600 text-white hover:bg-blue-500",
               "disabled:opacity-60"
             )}
             disabled={loading || masterLoading}
           >
-            匯出完整明細 CSV (含拆帳展開)
+            <Download className="h-4 w-4" />
+            完整明細
           </button>
         </div>
-      </div>
+      </header>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
         <button
           onClick={() => setRange("thisMonth")}
-          className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 font-bold text-sm"
+          className="shrink-0 rounded-lg bg-slate-100 px-3 py-2 text-sm font-bold hover:bg-slate-200"
         >
           本月
         </button>
         <button
           onClick={() => setRange("lastMonth")}
-          className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 font-bold text-sm"
+          className="shrink-0 rounded-lg bg-slate-100 px-3 py-2 text-sm font-bold hover:bg-slate-200"
         >
           上月
         </button>
         <button
           onClick={() => setRange("d7")}
-          className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 font-bold text-sm"
+          className="shrink-0 rounded-lg bg-slate-100 px-3 py-2 text-sm font-bold hover:bg-slate-200"
         >
           近 7 天
         </button>
         <button
           onClick={() => setRange("d30")}
-          className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 font-bold text-sm"
+          className="shrink-0 rounded-lg bg-slate-100 px-3 py-2 text-sm font-bold hover:bg-slate-200"
         >
           近 30 天
         </button>
         <button
           onClick={() => setRange("thisYear")}
-          className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 font-bold text-sm"
+          className="shrink-0 rounded-lg bg-slate-100 px-3 py-2 text-sm font-bold hover:bg-slate-200"
         >
           今年
         </button>
@@ -633,7 +635,7 @@ export default function LedgerDashboardPage() {
         <button
           onClick={applyZiyiMedical}
           className={cn(
-            "px-3 py-2 rounded-xl font-black text-sm",
+            "shrink-0 rounded-lg px-3 py-2 text-sm font-black",
             "bg-amber-100 hover:bg-amber-200 text-amber-900",
             "disabled:opacity-60"
           )}
@@ -644,8 +646,19 @@ export default function LedgerDashboardPage() {
         </button>
       </div>
 
-      {/* Filters Card */}
-      <div className="border rounded-2xl p-4 bg-white shadow-sm space-y-3">
+      <section className="app-panel overflow-hidden">
+        <button
+          type="button"
+          className="app-panel-header w-full text-left"
+          onClick={() => setShowFilters((current) => !current)}
+        >
+          <span className="flex items-center gap-2 font-black text-slate-800">
+            <Filter className="h-4 w-4 text-slate-400" />
+            篩選條件
+          </span>
+          <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform md:hidden ${showFilters ? "rotate-180" : ""}`} />
+        </button>
+        <div className={`${showFilters ? "block" : "hidden"} space-y-3 p-4 md:block`}>
         <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
           <div className="space-y-1">
             <div className="text-xs font-bold text-slate-500">起日</div>
@@ -769,27 +782,28 @@ export default function LedgerDashboardPage() {
             </button>
           </div>
         </div>
-      </div>
+        </div>
+      </section>
 
       {/* Error */}
       {mergedError ? (
-        <div className="border border-red-200 bg-red-50 text-red-700 rounded-xl p-3">
-          讀取失敗：{mergedError}
+        <div className="app-error">
+          資料暫時無法讀取，請稍後再試。
         </div>
       ) : null}
 
       {/* KPI */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 gap-3">
         <div className="rounded-2xl p-4 bg-red-50 border border-red-100">
           <p className="text-sm text-slate-700 font-bold">總支出</p>
-          <p className="text-2xl font-black text-red-600 mt-1">
+          <p className="mt-1 text-xl font-black text-red-600">
             {totalExpense.toLocaleString()}
           </p>
         </div>
 
         <div className="rounded-2xl p-4 bg-green-50 border border-green-100">
           <p className="text-sm text-slate-700 font-bold">總收入</p>
-          <p className="text-2xl font-black text-green-600 mt-1">
+          <p className="mt-1 text-xl font-black text-green-600">
             {totalIncome.toLocaleString()}
           </p>
         </div>
@@ -798,7 +812,7 @@ export default function LedgerDashboardPage() {
           <p className="text-sm text-slate-700 font-bold">淨額</p>
           <p
             className={cn(
-              "text-2xl font-black mt-1",
+              "mt-1 text-xl font-black",
               net >= 0 ? "text-green-700" : "text-red-700"
             )}
           >
@@ -1160,6 +1174,7 @@ export default function LedgerDashboardPage() {
           )}
         </div>
       </div>
-    </div >
+      </div>
+    </main>
   );
 }

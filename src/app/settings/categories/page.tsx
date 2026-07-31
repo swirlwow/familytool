@@ -637,34 +637,29 @@ export default function CategoriesPage() {
   }, [rows, groupsOrdered]);
 
   return (
-    <main className="min-h-screen bg-slate-50 p-4 md:p-6 lg:p-8">
-      <div className="mx-auto max-w-6xl space-y-6">
+    <main className="app-page">
+      <div className="app-page-inner max-w-6xl">
         
         {/* ✅ Header：黏住頂部 + 縮小 - Violet Theme */}
-        <div className="card bg-white/90 backdrop-blur-md shadow-sm border border-slate-200 rounded-2xl sticky top-0 z-40">
-          <div className="card-body p-3 flex flex-row items-center justify-between gap-3">
+        <div className="app-header">
+          <div className="flex w-full flex-row items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="bg-violet-50 text-violet-600 p-2 rounded-lg border border-violet-100">
                 <Tags className="w-5 h-5" />
               </div>
 
-              <div className="flex items-center gap-2">
-                <h1 className="text-lg font-black tracking-tight text-slate-800">分類管理</h1>
-                <div className="badge badge-sm bg-violet-100 text-violet-700 border-none font-bold hidden sm:inline-flex">
-                  Settings
-                </div>
-              </div>
+              <h1 className="text-lg font-black text-slate-800">分類管理</h1>
             </div>
 
             <div className="flex gap-2">
                 <button
-                    className="btn btn-ghost btn-sm h-9 min-h-0 rounded-xl font-bold text-slate-500 hover:bg-slate-100"
+                    className="btn btn-ghost btn-sm hidden h-9 min-h-0 rounded-lg font-bold text-slate-500 hover:bg-slate-100 sm:inline-flex"
                     onClick={() => router.push("/")}
                 >
                     回首頁
                 </button>
                 <button
-                    className="btn btn-outline btn-sm h-9 min-h-0 rounded-xl font-bold border-slate-300 hover:bg-slate-100 hover:text-slate-700 gap-2"
+                    className="btn btn-outline btn-sm h-9 min-h-0 rounded-lg border-slate-300 font-bold hover:bg-slate-100 hover:text-slate-700"
                     onClick={() => router.push("/ledger")}
                 >
                     <ArrowLeft className="w-4 h-4" /> 記帳本
@@ -802,7 +797,7 @@ export default function CategoriesPage() {
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-base font-bold text-slate-800">小分類清單</CardTitle>
                   <Badge variant="secondary" className="rounded-full bg-slate-100 text-slate-500 font-mono">
-                    {loading ? "Loading..." : `${rows.length}`}
+                    {loading ? "讀取中" : `${rows.length}`}
                   </Badge>
                 </div>
               </CardHeader>

@@ -64,14 +64,14 @@ export default function PayersPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 p-4">
-      <div className="mx-auto max-w-3xl space-y-4">
-        <div className="flex items-start justify-between gap-3">
+    <main className="app-page">
+      <div className="app-page-inner max-w-3xl">
+        <div className="app-header">
           <div>
-            <h1 className="text-2xl font-bold">付款人管理</h1>
-            <div className="text-sm text-gray-500">適用拆帳（A / B），停用不刪資料</div>
+            <h1 className="text-lg font-black text-slate-800">付款人管理</h1>
+            <div className="text-xs text-slate-500">停用後仍保留歷史資料</div>
           </div>
-          <div className="flex gap-2">
+          <div className="hidden gap-2 sm:flex">
             <a
               href="/"
               className="rounded-lg border bg-white px-4 py-2 text-sm hover:bg-gray-50"
@@ -128,7 +128,7 @@ export default function PayersPage() {
             </button>
           </div>
           <div className="mt-2 text-xs text-gray-500">
-            提醒：拆帳邏輯最少需要 2 位付款人（A/B）。你可以新增兩筆後就不必再動了。
+            拆帳至少需要兩位付款人。
           </div>
         </div>
 

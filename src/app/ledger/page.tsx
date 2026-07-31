@@ -15,6 +15,7 @@ import {
   Wallet,
   User,
   CreditCard,
+  ChevronDown,
 } from "lucide-react";
 import { StatCard } from "@/components/ui/StatCard";
 import { useLedgerMonth } from "@/hooks/useLedgerMonth";
@@ -202,6 +203,7 @@ export default function LedgerPage() {
   const [payerId, setPayerId] = useState<string>("");
   const [useSplit, setUseSplit] = useState(false);
   const [splits, setSplits] = useState<SplitRow[]>([]);
+  const [showEntryForm, setShowEntryForm] = useState(false);
 
   const [editing, setEditing] = useState<LedgerRow | null>(null);
   const [editForm, setEditForm] = useState({
@@ -445,30 +447,25 @@ export default function LedgerPage() {
   }, [editCats, editForm.group_name]);
 
   return (
-    <main className="min-h-screen bg-slate-50 px-0 py-4 sm:p-4 md:p-6 lg:p-8 pb-24 md:pb-8">
-      <div className="mx-auto max-w-6xl space-y-3 sm:space-y-6">
+    <main className="app-page">
+      <div className="app-page-inner max-w-6xl">
         
         {/* Sticky Header */}
-        <div className="card bg-white/90 backdrop-blur-md shadow-none sm:shadow-sm border-b sm:border border-slate-200 rounded-none sm:rounded-3xl sticky top-0 z-40">
-          <div className="card-body p-3 px-4 sm:p-3 flex flex-row items-center justify-between gap-3">
+        <div className="app-header">
+          <div className="flex w-full flex-row items-center justify-between gap-3">
             <div className="flex items-center gap-2 sm:gap-3">
               <div className="bg-sky-50 text-sky-600 p-1.5 sm:p-2 rounded-lg border border-sky-100">
                 <Wallet className="w-5 h-5" />
               </div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-lg font-black text-slate-800 tracking-tight">記帳本</h1>
-                <div className="badge badge-sm bg-sky-100 text-sky-700 border-none font-bold hidden sm:inline-flex">
-                  Ledger
-                </div>
-              </div>
+              <h1 className="text-lg font-black text-slate-800">記帳本</h1>
             </div>
             <div className="flex gap-2">
-              <Link href="/ledger/dashboard" className="btn btn-outline btn-sm h-8 sm:h-9 min-h-0 rounded-xl font-bold px-3 sm:px-4 text-xs sm:text-sm text-slate-600 border-slate-300">
+              <Link href="/ledger/dashboard" className="btn btn-outline btn-sm h-9 min-h-0 rounded-lg border-slate-300 px-3 text-xs font-bold text-slate-600 sm:px-4 sm:text-sm">
                 財務儀表板
               </Link>
               <Link
                 href="/"
-                className="btn btn-ghost btn-sm h-8 sm:h-9 min-h-0 rounded-xl font-bold text-slate-500 hover:bg-slate-100 hidden sm:inline-flex"
+                className="btn btn-ghost btn-sm hidden h-9 min-h-0 rounded-lg font-bold text-slate-500 hover:bg-slate-100 sm:inline-flex"
               >
                 回首頁
               </Link>
@@ -477,23 +474,21 @@ export default function LedgerPage() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-3 px-3 sm:px-0">
-          <div className="card bg-white shadow-sm border border-slate-200 rounded-2xl sm:rounded-3xl">
-            <div className="card-body p-4 sm:p-5 flex flex-col justify-center">
-              <div className="flex items-center gap-2 mb-2 sm:mb-3">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-[260px_1fr_1fr]">
+          <div className="col-span-2 rounded-lg border border-slate-200 bg-white p-4 shadow-sm md:col-span-1">
+              <div className="mb-2 flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-sky-500" />
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">統計月份</span>
+                <span className="text-xs font-bold text-slate-500">查看月份</span>
               </div>
               <input
                 type="month"
-                className="input input-sm sm:input-md input-bordered w-full font-bold text-base sm:text-lg bg-slate-50 border-slate-200 focus:border-sky-500 rounded-xl"
+                className="input input-bordered h-10 min-h-0 w-full rounded-lg border-slate-200 bg-slate-50 font-bold focus:border-sky-500"
                 value={ym}
                 onChange={(e) => setYm(e.target.value)}
               />
-              <div className="mt-2 text-[10px] text-slate-400 font-mono tracking-tighter">
+              <div className="mt-2 text-[11px] text-slate-400">
                 {from} ~ {to}
               </div>
-            </div>
           </div>
 
           <StatCard
@@ -513,17 +508,20 @@ export default function LedgerPage() {
         </div>
 
         {/* ===== New Entry Form ===== */}
-        <div className="card bg-white shadow-none sm:shadow-md border-y sm:border border-slate-200 rounded-none sm:rounded-3xl overflow-visible sm:overflow-hidden">
-          <div className="bg-slate-50/50 px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-200 flex items-center justify-between sm:rounded-t-3xl">
+        <section className="overflow-visible rounded-lg border border-slate-200 bg-white shadow-sm sm:overflow-hidden">
+          <button
+            type="button"
+            className="flex w-full items-center justify-between bg-slate-50/70 px-4 py-3 text-left sm:px-5 md:cursor-default"
+            onClick={() => setShowEntryForm((current) => !current)}
+          >
             <h2 className="font-black text-base sm:text-lg text-slate-800 flex items-center gap-2">
-              <div className="bg-sky-500 text-white p-1 rounded-md sm:rounded-lg">
-                <Plus className="w-4 h-4" />
-              </div>{" "}
-              新增記帳
+              <Plus className="h-4 w-4 text-sky-600" />
+              手動新增記帳
             </h2>
-          </div>
+            <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform md:hidden ${showEntryForm ? "rotate-180" : ""}`} />
+          </button>
 
-          <div className="card-body p-4 sm:p-6 space-y-4 sm:space-y-6">
+          <div className={`${showEntryForm ? "block" : "hidden"} space-y-4 border-t border-slate-200 p-4 sm:p-5 md:block`}>
             <div className="grid grid-cols-2 sm:grid-cols-1 md:grid-cols-4 gap-x-3 gap-y-4 sm:gap-5 items-end">
               
               <div className="col-span-1 sm:col-span-1 md:col-span-1">
@@ -801,24 +799,23 @@ export default function LedgerPage() {
               </div>
             </div>
           </div>
-        </div>
+        </section>
 
         {/* ===== List ===== */}
-        <div className="card bg-white shadow-none sm:shadow-sm border-y sm:border border-slate-200 rounded-none sm:rounded-3xl overflow-hidden">
-          <div className="px-4 sm:px-8 py-4 sm:py-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 sm:bg-transparent">
+        <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+          <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3 sm:px-5">
             <div className="flex items-center gap-2.5 sm:gap-3">
-              <div className="w-1.5 h-1.5 rounded-full bg-slate-800 hidden sm:block"></div>
-              <h2 className="text-base sm:text-xl font-black text-slate-800 italic tracking-tight">TRANSACTIONS</h2>
+              <h2 className="text-base font-black text-slate-800">記帳明細</h2>
             </div>
             <div className="flex items-center gap-2">
               {rowsLoading && <span className="loading loading-spinner loading-xs text-sky-500"></span>}
-              <span className="text-[10px] font-black opacity-40 tracking-widest uppercase">{safeRows.length} 筆</span>
+              <span className="text-xs font-bold text-slate-400">{safeRows.length} 筆</span>
             </div>
           </div>
 
           <div className="flex flex-col">
             {safeRows.length === 0 ? (
-              <div className="p-16 sm:p-20 text-center opacity-30 font-black italic text-base sm:text-lg">本月尚無任何記帳資料。</div>
+              <div className="app-empty">這個月份沒有記帳資料</div>
             ) : (
               safeRows.map((r) => {
                 const sp = Array.isArray(r.ledger_splits) ? r.ledger_splits : [];
@@ -945,7 +942,7 @@ export default function LedgerPage() {
               })
             )}
           </div>
-        </div>
+        </section>
       </div>
 
       {/* ===== Edit Modal ===== */}

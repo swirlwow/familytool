@@ -11,7 +11,6 @@ import {
   StickyNote,
   NotebookPen,
   ArrowRight,
-  Sparkles,
   DatabaseBackup,
   Settings
 } from "lucide-react";
@@ -50,128 +49,88 @@ const lifeTools = [
 
 // 設定與備份清單
 const settingTools = [
-  { name: "資料備份", desc: "一鍵匯出全機 JSON", href: "/settings/backup", icon: DatabaseBackup, theme: "indigo" },
+  { name: "資料備份", desc: "下載完整家庭資料", href: "/settings/backup", icon: DatabaseBackup, theme: "indigo" },
   { name: "系統設定", desc: "分類與付款方式管理", href: "/settings/categories", icon: Settings, theme: "slate" },
 ];
 
 export default function HomePage() {
-  return (
-    <main className="min-h-screen bg-slate-50 px-4 py-6 md:p-8 lg:p-10 pb-28 md:pb-12">
-      <div className="mx-auto max-w-5xl space-y-8 md:space-y-12">
-        
-        {/* ===== Header Hero Section ===== */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 bg-white p-6 md:p-8 rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden">
-          {/* 裝飾背景 */}
-          <div className="absolute -right-10 -top-10 w-40 h-40 bg-sky-100 rounded-full blur-3xl opacity-50 pointer-events-none"></div>
-          <div className="absolute -left-10 -bottom-10 w-40 h-40 bg-amber-100 rounded-full blur-3xl opacity-50 pointer-events-none"></div>
+  const toolGroups = [
+    { title: "帳務", tools: financeTools },
+    { title: "生活", tools: lifeTools },
+    { title: "設定", tools: settingTools },
+  ];
 
-          <div className="relative z-10 space-y-2">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-[11px] font-black text-emerald-600 mb-2">
-              <Sparkles className="w-3 h-3" /> 系統運作正常
+  return (
+    <main className="app-page">
+      <div className="app-page-inner max-w-5xl">
+        <header className="app-header">
+          <div>
+            <h1 className="text-lg font-black text-slate-900 sm:text-xl">家庭生活工具</h1>
+            <p className="mt-0.5 text-xs font-medium text-slate-500">今天要處理什麼？</p>
+          </div>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+            可使用
+          </span>
+        </header>
+
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(280px,0.8fr)]">
+          <section className="app-panel overflow-hidden">
+            <div className="app-panel-header">
+              <h2 className="font-black text-slate-800">常用帳務</h2>
             </div>
-            <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight">
-              家庭生活工具
-            </h1>
-            <p className="text-sm md:text-base font-medium text-slate-500 max-w-md leading-relaxed">
-              集中管理全家人的日常收支、代墊拆帳、行程規劃與重要備忘，所有資料完全掌握在自己手中。
-            </p>
+            <div className="grid sm:grid-cols-2">
+              {financeTools.map((tool) => {
+                const Icon = tool.icon;
+                const colors = getThemeClasses(tool.theme);
+                return (
+                  <Link
+                    key={tool.name}
+                    href={tool.href}
+                    className="group flex min-h-20 items-center gap-3 border-b border-slate-100 px-4 py-3 transition-colors hover:bg-slate-50 sm:odd:border-r"
+                  >
+                    <span className={`rounded-lg p-2.5 ring-1 ring-inset ${colors}`}>
+                      <Icon className="h-5 w-5" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block font-bold text-slate-900">{tool.name}</span>
+                      <span className="mt-0.5 block truncate text-xs text-slate-500">{tool.desc}</span>
+                    </span>
+                    <ArrowRight className="h-4 w-4 text-slate-300 transition-transform group-hover:translate-x-0.5 group-hover:text-slate-500" />
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+
+          <div className="space-y-4">
+            {toolGroups.slice(1).map((group) => (
+              <section key={group.title} className="app-panel overflow-hidden">
+                <div className="app-panel-header">
+                  <h2 className="font-black text-slate-800">{group.title}</h2>
+                </div>
+                <div className="divide-y divide-slate-100">
+                  {group.tools.map((tool) => {
+                    const Icon = tool.icon;
+                    const colors = getThemeClasses(tool.theme);
+                    return (
+                      <Link key={tool.name} href={tool.href} className="group flex items-center gap-3 px-4 py-3 hover:bg-slate-50">
+                        <span className={`rounded-lg p-2 ring-1 ring-inset ${colors}`}>
+                          <Icon className="h-4 w-4" />
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-sm font-bold text-slate-800">{tool.name}</span>
+                          <span className="block truncate text-xs text-slate-400">{tool.desc}</span>
+                        </span>
+                        <ArrowRight className="h-4 w-4 text-slate-300" />
+                      </Link>
+                    );
+                  })}
+                </div>
+              </section>
+            ))}
           </div>
         </div>
-
-        {/* ===== 帳務工具 ===== */}
-        <section className="space-y-4">
-          <div className="flex items-center gap-3 px-1">
-            <h2 className="text-lg font-black text-slate-800 tracking-tight">帳務與拆帳</h2>
-            <div className="h-px flex-1 bg-slate-200"></div>
-          </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
-            {financeTools.map((tool) => {
-              const Icon = tool.icon;
-              const colors = getThemeClasses(tool.theme);
-              return (
-                <Link key={tool.name} href={tool.href} className="group block outline-none">
-                  <div className="bg-white border border-slate-200 rounded-2xl p-4 md:p-5 transition-all duration-300 hover:shadow-lg hover:shadow-slate-200/50 hover:-translate-y-1 hover:border-slate-300 h-full flex flex-col">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className={`p-2.5 md:p-3 rounded-xl transition-colors duration-300 ring-1 ring-inset ${colors}`}>
-                        <Icon className="w-5 h-5 md:w-6 md:h-6" />
-                      </div>
-                      <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 group-hover:bg-slate-900 group-hover:text-white transition-colors duration-300">
-                        <ArrowRight className="w-4 h-4" />
-                      </div>
-                    </div>
-                    <div className="mt-auto">
-                      <h3 className="font-bold text-slate-900 text-base md:text-lg">{tool.name}</h3>
-                      <p className="text-xs md:text-sm text-slate-500 font-medium mt-1">{tool.desc}</p>
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* ===== 生活工具 ===== */}
-        <section className="space-y-4">
-          <div className="flex items-center gap-3 px-1">
-            <h2 className="text-lg font-black text-slate-800 tracking-tight">生活與規劃</h2>
-            <div className="h-px flex-1 bg-slate-200"></div>
-          </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
-            {lifeTools.map((tool) => {
-              const Icon = tool.icon;
-              const colors = getThemeClasses(tool.theme);
-              return (
-                <Link key={tool.name} href={tool.href} className="group block outline-none">
-                  <div className="bg-white border border-slate-200 rounded-2xl p-4 md:p-5 transition-all duration-300 hover:shadow-lg hover:shadow-slate-200/50 hover:-translate-y-1 hover:border-slate-300 h-full flex flex-col">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className={`p-2.5 md:p-3 rounded-xl transition-colors duration-300 ring-1 ring-inset ${colors}`}>
-                        <Icon className="w-5 h-5 md:w-6 md:h-6" />
-                      </div>
-                      <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 group-hover:bg-slate-900 group-hover:text-white transition-colors duration-300">
-                        <ArrowRight className="w-4 h-4" />
-                      </div>
-                    </div>
-                    <div className="mt-auto">
-                      <h3 className="font-bold text-slate-900 text-base md:text-lg">{tool.name}</h3>
-                      <p className="text-xs md:text-sm text-slate-500 font-medium mt-1">{tool.desc}</p>
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* ===== 設定與備份 ===== */}
-        <section className="space-y-4 pb-8">
-          <div className="flex items-center gap-3 px-1">
-            <h2 className="text-lg font-black text-slate-800 tracking-tight">設定與備份</h2>
-            <div className="h-px flex-1 bg-slate-200"></div>
-          </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 lg:w-2/3">
-            {settingTools.map((tool) => {
-              const Icon = tool.icon;
-              const colors = getThemeClasses(tool.theme);
-              return (
-                <Link key={tool.name} href={tool.href} className="group block outline-none">
-                  <div className="bg-slate-100/50 border border-slate-200 rounded-2xl p-4 transition-all duration-300 hover:bg-white hover:shadow-md hover:border-slate-300 flex items-center gap-4">
-                    <div className={`p-2.5 rounded-xl transition-colors duration-300 ring-1 ring-inset ${colors}`}>
-                      <Icon className="w-5 h-5" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-bold text-slate-900 text-sm">{tool.name}</h3>
-                      <p className="text-[11px] text-slate-500 font-medium mt-0.5">{tool.desc}</p>
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        </section>
-
       </div>
     </main>
   );

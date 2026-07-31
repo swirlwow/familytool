@@ -97,7 +97,7 @@ export default function LoginPage() {
     if (!email.trim()) {
       toast({
         variant: "destructive",
-        title: "請先輸入 Email",
+        title: "請先輸入電子郵件",
         description: "系統會將密碼重設信寄到這個信箱。",
       });
       return;
@@ -131,7 +131,7 @@ export default function LoginPage() {
       toast({
         variant: "destructive",
         title: "輸入欄位不完整",
-        description: "請填寫 Email 與密碼",
+        description: "請填寫電子郵件與密碼",
       });
       return;
     }
@@ -198,35 +198,30 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-slate-900 relative overflow-hidden px-4 py-8">
-      {/* 背景微光漸層裝飾 (Ambient Glow) */}
-      <div className="absolute -top-40 -left-40 w-96 h-96 bg-sky-500 rounded-full blur-[120px] opacity-20 pointer-events-none"></div>
-      <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-amber-500 rounded-full blur-[120px] opacity-20 pointer-events-none"></div>
-      
-      {/* 玻璃擬態 (Glassmorphic) 登入卡片 */}
-      <div className="w-full max-w-md bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 p-6 sm:p-10 rounded-3xl shadow-2xl flex flex-col gap-6 relative z-10 transition-all duration-500">
+    <main className="flex min-h-screen items-center justify-center bg-slate-100 px-4 py-8">
+      <div className="relative z-10 flex w-full max-w-md flex-col gap-6 rounded-lg border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
         
         {/* Header Logo & Title */}
         <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center h-12 w-12 rounded-2xl bg-gradient-to-tr from-sky-500 to-indigo-600 text-white shadow-lg mb-2">
-            <Sparkles className="w-6 h-6 animate-pulse" />
+          <div className="mb-2 inline-flex h-12 w-12 items-center justify-center rounded-lg bg-slate-900 text-white">
+            <Sparkles className="w-6 h-6" />
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-none">
+          <h1 className="text-2xl font-black leading-none text-slate-900 sm:text-3xl">
             家庭生活工具
           </h1>
-          <p className="text-xs sm:text-sm font-medium text-slate-400">
+          <p className="text-xs font-medium text-slate-500 sm:text-sm">
             {isRecovery
               ? "設定新的登入密碼"
               : isRegister
-              ? "建立新帳號以加入您的家庭工作區"
-              : "登入以管理收支、拆帳與行程規劃"}
+              ? "建立家庭工具帳號"
+              : "登入家庭生活工具"}
           </p>
         </div>
 
         {isRecovery ? (
           <form onSubmit={handleRecovery} className="space-y-4">
             <div className="space-y-1">
-              <label className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider block pl-1">
+              <label className="block pl-1 text-[10px] font-bold text-slate-500 sm:text-xs">
                 新密碼
               </label>
               <div className="relative">
@@ -237,7 +232,7 @@ export default function LoginPage() {
                   type="password"
                   required
                   minLength={8}
-                  className="input input-bordered w-full pl-10 bg-slate-800/60 border-slate-700 focus:border-sky-500 rounded-2xl text-white text-sm sm:text-base placeholder-slate-500"
+                  className="input input-bordered w-full rounded-lg border-slate-200 bg-white pl-10 text-sm text-slate-800 focus:border-sky-500 sm:text-base"
                   placeholder="至少 8 個字元"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
@@ -246,7 +241,7 @@ export default function LoginPage() {
             </div>
 
             <div className="space-y-1">
-              <label className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider block pl-1">
+              <label className="block pl-1 text-[10px] font-bold text-slate-500 sm:text-xs">
                 再次確認
               </label>
               <div className="relative">
@@ -257,7 +252,7 @@ export default function LoginPage() {
                   type="password"
                   required
                   minLength={8}
-                  className="input input-bordered w-full pl-10 bg-slate-800/60 border-slate-700 focus:border-sky-500 rounded-2xl text-white text-sm sm:text-base placeholder-slate-500"
+                  className="input input-bordered w-full rounded-lg border-slate-200 bg-white pl-10 text-sm text-slate-800 focus:border-sky-500 sm:text-base"
                   placeholder="再次輸入新密碼"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
@@ -268,7 +263,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="btn w-full h-12 rounded-2xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 border-none text-white font-black shadow-lg shadow-sky-500/10 mt-4 disabled:opacity-55"
+              className="btn mt-4 h-12 w-full rounded-lg border-none bg-sky-600 font-black text-white hover:bg-sky-700 disabled:opacity-55"
             >
               {loading ? <span className="loading loading-spinner loading-sm"></span> : "更新密碼"}
             </button>
@@ -278,8 +273,8 @@ export default function LoginPage() {
         {/* Form */}
         <form onSubmit={handleAuth} className="space-y-4">
           <div className="space-y-1">
-            <label className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider block pl-1">
-              Email
+            <label className="block pl-1 text-[10px] font-bold text-slate-500 sm:text-xs">
+              電子郵件
             </label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
@@ -288,7 +283,7 @@ export default function LoginPage() {
               <input
                 type="email"
                 required
-                className="input input-bordered w-full pl-10 bg-slate-800/60 border-slate-700 focus:border-sky-500 rounded-2xl text-white text-sm sm:text-base placeholder-slate-500"
+                className="input input-bordered w-full rounded-lg border-slate-200 bg-white pl-10 text-sm text-slate-800 focus:border-sky-500 sm:text-base"
                 placeholder="you@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -297,7 +292,7 @@ export default function LoginPage() {
           </div>
 
           <div className="space-y-1">
-            <label className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider block pl-1">
+            <label className="block pl-1 text-[10px] font-bold text-slate-500 sm:text-xs">
               密碼
             </label>
             <div className="relative">
@@ -307,7 +302,7 @@ export default function LoginPage() {
               <input
                 type="password"
                 required
-                className="input input-bordered w-full pl-10 bg-slate-800/60 border-slate-700 focus:border-sky-500 rounded-2xl text-white text-sm sm:text-base placeholder-slate-500"
+                className="input input-bordered w-full rounded-lg border-slate-200 bg-white pl-10 text-sm text-slate-800 focus:border-sky-500 sm:text-base"
                 placeholder="請輸入密碼"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -318,7 +313,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="btn w-full h-12 rounded-2xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 border-none text-white font-black shadow-lg shadow-sky-500/10 mt-4 flex items-center justify-center gap-2 text-sm sm:text-base transition-all duration-300 disabled:opacity-55"
+            className="btn mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-lg border-none bg-sky-600 text-sm font-black text-white hover:bg-sky-700 disabled:opacity-55 sm:text-base"
           >
             {loading ? (
               <span className="loading loading-spinner loading-sm"></span>
@@ -328,18 +323,18 @@ export default function LoginPage() {
               </>
             ) : (
               <>
-                <LogIn className="w-5 h-5" /> 安全登入
+                <LogIn className="w-5 h-5" /> 登入
               </>
             )}
           </button>
         </form>
 
         {/* Footer Mode Switcher */}
-        <div className="text-center border-t border-slate-700/40 pt-4 mt-2 space-y-3">
+        <div className="mt-2 space-y-3 border-t border-slate-200 pt-4 text-center">
           {!isRegister && (
             <button
               type="button"
-              className="block w-full text-xs sm:text-sm font-semibold text-slate-300 hover:text-white transition-colors"
+              className="block w-full text-xs font-semibold text-slate-500 hover:text-slate-900 sm:text-sm"
               onClick={sendRecoveryEmail}
               disabled={loading}
             >
@@ -348,10 +343,10 @@ export default function LoginPage() {
           )}
           <button
             type="button"
-            className="text-xs sm:text-sm font-semibold text-sky-400 hover:text-sky-300 transition-colors"
+            className="text-xs font-semibold text-sky-700 hover:text-sky-800 sm:text-sm"
             onClick={() => setIsRegister(!isRegister)}
           >
-            {isRegister ? "已有帳號？立即登入" : "沒有帳號？註冊新帳號"}
+            {isRegister ? "已有帳號？登入" : "建立新帳號"}
           </button>
         </div>
         </>

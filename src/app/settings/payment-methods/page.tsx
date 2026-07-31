@@ -36,7 +36,7 @@ import {
   orderBySortName,
 } from "@/lib/api";
 
-import { CreditCard, GripVertical, Power, Trash2, ArrowUpDown, ArrowLeft, Plus } from "lucide-react";
+import { CreditCard, GripVertical, Trash2, ArrowUpDown, ArrowLeft, Plus } from "lucide-react";
 
 function stopDrag(e: React.SyntheticEvent) {
   e.stopPropagation();
@@ -282,34 +282,29 @@ export default function PaymentMethodsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 p-4 md:p-6 lg:p-8">
-      <div className="mx-auto max-w-6xl space-y-6">
+    <main className="app-page">
+      <div className="app-page-inner max-w-6xl">
         
         {/* ✅ Header：黏住頂部 + 縮小 - Sky Theme */}
-        <div className="card bg-white/90 backdrop-blur-md shadow-sm border border-slate-200 rounded-3xl sticky top-0 z-40">
-          <div className="card-body p-4 flex flex-row items-center justify-between gap-3">
+        <div className="app-header">
+          <div className="flex w-full flex-row items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="bg-sky-50 text-sky-600 p-2 rounded-lg border border-sky-100">
                 <CreditCard className="w-5 h-5" />
               </div>
 
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl font-black tracking-tight text-slate-800">付款方式</h1>
-                <div className="badge badge-sm bg-sky-100 text-sky-700 border-none font-bold hidden sm:inline-flex">
-                  Settings
-                </div>
-              </div>
+              <h1 className="text-lg font-black text-slate-800">付款方式</h1>
             </div>
 
             <div className="flex gap-2">
                 <button
-                    className="btn btn-ghost btn-sm h-9 min-h-0 rounded-xl font-bold text-slate-500 hover:bg-slate-100"
+                    className="btn btn-ghost btn-sm hidden h-9 min-h-0 rounded-lg font-bold text-slate-500 hover:bg-slate-100 sm:inline-flex"
                     onClick={() => router.push("/")}
                 >
                     回首頁
                 </button>
                 <button
-                    className="btn btn-outline btn-sm h-9 min-h-0 rounded-xl font-bold border-slate-300 hover:bg-slate-100 hover:text-slate-700 gap-2"
+                    className="btn btn-outline btn-sm h-9 min-h-0 rounded-lg border-slate-300 font-bold hover:bg-slate-100 hover:text-slate-700"
                     onClick={() => router.push("/ledger")}
                 >
                     <ArrowLeft className="w-4 h-4" /> 記帳本
@@ -408,7 +403,7 @@ export default function PaymentMethodsPage() {
               )}
 
               <div className="mt-8 text-center text-xs text-slate-400">
-                💡 提示：按住卡片左側圖示即可上下拖曳排序
+                按住左側圖示可調整順序
               </div>
             </CardContent>
           </Card>

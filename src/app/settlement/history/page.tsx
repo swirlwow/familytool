@@ -142,31 +142,28 @@ export default function SettlementHistoryPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 p-4 md:p-6 lg:p-8 pb-24 md:pb-8">
-      <div className="mx-auto max-w-7xl space-y-6">
+    <main className="app-page">
+      <div className="app-page-inner">
         
         {/* ✅ Header: Sticky & Compact - Violet Theme */}
-        <div className="card bg-white/90 backdrop-blur-md shadow-sm border border-slate-200 rounded-2xl sticky top-0 z-40">
-          <div className="card-body p-3 flex flex-row items-center justify-between gap-3">
+        <div className="app-header">
+          <div className="flex w-full flex-row items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="bg-violet-50 text-violet-600 p-2 rounded-lg border border-violet-100">
                 <History className="w-5 h-5" />
               </div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-lg font-black tracking-tight text-slate-800">結清紀錄</h1>
-                <div className="badge badge-sm bg-violet-100 text-violet-700 border-none font-bold hidden sm:inline-flex">History</div>
-              </div>
+              <h1 className="text-lg font-black text-slate-800">結清紀錄</h1>
             </div>
 
             <div className="flex gap-2">
               <button
-                className="btn btn-ghost btn-sm h-9 min-h-0 rounded-xl font-bold text-slate-500 hover:bg-slate-100"
+                className="btn btn-ghost btn-sm hidden h-9 min-h-0 rounded-lg font-bold text-slate-500 hover:bg-slate-100 sm:inline-flex"
                 onClick={() => router.push("/")}
               >
                 回首頁
               </button>
               <button
-                className="btn btn-outline btn-sm h-9 min-h-0 rounded-xl font-bold border-slate-300 hover:bg-slate-100 hover:text-slate-700 gap-2"
+                className="btn btn-outline btn-sm h-9 min-h-0 rounded-lg border-slate-300 font-bold hover:bg-slate-100 hover:text-slate-700"
                 onClick={() => router.push("/settlement")}
               >
                 <ArrowLeft className="w-4 h-4" /> 回建議結算
@@ -184,16 +181,15 @@ export default function SettlementHistoryPage() {
         </div>
 
         {/* Filters Panel */}
-        <div className="card bg-white shadow-sm border border-slate-200 rounded-3xl">
-          <div className="card-body p-5">
+        <section className="app-panel p-4 sm:p-5">
             <div className="flex items-center gap-2 mb-3">
               <CalendarDays className="w-4 h-4 text-violet-500" />
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">查詢條件</span>
+              <span className="text-xs font-bold text-slate-500">查詢條件</span>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
               <div>
-                <div className="text-[11px] font-bold text-slate-400 mb-1 pl-1 uppercase">Start Date</div>
+                <div className="mb-1 pl-1 text-[11px] font-bold text-slate-500">開始日期</div>
                 <input
                   type="date"
                   className="input input-bordered w-full bg-slate-50 border-slate-200 rounded-xl font-bold focus:border-violet-500"
@@ -202,7 +198,7 @@ export default function SettlementHistoryPage() {
                 />
               </div>
               <div>
-                <div className="text-[11px] font-bold text-slate-400 mb-1 pl-1 uppercase">End Date</div>
+                <div className="mb-1 pl-1 text-[11px] font-bold text-slate-500">結束日期</div>
                 <input
                   type="date"
                   className="input input-bordered w-full bg-slate-50 border-slate-200 rounded-xl font-bold focus:border-violet-500"
@@ -211,7 +207,7 @@ export default function SettlementHistoryPage() {
                 />
               </div>
               <div>
-                <div className="text-[11px] font-bold text-slate-400 mb-1 pl-1 uppercase">Limit Rows</div>
+                <div className="mb-1 pl-1 text-[11px] font-bold text-slate-500">顯示筆數</div>
                 <input
                   type="number"
                   min={1}
@@ -221,9 +217,9 @@ export default function SettlementHistoryPage() {
                   onChange={(e) => setLimit(Number(e.target.value || 50))}
                 />
               </div>
-              <div className="flex gap-2">
+              <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] gap-2">
                 <button
-                  className="btn bg-violet-600 hover:bg-violet-700 text-white w-full rounded-xl font-black shadow-md shadow-violet-500/20 border-none gap-2"
+                  className="btn w-full rounded-lg border-none bg-violet-600 font-black text-white hover:bg-violet-700"
                   onClick={loadHistory}
                   disabled={loading}
                 >
@@ -231,24 +227,22 @@ export default function SettlementHistoryPage() {
                   重新查詢
                 </button>
                 <button
-                  className="btn btn-outline rounded-xl font-black border-emerald-200 text-emerald-700 gap-2"
+                  className="btn rounded-lg border-emerald-200 px-3 font-black text-emerald-700 sm:px-4"
                   onClick={() => exportReconciliation()}
                   title="匯出目前日期範圍的完整結算明細"
                 >
                   <Download className="w-4 h-4" />
-                  匯出
+                  <span className="hidden sm:inline">匯出</span>
                 </button>
               </div>
             </div>
-          </div>
-        </div>
+        </section>
 
         {/* History List */}
-        <div className="card bg-white shadow-sm border border-slate-200 rounded-3xl overflow-hidden">
-          <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/30">
+        <section className="app-panel overflow-hidden">
+          <div className="app-panel-header">
             <div className="flex items-center gap-3">
-              <div className="w-1.5 h-1.5 rounded-full bg-slate-800"></div>
-              <h3 className="text-lg font-black text-slate-800 tracking-tight">結算歷史列表</h3>
+              <h3 className="text-base font-black text-slate-800">結清明細</h3>
             </div>
             <div className="text-xs font-bold text-slate-400">
                 共 {rows.length} 筆
@@ -257,13 +251,52 @@ export default function SettlementHistoryPage() {
 
           <div className="overflow-x-auto">
             {rows.length === 0 ? (
-              <div className="p-16 text-center text-slate-400 opacity-60 font-medium">查無符合條件的資料</div>
+              <div className="app-empty">這個期間沒有結清紀錄</div>
             ) : (
-              <table className="table w-full">
+              <>
+              <div className="divide-y divide-slate-100 md:hidden">
+                {rows.map((r) => {
+                  const details = detailRows.filter((item) => String(item.settlement_id) === String(r.id));
+                  return (
+                    <article key={r.id} className="space-y-3 p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <div className="font-bold text-slate-800">{nameOf(r.debtor_id)} → {nameOf(r.creditor_id)}</div>
+                          <div className="mt-1 text-xs text-slate-400">{String(r.created_at || "").replace("T", " ").slice(0, 16)}</div>
+                        </div>
+                        <div className="font-mono text-lg font-black text-slate-800">${Number(r.amount).toLocaleString()}</div>
+                      </div>
+                      <div className="text-xs text-slate-500">{r.from_date} ~ {r.to_date}</div>
+                      <div className="flex items-center justify-end gap-2">
+                        <button className="btn btn-ghost btn-sm rounded-lg" onClick={() => setExpandedId(expandedId === r.id ? null : r.id)}>
+                          <ChevronDown className={`h-4 w-4 ${expandedId === r.id ? "rotate-180" : ""}`} />明細
+                        </button>
+                        <button className="btn btn-ghost btn-sm rounded-lg text-emerald-700" onClick={() => exportReconciliation(r.id)} title="匯出此筆結算">
+                          <Download className="h-4 w-4" /><span className="sr-only">匯出</span>
+                        </button>
+                        <button className="btn btn-ghost btn-sm rounded-lg text-rose-600" onClick={() => undoWholeSettlement(r)}>
+                          <Trash2 className="h-4 w-4" />撤銷
+                        </button>
+                      </div>
+                      {expandedId === r.id ? (
+                        <div className="space-y-2 rounded-lg bg-slate-50 p-3">
+                          {details.length ? details.map((item) => (
+                            <div key={item.id} className="flex justify-between gap-3 text-xs">
+                              <span className="min-w-0 truncate text-slate-600">{item.entry_date} {item.merchant || item.note || "帳目"}</span>
+                              <span className="shrink-0 font-mono font-bold">${Number(item.amount || 0).toLocaleString()}</span>
+                            </div>
+                          )) : <div className="text-xs text-slate-400">沒有可顯示的明細</div>}
+                        </div>
+                      ) : null}
+                    </article>
+                  );
+                })}
+              </div>
+              <table className="table hidden w-full md:table">
                 <thead>
                   <tr className="bg-white border-b border-slate-100 text-slate-400 text-xs font-bold uppercase tracking-wide">
                     <th className="pl-8 py-4">建立時間</th>
-                    <th>結算對象 (Debtor → Creditor)</th>
+                    <th>結算對象</th>
                     <th>涵蓋區間</th>
                     <th className="text-right">結算金額</th>
                     <th className="text-right pr-8">操作</th>
@@ -390,25 +423,16 @@ export default function SettlementHistoryPage() {
                   )})}
                 </tbody>
               </table>
+              </>
             )}
           </div>
-        </div>
-
-        {/* Loading Overlay */}
-        {loading && (
-          <div className="fixed inset-0 bg-white/50 backdrop-blur-sm z-50 flex items-center justify-center">
-            <div className="flex flex-col items-center gap-3">
-              <span className="loading loading-spinner loading-lg text-violet-500"></span>
-              <span className="text-sm font-bold text-violet-600 animate-pulse">讀取中...</span>
-            </div>
-          </div>
-        )}
+        </section>
 
         {error && (
           <div className="toast toast-bottom toast-center">
             <div className="alert alert-error shadow-lg">
               <AlertCircle className="w-5 h-5" />
-              <span>{error}</span>
+              <span>資料暫時無法讀取，請稍後再試。</span>
             </div>
           </div>
         )}

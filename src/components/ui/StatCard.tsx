@@ -37,10 +37,10 @@ export function StatCard({
   const s = styles[theme] || styles.slate;
 
   return (
-    <div className="card bg-white shadow-sm border border-slate-200 rounded-3xl h-full">
-      <div className="card-body p-5 flex flex-col h-full justify-between">
-        <div className="flex items-center justify-between mb-2">
-          <div className={`text-xs font-bold uppercase tracking-widest flex items-center gap-1.5 ${s.title}`}>
+    <div className="h-full rounded-lg border border-slate-200 bg-white shadow-sm">
+      <div className="flex h-full min-h-20 flex-col justify-between p-4">
+        <div className="mb-1 flex items-center justify-between">
+          <div className={`flex items-center gap-1.5 text-xs font-bold ${s.title}`}>
             {Icon && <Icon className="w-4 h-4" />}
             {title}
           </div>
@@ -50,7 +50,7 @@ export function StatCard({
           {loading ? (
             <div className="h-9 w-32 bg-slate-100 rounded-lg animate-pulse" />
           ) : (
-            <div className={`text-3xl font-black tabular-nums tracking-tight ${s.text}`}>
+            <div className={`text-xl font-black tabular-nums sm:text-2xl ${s.text}`}>
               {value}
             </div>
           )}

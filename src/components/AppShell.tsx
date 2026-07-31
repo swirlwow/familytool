@@ -88,7 +88,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [user, setUser] = useState<any>(null);
-  const [workspaceId, setWorkspaceId] = useState<string>("");
 
   useEffect(() => {
     // 獲取當前登入使用者資訊
@@ -105,9 +104,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         setUser(session?.user ?? null);
       }
     });
-
-    // 設定 workspace id
-    setWorkspaceId(process.env.NEXT_PUBLIC_WORKSPACE_ID || "");
 
     return () => {
       subscription.unsubscribe();
@@ -136,33 +132,28 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="drawer lg:drawer-open bg-slate-50">
+    <div className="drawer bg-slate-50 lg:drawer-open">
       <input id="app-drawer" type="checkbox" className="drawer-toggle" />
       
-      <div className="drawer-content flex flex-col min-h-screen">
-        
-        {/* ✅ 解除手機版強制 p-4 的限制，改為 px-0 py-0，讓手機版可以真正達到左右滿版貼邊！ */}
-        {/* 電腦版 (sm 以上) 則自動恢復原本的 p-4 與 lg:p-8 */}
-        <div className="flex-1 px-0 py-0 sm:p-4 lg:p-8 pb-24 lg:pb-8">
+      <div className="drawer-content flex min-h-screen min-w-0 flex-col">
+        <div className="min-w-0 flex-1 pb-24 lg:pb-0">
             {children}
         </div>
 
-        {/* 底部導航 (手機版顯示) */}
         <BottomNav />
       </div>
 
-      {/* 側邊欄 (桌機版顯示 / 手機版作為 Drawer 彈出) */}
       <div className="drawer-side z-50">
         <label htmlFor="app-drawer" className="drawer-overlay"></label>
-        <aside className="min-h-full w-72 bg-white border-r border-slate-200 px-4 py-6 flex flex-col gap-6">
+        <aside className="flex min-h-full w-72 flex-col gap-6 border-r border-slate-200 bg-white px-4 py-5">
           <div className="px-2">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 text-white shadow-md shadow-slate-200">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-900 text-white shadow-sm">
                 <LayoutDashboard className="h-6 w-6" />
               </div>
               <div>
-                <h1 className="text-lg font-extrabold text-slate-900 tracking-tight leading-tight">家庭生活工具</h1>
-                <p className="text-[11px] font-medium text-slate-400">Finance & Life Manager</p>
+                <h1 className="text-lg font-extrabold leading-tight text-slate-900">家庭生活工具</h1>
+                <p className="text-[11px] font-medium text-slate-400">家庭收支與生活管理</p>
               </div>
             </div>
           </div>
@@ -182,7 +173,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                       <li key={item.href}>
                         <Link 
                             href={item.href} 
-                            className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${themeClass}`}
+                            className={`group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${themeClass}`}
                         >
                           <Icon className={`h-5 w-5 transition-colors ${iconClass}`} />
                           {item.name}
@@ -198,28 +189,28 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           {/* 使用者資訊與登出 */}
           {user ? (
             <div className="mt-auto pt-4 border-t border-slate-100 flex flex-col gap-3">
-              <div className="flex items-center gap-3 px-2 py-1.5 rounded-xl bg-slate-50 border border-slate-100">
+              <div className="flex items-center gap-3 rounded-lg border border-slate-100 bg-slate-50 px-2 py-1.5">
                 <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 shrink-0">
                   <User className="h-5 w-5" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-bold text-slate-800 truncate" title={user.email}>{user.email}</p>
-                  <p className="text-[10px] text-slate-400 font-semibold truncate">WS: {workspaceId || "Default"}</p>
+                  <p className="text-[10px] font-semibold text-slate-400">已登入</p>
                 </div>
               </div>
               <button
                 onClick={handleLogout}
-                className="group flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 active:scale-95 text-xs font-bold transition-all duration-200"
+                className="group flex w-full items-center justify-center gap-2 rounded-lg bg-rose-50 py-2.5 text-xs font-bold text-rose-600 transition-colors hover:bg-rose-100"
               >
                 <LogOut className="h-4 w-4" strokeWidth={2.5} />
-                安全登出
+                登出
               </button>
             </div>
           ) : (
             <div className="mt-auto px-2 pt-4 border-t border-slate-100">
               <div className="flex items-center gap-2 text-xs text-slate-400 font-medium">
                 <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                System Online
+                系統可使用
               </div>
             </div>
           )}

@@ -118,7 +118,7 @@ export default function SettlementPage() {
   }
 
   function showError(title: string, raw: any) {
-    const msg =
+    const detail =
       typeof raw === "string"
         ? raw
         : raw?.error
@@ -126,6 +126,8 @@ export default function SettlementPage() {
         : raw?.message
         ? String(raw.message)
         : "操作失敗";
+    const technical = /(column|schema|relationship|PGRST|HTTP\s*\d|does not exist)/i.test(detail);
+    const msg = technical ? "資料暫時無法處理，請稍後重新整理。" : detail;
     toast({ variant: "destructive", title, description: msg });
   }
 
@@ -423,39 +425,33 @@ export default function SettlementPage() {
   const dialogBusy = !!(confirmState?.actionKey && busy[confirmState.actionKey]);
 
   return (
-    <main className="min-h-screen bg-slate-50 p-4 md:p-6 lg:p-8 pb-8">
-      <div className="mx-auto max-w-7xl space-y-6">
-        {/* ✅ Header：改為「黏住頂部 + 縮小」(對齊記帳頁) */}
-        <div className="card bg-white/90 backdrop-blur-md shadow-sm border border-slate-200 rounded-2xl sticky top-0 z-40">
-          <div className="card-body p-3 flex flex-row items-center justify-between gap-3">
+    <main className="app-page">
+      <div className="app-page-inner">
+        <div className="app-header">
+          <div className="flex w-full flex-row items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="bg-amber-50 text-amber-600 p-2 rounded-lg border border-amber-100">
                 <Calculator className="w-5 h-5" />
               </div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-lg font-black tracking-tight text-slate-800">建議結算</h1>
-                <div className="badge badge-sm bg-amber-100 text-amber-700 border-none font-bold hidden sm:inline-flex">
-                  Settlement
-                </div>
-              </div>
+              <h1 className="text-lg font-black text-slate-800">拆帳結算</h1>
             </div>
 
             <div className="flex gap-2">
               <button
-                className="btn btn-outline btn-sm h-9 min-h-0 rounded-xl font-bold border-emerald-200 text-emerald-700 hover:bg-emerald-50 gap-2"
+                className="btn btn-outline btn-sm h-9 min-h-0 rounded-lg border-emerald-200 font-bold text-emerald-700 hover:bg-emerald-50"
                 onClick={() => exportReconciliation()}
                 title="匯出完整結算對帳明細"
               >
                 <Download className="w-4 h-4" /> 匯出對帳
               </button>
               <button
-                className="btn btn-ghost btn-sm h-9 min-h-0 rounded-xl font-bold text-slate-500 hover:bg-slate-100"
+                className="btn btn-ghost btn-sm hidden h-9 min-h-0 rounded-lg font-bold text-slate-500 hover:bg-slate-100 sm:inline-flex"
                 onClick={() => router.push("/")}
               >
                 回首頁
               </button>
               <button
-                className="btn btn-outline btn-sm h-9 min-h-0 rounded-xl font-bold border-slate-300 hover:bg-slate-100 hover:text-slate-700 gap-2"
+                className="btn btn-outline btn-sm hidden h-9 min-h-0 rounded-lg border-slate-300 font-bold hover:bg-slate-100 hover:text-slate-700 sm:inline-flex"
                 onClick={() => router.push("/ledger")}
               >
                 <ArrowLeft className="w-4 h-4" /> 記帳本
@@ -473,18 +469,17 @@ export default function SettlementPage() {
         </div>
 
         {/* Dashboard Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-[280px_minmax(0,1fr)]">
           {/* Control Panel */}
-          <div className="card bg-white shadow-sm border border-slate-200 rounded-3xl">
-            <div className="card-body p-5">
+          <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
               <div className="flex items-center gap-2 mb-3">
                 <Calendar className="w-4 h-4 text-amber-500" />
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                <span className="text-xs font-bold text-slate-500">
                   結算期間
                 </span>
               </div>
 
-              <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+              <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
                 <div className="font-black text-slate-800">跨月累計</div>
                 <div className="mt-1 text-xs text-slate-500">自最早紀錄累計至今日</div>
               </div>
@@ -502,39 +497,29 @@ export default function SettlementPage() {
                   刷新
                 </button>
               </div>
-
-            </div>
           </div>
 
-          {/* Stats Cards */}
-          <div className="card bg-white shadow-sm border border-slate-200 rounded-3xl md:col-span-3">
-            <div className="card-body p-5">
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 h-full">
-                <div className="flex flex-col justify-center">
+          <div className="rounded-lg border border-slate-200 bg-white shadow-sm">
+              <div className="grid h-full grid-cols-2 lg:grid-cols-4">
+                <div className="flex min-h-24 flex-col justify-center px-4 py-3">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-                      雙向拆帳流水
-                    </span>
-                    <span className="badge badge-xs bg-slate-100 text-slate-500 border-none hidden lg:inline-flex">
-                      Total
+                    <span className="text-xs font-bold text-slate-400">
+                      拆帳總額
                     </span>
                   </div>
-                  <div className="text-2xl lg:text-3xl font-black tabular-nums text-slate-800">
+                  <div className="text-xl font-black tabular-nums text-slate-800">
                     ${totals.split_amount.toLocaleString()}
                   </div>
                   <div className="text-xs text-slate-400 mt-1">{splits.length} 筆記錄</div>
                 </div>
 
-                <div className="flex flex-col justify-center border-l border-slate-100 pl-4">
+                <div className="flex min-h-24 flex-col justify-center border-l border-slate-100 px-4 py-3">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-bold text-blue-600 uppercase tracking-widest">
+                    <span className="text-xs font-bold text-blue-600">
                       結算前淨欠款
                     </span>
-                    <span className="badge badge-xs bg-blue-100 text-blue-700 border-none hidden lg:inline-flex">
-                      Net debt
-                    </span>
                   </div>
-                  <div className="text-2xl lg:text-3xl font-black tabular-nums text-blue-700">
+                  <div className="text-xl font-black tabular-nums text-blue-700">
                     ${totals.pre_settlement_amount.toLocaleString()}
                   </div>
                   <div className="text-xs text-slate-400 mt-1">
@@ -544,31 +529,25 @@ export default function SettlementPage() {
                   </div>
                 </div>
 
-                <div className="flex flex-col justify-center border-l border-slate-100 pl-4">
+                <div className="flex min-h-24 flex-col justify-center border-t border-slate-100 px-4 py-3 lg:border-l lg:border-t-0">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-bold text-emerald-500 uppercase tracking-widest">
+                    <span className="text-xs font-bold text-emerald-600">
                       實際還款
                     </span>
-                    <span className="badge badge-xs bg-emerald-100 text-emerald-600 border-none hidden lg:inline-flex">
-                      Settled
-                    </span>
                   </div>
-                  <div className="text-2xl lg:text-3xl font-black tabular-nums text-emerald-500">
+                  <div className="text-xl font-black tabular-nums text-emerald-600">
                     ${totals.settled_amount.toLocaleString()}
                   </div>
                   <div className="text-xs text-slate-400 mt-1">依結算紀錄加總</div>
                 </div>
 
-                <div className="flex flex-col justify-center border-l border-slate-100 pl-4">
+                <div className="flex min-h-24 flex-col justify-center border-l border-t border-slate-100 px-4 py-3 lg:border-t-0">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-bold text-amber-500 uppercase tracking-widest">
+                    <span className="text-xs font-bold text-amber-600">
                       目前淨額
                     </span>
-                    <span className="badge badge-xs bg-amber-100 text-amber-600 border-none hidden lg:inline-flex">
-                      Remaining
-                    </span>
                   </div>
-                  <div className="text-2xl lg:text-3xl font-black tabular-nums text-amber-500">
+                  <div className="text-xl font-black tabular-nums text-amber-600">
                     ${totals.remaining_amount.toLocaleString()}
                   </div>
                   <div className="text-xs text-slate-400 mt-1">
@@ -578,7 +557,6 @@ export default function SettlementPage() {
                   </div>
                 </div>
               </div>
-            </div>
           </div>
         </div>
 
@@ -601,8 +579,8 @@ export default function SettlementPage() {
           <div className="bg-slate-50/50 px-6 py-4 border-b border-slate-200 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-1.5 h-1.5 rounded-full bg-slate-800"></div>
-              <h3 className="text-lg font-black text-slate-800 tracking-tight">
-                目前淨額 (Net Status)
+              <h3 className="text-lg font-black text-slate-800">
+                目前淨額
               </h3>
             </div>
           </div>
@@ -704,11 +682,11 @@ export default function SettlementPage() {
             <div className="flex items-center gap-3">
               <div className="w-1.5 h-1.5 rounded-full bg-slate-800"></div>
               <h3 className="text-lg font-black text-slate-800 tracking-tight">
-                建議還款對帳 (Suggested Repayments)
+                建議還款
               </h3>
             </div>
             <span className="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-lg">
-              Optimal Transfers
+              建議結果
             </span>
           </div>
 
@@ -761,7 +739,7 @@ export default function SettlementPage() {
               <h3 className="text-lg font-black text-slate-800 tracking-tight">本期拆帳來源明細</h3>
             </div>
             <span className="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-lg">
-              Ledger Splits
+              拆帳明細
             </span>
           </div>
 
@@ -773,8 +751,8 @@ export default function SettlementPage() {
                 <thead>
                   <tr className="text-slate-400 text-xs font-bold uppercase tracking-wide bg-white border-b border-slate-100">
                     <th className="pl-8 py-4">日期</th>
-                    <th>應收 (Creditor)</th>
-                    <th>欠款 (Debtor)</th>
+                    <th>應收者</th>
+                    <th>應付者</th>
                     <th className="text-right">總額</th>
                     <th className="text-right">已結</th>
                     <th className="text-right">剩餘</th>
