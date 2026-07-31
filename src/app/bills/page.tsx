@@ -1,30 +1,36 @@
 // src/app/bills/page.tsx
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { WORKSPACE_ID } from "@/lib/appConfig";
+import { BillTemplateManager } from "@/components/bills/BillTemplateManager";
 import {
   Receipt,
   Calendar,
   Plus,
   Trash2,
   CreditCard,
-  ArrowLeft,
   Clock,
   RefreshCw,
   Wallet,
-  AlertCircle
+  CheckCircle2,
+  FilePenLine,
+  LayoutList,
+  Settings2
 } from "lucide-react";
 
 type BillInstance = {
   id: string;
   period: string;
-  due_date: string;
+  due_date: string | null;
   name_snapshot: string;
-  amount_due: number;
+  amount_due: number | null;
   paid_total: number;
-  status: "unpaid" | "partial" | "paid" | string;
+  status: "awaiting_details" | "unpaid" | "partial" | "paid" | string;
+  source: "manual" | "template";
+  payment_mode: "ledger" | "status_only";
+  paid_at?: string | null;
   billing_start?: string | null;
   billing_end?: string | null;
   created_at?: string;
@@ -36,7 +42,7 @@ type Category = { id: string; name: string; group_name?: string | null; sort_ord
 
 type SplitRow = { payer_id: string; amount: number };
 
-function n(v: any) { const x = Number(v); return Number.isFinite(x) ? x : 0; }
+function n(v: unknown) { const x = Number(v); return Number.isFinite(x) ? x : 0; }
 function round2(v: number) { return Math.round((v + Number.EPSILON) * 100) / 100; }
 function ymNow() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; }
 function todayStr() { const d = new Date(); const y = d.getFullYear(); const m = String(d.getMonth() + 1).padStart(2, "0"); const day = String(d.getDate()).padStart(2, "0"); return `${y}-${m}-${day}`; }
@@ -45,11 +51,20 @@ function statusBadge(s: string) {
   const v = String(s || "");
   if (v === "paid") return "badge bg-emerald-100 text-emerald-600 border-none font-bold";
   if (v === "partial") return "badge bg-amber-100 text-amber-600 border-none font-bold";
+  if (v === "awaiting_details") return "badge bg-sky-100 text-sky-700 border-none font-bold";
   return "badge bg-slate-100 text-slate-500 border-none font-bold";
+}
+
+function statusLabel(status: string) {
+  if (status === "paid") return "已繳";
+  if (status === "partial") return "部分付款";
+  if (status === "awaiting_details") return "待填資料";
+  return "待付款";
 }
 
 export default function BillsPage() {
   const router = useRouter();
+  const [view, setView] = useState<"bills" | "templates">("bills");
 
   const [ym, setYm] = useState(ymNow());
   const { from, to } = useMemo(() => monthRange(ym), [ym]);
@@ -58,6 +73,9 @@ export default function BillsPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [rows, setRows] = useState<BillInstance[]>([]);
+  const [detailing, setDetailing] = useState<BillInstance | null>(null);
+  const [detailForm, setDetailForm] = useState({ amount_due: "", due_date: "" });
+  const [markingPaidId, setMarkingPaidId] = useState<string | null>(null);
 
   const [payMethods, setPayMethods] = useState<PayMethod[]>([]);
   const [payers, setPayers] = useState<Payer[]>([]);
@@ -97,9 +115,7 @@ export default function BillsPage() {
     splits: [] as SplitRow[],
   });
 
-  function payerName(id?: string | null) { if (!id) return ""; return payers.find((p) => p.id === id)?.name ?? id; }
-
-  async function loadBills() {
+  const loadBills = useCallback(async () => {
     if (!WORKSPACE_ID) return;
     setLoading(true);
     setError(null);
@@ -109,7 +125,7 @@ export default function BillsPage() {
       if (!res.ok) throw new Error(j?.error || "讀取失敗");
       setRows(Array.isArray(j?.data) ? j.data : []);
     } catch (e: any) { setError(e.message); setRows([]); } finally { setLoading(false); }
-  }
+  }, [ym]);
 
   async function loadPayMethods() {
     if (!WORKSPACE_ID) return;
@@ -132,7 +148,7 @@ export default function BillsPage() {
     setCatsExpense(Array.isArray(j?.data) ? j.data : []);
   }
 
-  useEffect(() => { loadBills(); }, [ym]);
+  useEffect(() => { void loadBills(); }, [loadBills]);
   useEffect(() => { loadPayMethods(); loadPayers(); loadExpenseCats(); }, []);
 
   useEffect(() => {
@@ -144,7 +160,7 @@ export default function BillsPage() {
       if (!prev.splits || prev.splits.length === 0) return { ...prev, splits: [{ payer_id: other, amount: 0 }] };
       return { ...prev, splits: prev.splits.map((s) => ({ ...s, payer_id: s.payer_id === prev.payer_id ? other : s.payer_id })) };
     });
-  }, [payForm.payer_id, payForm.useSplit, payers.length]);
+  }, [payForm.payer_id, payForm.useSplit, payers]);
 
   const paySubcats = useMemo(() => {
     const g = (payForm.category_group || "").trim();
@@ -181,11 +197,66 @@ export default function BillsPage() {
 
   async function deleteBill(b: BillInstance) {
     if (!WORKSPACE_ID) return;
-    if (!confirm(`確定刪除帳單？\n${b.name_snapshot}\n${b.due_date} 金額 ${b.amount_due}`)) return;
+    if (!confirm(`確定刪除帳單？\n${b.name_snapshot}\n${b.due_date || "尚未填日期"} 金額 ${b.amount_due ?? "尚未填寫"}`)) return;
     const res = await fetch("/api/bills", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ workspace_id: WORKSPACE_ID, id: b.id }) });
     const j = await res.json().catch(() => ({}));
     if (!res.ok) return alert(j?.error || "刪除失敗");
     await loadBills();
+  }
+
+  function openDetails(b: BillInstance) {
+    setDetailing(b);
+    setDetailForm({
+      amount_due: b.amount_due == null ? "" : String(b.amount_due),
+      due_date: b.due_date || "",
+    });
+  }
+
+  async function saveDetails() {
+    if (!WORKSPACE_ID || !detailing) return;
+    const amount = round2(n(detailForm.amount_due));
+    if (amount <= 0) return alert("請填寫大於 0 的金額");
+    if (!detailForm.due_date) return alert("請選擇到期日");
+
+    const response = await fetch("/api/bills", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        workspace_id: WORKSPACE_ID,
+        id: detailing.id,
+        amount_due: amount,
+        due_date: detailForm.due_date,
+      }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) return alert(payload?.error || "更新帳單失敗");
+    setDetailing(null);
+    await loadBills();
+  }
+
+  async function markPaid(b: BillInstance) {
+    if (!WORKSPACE_ID) return;
+    if (!b.amount_due || b.amount_due <= 0) return openDetails(b);
+    if (!confirm(`將「${b.name_snapshot}」標記為已繳？\n此操作不會新增記帳紀錄。`)) return;
+
+    setMarkingPaidId(b.id);
+    try {
+      const response = await fetch("/api/bills", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "mark_paid",
+          workspace_id: WORKSPACE_ID,
+          bill_instance_id: b.id,
+          paid_at: todayStr(),
+        }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) return alert(payload?.error || "標記已繳失敗");
+      await loadBills();
+    } finally {
+      setMarkingPaidId(null);
+    }
   }
 
   function openPay(b: BillInstance) {
@@ -253,8 +324,44 @@ export default function BillsPage() {
     const due = rows.reduce((a, r) => a + n(r.amount_due), 0);
     const paid = rows.reduce((a, r) => a + n(r.paid_total), 0);
     const remain = round2(due - paid);
-    return { due, paid, remain };
+    const awaiting = rows.filter((row) => row.status === "awaiting_details").length;
+    return { due, paid, remain, awaiting };
   }, [rows]);
+
+  function billActions(b: BillInstance) {
+    const due = round2(n(b.amount_due));
+    const paid = round2(n(b.paid_total));
+    const remain = round2(due - paid);
+    const needsDetails = b.status === "awaiting_details" || !b.due_date || due <= 0;
+
+    return (
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        {needsDetails ? (
+          <button className="btn btn-sm rounded-lg border-none bg-sky-600 text-white hover:bg-sky-700" onClick={() => openDetails(b)}>
+            <FilePenLine className="h-4 w-4" />
+            填寫資料
+          </button>
+        ) : b.payment_mode === "status_only" ? (
+          <button
+            className="btn btn-sm rounded-lg border-none bg-emerald-600 text-white hover:bg-emerald-700"
+            onClick={() => void markPaid(b)}
+            disabled={b.status === "paid" || markingPaidId === b.id}
+          >
+            <CheckCircle2 className="h-4 w-4" />
+            {b.status === "paid" ? "已繳" : "標記已繳"}
+          </button>
+        ) : (
+          <button className="btn btn-sm rounded-lg border-none bg-rose-500 text-white hover:bg-rose-600" onClick={() => openPay(b)} disabled={remain <= 0}>
+            <CreditCard className="h-4 w-4" />
+            付款
+          </button>
+        )}
+        <button className="btn btn-ghost btn-sm rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-500" onClick={() => void deleteBill(b)} title="刪除">
+          <Trash2 className="h-4 w-4" />
+        </button>
+      </div>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-slate-50 p-4 md:p-6 lg:p-8 pb-24 md:pb-8">
@@ -284,6 +391,27 @@ export default function BillsPage() {
           )}
         </div>
 
+        <div className="inline-flex w-full rounded-lg border border-slate-200 bg-white p-1 shadow-sm sm:w-auto">
+          <button
+            type="button"
+            className={`btn btn-sm flex-1 rounded-lg border-none sm:flex-none ${view === "bills" ? "bg-slate-800 text-white hover:bg-slate-800" : "btn-ghost text-slate-500"}`}
+            onClick={() => setView("bills")}
+          >
+            <LayoutList className="h-4 w-4" />
+            本月帳單
+          </button>
+          <button
+            type="button"
+            className={`btn btn-sm flex-1 rounded-lg border-none sm:flex-none ${view === "templates" ? "bg-slate-800 text-white hover:bg-slate-800" : "btn-ghost text-slate-500"}`}
+            onClick={() => setView("templates")}
+          >
+            <Settings2 className="h-4 w-4" />
+            自動模板
+          </button>
+        </div>
+
+        {view === "bills" ? (
+          <>
         {/* Month / Summary */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="card bg-white shadow-sm border border-slate-200 rounded-3xl">
@@ -304,7 +432,7 @@ export default function BillsPage() {
 
           <div className="card bg-white shadow-sm border border-slate-200 rounded-3xl md:col-span-2">
             <div className="card-body p-5">
-              <div className="grid grid-cols-3 gap-4 h-full">
+              <div className="grid h-full grid-cols-2 gap-4 sm:grid-cols-4">
                 <div className="flex flex-col justify-center">
                   <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">本期應繳</div>
                   <div className="text-2xl lg:text-3xl font-black tabular-nums text-slate-800">${summary.due.toLocaleString()}</div>
@@ -316,6 +444,10 @@ export default function BillsPage() {
                 <div className="flex flex-col justify-center border-l border-slate-100 pl-4">
                   <div className="text-xs font-bold text-rose-500 uppercase tracking-widest mb-1">本期待付</div>
                   <div className="text-2xl lg:text-3xl font-black tabular-nums text-rose-500">${summary.remain.toLocaleString()}</div>
+                </div>
+                <div className="flex flex-col justify-center border-l border-slate-100 pl-4">
+                  <div className="mb-1 text-xs font-bold uppercase tracking-widest text-sky-600">待填資料</div>
+                  <div className="text-2xl font-black tabular-nums text-sky-700">{summary.awaiting}</div>
                 </div>
               </div>
             </div>
@@ -373,15 +505,53 @@ export default function BillsPage() {
           <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-1.5 h-1.5 rounded-full bg-slate-800"></div>
-              <h2 className="text-xl font-black text-slate-800 italic tracking-tight">BILL LIST</h2>
+              <h2 className="text-xl font-black tracking-tight text-slate-800">本月帳單</h2>
             </div>
           </div>
 
           {rows.length === 0 ? (
-            <div className="p-16 text-center opacity-40 font-black italic text-lg">本期尚無帳單。</div>
+            <div className="p-16 text-center text-sm font-bold text-slate-400">本期尚無帳單</div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="table w-full">
+            <>
+              <div className="divide-y divide-slate-100 md:hidden">
+                {rows.map((b) => {
+                  const due = round2(n(b.amount_due));
+                  const paid = round2(n(b.paid_total));
+                  const remain = round2(due - paid);
+                  return (
+                    <article key={b.id} className="space-y-4 p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <h3 className="truncate font-bold text-slate-800">{b.name_snapshot}</h3>
+                          <div className="mt-1 flex items-center gap-1.5 text-xs text-slate-400">
+                            <Clock className="h-3.5 w-3.5" />
+                            {b.due_date || "待填到期日"}
+                          </div>
+                        </div>
+                        <span className={statusBadge(b.status)}>{statusLabel(b.status)}</span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 rounded-lg bg-slate-50 p-3">
+                        <div>
+                          <div className="text-[11px] font-bold text-slate-400">應繳</div>
+                          <div className="mt-1 font-mono text-sm font-black text-slate-800">{b.amount_due == null ? "待填" : `$${due.toLocaleString()}`}</div>
+                        </div>
+                        <div>
+                          <div className="text-[11px] font-bold text-slate-400">已付</div>
+                          <div className="mt-1 font-mono text-sm font-bold text-emerald-600">${paid.toLocaleString()}</div>
+                        </div>
+                        <div>
+                          <div className="text-[11px] font-bold text-slate-400">待付</div>
+                          <div className="mt-1 font-mono text-sm font-black text-rose-500">${remain.toLocaleString()}</div>
+                        </div>
+                      </div>
+                      {billActions(b)}
+                    </article>
+                  );
+                })}
+              </div>
+
+              <div className="hidden overflow-x-auto md:block">
+                <table className="table w-full">
                 <thead>
                   <tr className="bg-white border-b border-slate-100 text-slate-400 text-xs font-bold uppercase tracking-wide">
                     <th className="pl-8 py-4">到期日</th>
@@ -401,33 +571,33 @@ export default function BillsPage() {
                     return (
                       <tr key={b.id} className="group border-b border-slate-50 last:border-0 hover:bg-rose-50/10 transition-colors">
                         <td className="pl-8 whitespace-nowrap text-sm font-medium text-slate-600 font-mono">
-                          <div className="flex items-center gap-2"><Clock className="w-3.5 h-3.5 text-slate-300" />{b.due_date}</div>
+                          <div className="flex items-center gap-2"><Clock className="w-3.5 h-3.5 text-slate-300" />{b.due_date || "待填"}</div>
                         </td>
                         <td className="font-bold text-slate-700 text-base">
                           <div>{b.name_snapshot}</div>
                           {(b.billing_start || b.billing_end) && <div className="text-[10px] text-slate-400 font-normal mt-0.5">{b.billing_start || "—"} ~ {b.billing_end || "—"}</div>}
                         </td>
-                        <td className="text-right font-black font-mono text-slate-800 text-base">${due.toLocaleString()}</td>
+                        <td className="text-right font-black font-mono text-slate-800 text-base">{b.amount_due == null ? "待填" : `$${due.toLocaleString()}`}</td>
                         <td className="text-right font-mono font-medium text-emerald-600">${paid.toLocaleString()}</td>
                         <td className={`text-right font-mono font-black ${remain > 0 ? "text-rose-500" : "text-slate-300"}`}>${remain.toLocaleString()}</td>
-                        <td><span className={statusBadge(b.status)}>{b.status}</span></td>
+                        <td><span className={statusBadge(b.status)}>{statusLabel(b.status)}</span></td>
                         <td className="text-right pr-8">
-                          <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button className="btn btn-sm bg-rose-500 hover:bg-rose-600 border-none text-white shadow-md shadow-rose-500/20 rounded-lg" onClick={() => openPay(b)} disabled={remain <= 0} title={remain <= 0 ? "已結清" : "付款並寫入記帳"}>
-                              <CreditCard className="w-4 h-4" /><span className="hidden sm:inline ml-1">付款</span>
-                            </button>
-                            <button className="btn btn-ghost btn-sm text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg" onClick={() => deleteBill(b)} title="刪除"><Trash2 className="w-4 h-4" /></button>
-                          </div>
+                          {billActions(b)}
                         </td>
                       </tr>
                     );
                   })}
                 </tbody>
-              </table>
-            </div>
+                </table>
+              </div>
+            </>
           )}
-          {rows.length > 0 && <div className="bg-slate-50 px-6 py-3 border-t border-slate-100 text-[10px] text-slate-400 text-center">💡 提示：點擊「付款」可將支出寫入記帳本，並支援分帳功能。</div>}
         </div>
+
+          </>
+        ) : (
+          <BillTemplateManager workspaceId={WORKSPACE_ID} />
+        )}
 
         {/* Pay Modal */}
         {paying && (
@@ -483,6 +653,45 @@ export default function BillsPage() {
             <div className="modal-backdrop" onClick={() => setPaying(null)} />
           </div>
         )}
+
+        {detailing ? (
+          <div className="modal modal-open bg-slate-900/40">
+            <div className="modal-box max-w-md rounded-lg p-0">
+              <div className="border-b border-slate-200 px-5 py-4">
+                <h3 className="font-black text-slate-800">填寫帳單資料</h3>
+                <p className="mt-1 text-sm font-medium text-slate-500">{detailing.name_snapshot}</p>
+              </div>
+              <div className="space-y-4 p-5">
+                <label className="form-control">
+                  <span className="label-text mb-1 text-xs font-bold text-slate-500">應繳金額</span>
+                  <input
+                    type="number"
+                    min="0"
+                    className="input input-bordered w-full rounded-lg font-mono text-lg font-bold"
+                    value={detailForm.amount_due}
+                    onChange={(event) => setDetailForm((current) => ({ ...current, amount_due: event.target.value }))}
+                  />
+                </label>
+                <label className="form-control">
+                  <span className="label-text mb-1 text-xs font-bold text-slate-500">到期日</span>
+                  <input
+                    type="date"
+                    className="input input-bordered w-full rounded-lg"
+                    value={detailForm.due_date}
+                    onChange={(event) => setDetailForm((current) => ({ ...current, due_date: event.target.value }))}
+                  />
+                </label>
+              </div>
+              <div className="flex justify-end gap-2 border-t border-slate-200 bg-slate-50 px-5 py-4">
+                <button type="button" className="btn btn-ghost rounded-lg" onClick={() => setDetailing(null)}>取消</button>
+                <button type="button" className="btn rounded-lg border-none bg-sky-600 px-6 text-white hover:bg-sky-700" onClick={() => void saveDetails()}>
+                  儲存
+                </button>
+              </div>
+            </div>
+            <button type="button" className="modal-backdrop" onClick={() => setDetailing(null)} aria-label="關閉帳單資料視窗" />
+          </div>
+        ) : null}
 
         {error && (<div className="toast toast-bottom toast-center"><div className="alert alert-error shadow-lg"><span>{error}</span></div></div>)}
       </div>

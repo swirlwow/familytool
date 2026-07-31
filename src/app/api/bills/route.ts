@@ -21,6 +21,24 @@ function monthRange(ym: string) {
   return { from, to };
 }
 
+const billSelect = `
+  id,
+  workspace_id,
+  template_id,
+  period,
+  due_date,
+  name_snapshot,
+  amount_due,
+  status,
+  paid_total,
+  billing_start,
+  billing_end,
+  source,
+  payment_mode,
+  paid_at,
+  created_at
+`;
+
 /** 分帳驗證（與 ledger/route.ts 同邏輯） */
 function validateSplits(params: {
   type: "expense" | "income";
@@ -70,28 +88,17 @@ export async function GET(req: Request) {
     }
     if (!from || !to) return apiError("缺少 ym 或 from/to");
 
-    const { data, error } = await supabase
+    let query = supabase
       .from("bill_instances")
-      .select(
-        `
-        id,
-        workspace_id,
-        template_id,
-        period,
-        due_date,
-        name_snapshot,
-        amount_due,
-        status,
-        paid_total,
-        billing_start,
-        billing_end,
-        created_at
-      `
-      )
-      .eq("workspace_id", workspace_id)
-      .gte("due_date", from)
-      .lte("due_date", to)
-      .order("due_date", { ascending: true })
+      .select(billSelect)
+      .eq("workspace_id", workspace_id);
+
+    query = ym
+      ? query.eq("period", ym)
+      : query.gte("due_date", from).lte("due_date", to);
+
+    const { data, error } = await query
+      .order("due_date", { ascending: true, nullsFirst: false })
       .order("created_at", { ascending: false });
 
     if (error) return NextResponse.json({ error: error.message, data: [] }, { status: 500 });
@@ -143,11 +150,11 @@ export async function POST(req: Request) {
             paid_total: 0,
             billing_start: billing_start ? String(billing_start) : null,
             billing_end: billing_end ? String(billing_end) : null,
+            source: "manual",
+            payment_mode: "ledger",
           },
         ])
-        .select(
-          `id, period, due_date, name_snapshot, amount_due, status, paid_total, billing_start, billing_end, created_at`
-        )
+        .select(billSelect)
         .single();
 
       if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -179,13 +186,16 @@ export async function POST(req: Request) {
       // 先撈帳單，算剩餘可付
       const { data: bill, error: bErr } = await supabase
         .from("bill_instances")
-        .select("id, amount_due, paid_total, status, name_snapshot, period")
+        .select("id, amount_due, paid_total, status, name_snapshot, period, payment_mode")
         .eq("workspace_id", workspace_id)
         .eq("id", bill_instance_id)
         .single();
 
       if (bErr) return NextResponse.json({ error: bErr.message }, { status: 500 });
       if (!bill) return apiError("找不到帳單");
+      if (bill.payment_mode === "status_only") {
+        return apiError("信用卡帳單只標記已繳，不會重複寫入記帳");
+      }
 
       const due = round2(toNum(bill.amount_due));
       const paid = round2(toNum(bill.paid_total));
@@ -267,6 +277,54 @@ export async function POST(req: Request) {
       });
     }
 
+    if (action === "mark_paid") {
+      const { workspace_id, bill_instance_id, paid_at } = body || {};
+      if (!workspace_id) return apiError("缺少 workspace_id");
+      if (!bill_instance_id) return apiError("缺少 bill_instance_id");
+
+      const { data: bill, error: billError } = await supabase
+        .from("bill_instances")
+        .select("id, amount_due, payment_mode, status")
+        .eq("workspace_id", workspace_id)
+        .eq("id", bill_instance_id)
+        .single();
+
+      if (billError) return NextResponse.json({ error: billError.message }, { status: 500 });
+      if (!bill) return apiError("找不到帳單");
+      if (bill.payment_mode !== "status_only") return apiError("此帳單需透過付款流程寫入記帳");
+
+      const amountDue = round2(toNum(bill.amount_due));
+      if (amountDue <= 0) return apiError("請先填寫帳單金額");
+      if (bill.status === "paid") return NextResponse.json({ success: true, already_paid: true });
+
+      const paidAt = paid_at ? new Date(String(paid_at)) : new Date();
+      if (Number.isNaN(paidAt.getTime())) return apiError("付款日期格式錯誤");
+
+      const { data: updated, error } = await supabase
+        .from("bill_instances")
+        .update({
+          paid_total: amountDue,
+          status: "paid",
+          paid_at: paidAt.toISOString(),
+        })
+        .eq("workspace_id", workspace_id)
+        .eq("id", bill_instance_id)
+        .eq("payment_mode", "status_only")
+        .select("id")
+        .single();
+
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      if (!updated) return apiError("帳單狀態未更新");
+
+      return NextResponse.json({
+        success: true,
+        bill_instance_id,
+        paid_total: amountDue,
+        status: "paid",
+        ledger_entry_id: null,
+      });
+    }
+
     return apiError("不支援的 action");
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
@@ -284,19 +342,39 @@ export async function PATCH(req: Request) {
     if (!workspace_id) return apiError("缺少 workspace_id");
     if (!id) return apiError("缺少 id");
 
-    const patch: any = {};
+    const { data: current, error: currentError } = await supabase
+      .from("bill_instances")
+      .select("amount_due, due_date, status")
+      .eq("workspace_id", workspace_id)
+      .eq("id", id)
+      .single();
+
+    if (currentError) return NextResponse.json({ error: currentError.message }, { status: 500 });
+    if (!current) return apiError("找不到帳單");
+
+    const patch: Record<string, string | number | null> = {};
     if (body.name_snapshot != null) patch.name_snapshot = String(body.name_snapshot);
-    if (body.due_date != null) patch.due_date = String(body.due_date);
+    if (body.due_date !== undefined) patch.due_date = body.due_date ? String(body.due_date) : null;
     if (body.billing_start !== undefined) patch.billing_start = body.billing_start ? String(body.billing_start) : null;
     if (body.billing_end !== undefined) patch.billing_end = body.billing_end ? String(body.billing_end) : null;
 
-    if (body.amount_due != null) {
+    if (body.amount_due !== undefined) {
       const amt = round2(toNum(body.amount_due));
       if (!amt || amt <= 0) return apiError("amount_due 必須大於 0");
       patch.amount_due = amt;
     }
     if (body.paid_total != null) patch.paid_total = round2(toNum(body.paid_total));
-    if (body.status != null) patch.status = String(body.status);
+    if (body.status != null) {
+      const status = String(body.status);
+      if (!["awaiting_details", "unpaid", "partial", "paid"].includes(status)) {
+        return apiError("不支援的帳單狀態");
+      }
+      patch.status = status;
+    } else if (current.status === "awaiting_details") {
+      const nextAmount = patch.amount_due ?? current.amount_due;
+      const nextDueDate = patch.due_date !== undefined ? patch.due_date : current.due_date;
+      if (nextAmount != null && toNum(nextAmount) > 0 && nextDueDate) patch.status = "unpaid";
+    }
 
     const { error } = await supabase.from("bill_instances").update(patch).eq("workspace_id", workspace_id).eq("id", id);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
