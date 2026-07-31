@@ -9,7 +9,6 @@ import {
   Calculator,
   History,
   Receipt,
-  Wallet,
   CreditCard,
   Tags,
   CalendarDays,
@@ -30,7 +29,6 @@ const NAV_GROUPS = [
       { name: "拆帳結算", href: "/settlement", icon: Calculator, theme: "amber" },
       { name: "結清紀錄", href: "/settlement/history", icon: History, theme: "violet" }, 
       { name: "帳單管理", href: "/bills", icon: Receipt, theme: "rose" },
-      { name: "帳戶總覽", href: "/accounts", icon: Wallet, theme: "emerald" },
       { name: "分類管理", href: "/settings/categories", icon: Tags, theme: "slate" },
       { name: "付款方式", href: "/settings/payment-methods", icon: CreditCard, theme: "slate" },
       { name: "資料備份", href: "/settings/backup", icon: DatabaseBackup, theme: "indigo" }, // ✅ 新增資料備份選單

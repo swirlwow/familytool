@@ -7,7 +7,6 @@ import {
   LayoutDashboard,
   Calculator,
   Receipt,
-  CreditCard,
   CalendarDays,
   StickyNote,
   NotebookPen,
@@ -40,7 +39,6 @@ const financeTools = [
   { name: "財務儀表板", desc: "收支統計與明細匯出", href: "/ledger/dashboard", icon: LayoutDashboard, theme: "blue" },
   { name: "拆帳結算", desc: "代墊款計算與批次結清", href: "/settlement", icon: Calculator, theme: "amber" },
   { name: "帳單管理", desc: "水電信貸等固定支出", href: "/bills", icon: Receipt, theme: "rose" },
-  { name: "帳戶總覽", desc: "銀行與信用卡餘額追蹤", href: "/accounts", icon: CreditCard, theme: "emerald" },
 ];
 
 // 生活工具清單
