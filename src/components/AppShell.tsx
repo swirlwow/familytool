@@ -13,7 +13,6 @@ import {
   Tags,
   CalendarDays,
   StickyNote,
-  NotebookPen,
   DatabaseBackup,
   LogOut,
   User,
@@ -37,7 +36,6 @@ const NAV_GROUPS = [
   {
     title: "生活工具",
     items: [
-      { name: "記事", href: "/notes", icon: NotebookPen, theme: "pink" },
       { name: "行事曆", href: "/calendar", icon: CalendarDays, theme: "orange" },
       { name: "便條紙", href: "/stickies", icon: StickyNote, theme: "yellow" },
     ],

@@ -9,7 +9,6 @@ import {
   Receipt,
   CalendarDays,
   StickyNote,
-  NotebookPen,
   ArrowRight,
   DatabaseBackup,
   Settings
@@ -44,7 +43,6 @@ const financeTools = [
 const lifeTools = [
   { name: "行事曆", desc: "全家行程與排班規劃", href: "/calendar", icon: CalendarDays, theme: "orange" },
   { name: "便條紙", desc: "隨手紀錄與牆上便利貼", href: "/stickies", icon: StickyNote, theme: "yellow" },
-  { name: "記事本", desc: "醫療、用藥與長篇紀錄", href: "/notes", icon: NotebookPen, theme: "pink" },
 ];
 
 // 設定與備份清單

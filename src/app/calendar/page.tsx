@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CalendarDays, ChevronLeft, ChevronRight, Plus, Share2, X } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Plus, Share2, Trash2, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const WORKSPACE_ID = process.env.NEXT_PUBLIC_WORKSPACE_ID || "";
@@ -274,6 +274,7 @@ export default function CalendarPage() {
 
   const [draft, setDraft] = useState<Draft | null>(null);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const swipeStartX = useRef<number | null>(null);
   const swipeStartY = useRef<number | null>(null);
@@ -425,6 +426,33 @@ export default function CalendarPage() {
       toast({ variant: "destructive", title: "儲存失敗", description: "請稍後再試。" });
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function deleteDraft() {
+    if (!WORKSPACE_ID || !draft || draft.mode !== "edit") return;
+
+    const id = String(draft.id || "").trim();
+    if (!id) return;
+
+    const title = String(draft.title || "").trim() || "未命名行程";
+    if (!window.confirm(`確定要刪除「${title}」嗎？`)) return;
+
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/notes/${encodeURIComponent(id)}?workspace_id=${WORKSPACE_ID}`, {
+        method: "DELETE",
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(j.error || "刪除失敗");
+
+      closeDraft();
+      await load();
+      toast({ title: "已刪除行程" });
+    } catch {
+      toast({ variant: "destructive", title: "刪除失敗", description: "請稍後再試。" });
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -602,7 +630,7 @@ export default function CalendarPage() {
               <button
                 className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-orange-600 hover:bg-orange-700 text-white grid place-items-center shadow-sm"
                 onClick={() => openNew(ymd(new Date()))}
-                aria-label="新增記事"
+                aria-label="新增行程"
                 type="button"
               >
                 <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -880,7 +908,7 @@ export default function CalendarPage() {
         type="button"
         className="md:hidden fixed right-5 bottom-[calc(16px+env(safe-area-inset-bottom)+72px)] z-30 h-14 w-14 rounded-full bg-orange-600 hover:bg-orange-700 text-white shadow-xl shadow-orange-600/40 grid place-items-center transition-transform active:scale-95"
         onClick={() => openNew(ymd(new Date()))}
-        aria-label="新增記事"
+        aria-label="新增行程"
       >
         <Plus className="w-6 h-6" />
       </button>
@@ -926,7 +954,7 @@ export default function CalendarPage() {
                   <button
                     className="h-9 px-4 rounded-full bg-orange-600 hover:bg-orange-700 text-white text-sm font-bold shadow-md shadow-orange-600/20 disabled:opacity-60"
                     onClick={saveDraft}
-                    disabled={saving}
+                    disabled={saving || deleting}
                     type="button"
                   >
                     {saving ? "儲存中" : "儲存"}
@@ -997,6 +1025,20 @@ export default function CalendarPage() {
                 onChange={(e) => setDraft({ ...draft, content: e.target.value })}
                 placeholder="點此輸入詳細內容..."
               />
+
+              {draft.mode === "edit" && (
+                <div className="border-t border-slate-100 pt-4">
+                  <button
+                    type="button"
+                    className="inline-flex h-10 items-center gap-2 rounded-lg px-3 text-sm font-bold text-rose-600 transition-colors hover:bg-rose-50 disabled:opacity-50"
+                    onClick={deleteDraft}
+                    disabled={saving || deleting}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    {deleting ? "刪除中" : "刪除行程"}
+                  </button>
+                </div>
+              )}
 
               <div className="h-[env(safe-area-inset-bottom)] sm:h-0" />
             </div>
