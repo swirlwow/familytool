@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CalendarDays, ChevronLeft, ChevronRight, Plus, Share2, Trash2, X } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Plus, Trash2, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const WORKSPACE_ID = process.env.NEXT_PUBLIC_WORKSPACE_ID || "";
@@ -246,19 +246,6 @@ type Draft = {
 
 export default function CalendarPage() {
   const { toast } = useToast();
-
-  function copyFeedUrl() {
-    if (!WORKSPACE_ID) return;
-    const url = `${window.location.origin}/api/calendar/feed?workspace_id=${WORKSPACE_ID}`;
-    navigator.clipboard.writeText(url).then(
-      () => {
-        toast({ title: "已複製行事曆訂閱連結", description: "您可以將此連結放入 Google 或 Apple 行事曆中進行訂閱。" });
-      },
-      () => {
-        toast({ variant: "destructive", title: "複製失敗", description: "請手動複製" });
-      }
-    );
-  }
 
   const [mode, setMode] = useState<"month" | "week">("month");
   const [ym, setYm] = useState(monthKey(new Date()));
@@ -618,15 +605,6 @@ export default function CalendarPage() {
                 {mode === "month" ? "週" : "月"}
               </button>
               
-              <button
-                className="h-8 w-8 sm:h-10 sm:w-10 rounded-full border border-slate-200 hover:bg-slate-100 text-slate-500 grid place-items-center shadow-sm mr-2"
-                onClick={copyFeedUrl}
-                title="複製行事曆訂閱連結 (iCal)"
-                type="button"
-              >
-                <Share2 className="w-4 h-4" />
-              </button>
-
               <button
                 className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-orange-600 hover:bg-orange-700 text-white grid place-items-center shadow-sm"
                 onClick={() => openNew(ymd(new Date()))}

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { apiError } from "@/lib/api/http";
+import { apiError, apiInternalError, apiOperationError } from "@/lib/api/http";
 import { validateSplits } from "@/lib/ledger/splits";
 import { supabase } from "@/lib/supabaseClient";
 import { settlementStatus } from "@/lib/settlementStatus";
@@ -42,7 +42,7 @@ export async function GET(req: Request) {
       .order("entry_date", { ascending: false })
       .order("created_at", { ascending: false });
 
-    if (error) return NextResponse.json({ error: error.message, data: [] }, { status: 500 });
+    if (error) return apiInternalError(error, { context: "Load ledger", data: [] });
 
     const entries = (data || []) as any[];
     const splitIds = entries.flatMap((entry) =>
@@ -65,7 +65,7 @@ export async function GET(req: Request) {
         .in("split_id", splitIds);
 
       if (itemError) {
-        return NextResponse.json({ error: itemError.message, data: [] }, { status: 500 });
+        return apiInternalError(itemError, { context: "Load settlement allocations", data: [] });
       }
 
       for (const item of items || []) {
@@ -114,8 +114,8 @@ export async function GET(req: Request) {
     });
 
     return NextResponse.json({ data: enriched });
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message, data: [] }, { status: 500 });
+  } catch (error) {
+    return apiInternalError(error, { context: "Load ledger", data: [] });
   }
 }
 
@@ -134,6 +134,7 @@ export async function POST(req: Request) {
       bill_instance_id,
       payer_id,
       splits,
+      request_key,
     } = body || {};
 
     if (!workspace_id) return apiError("缺少 workspace_id");
@@ -159,53 +160,35 @@ export async function POST(req: Request) {
           .eq("workspace_id", workspace_id)
           .eq("id", safeCategoryId)
           .maybeSingle();
-        if (cErr) return NextResponse.json({ error: cErr.message }, { status: 500 });
+        if (cErr) return apiInternalError(cErr, { context: "Validate ledger category" });
         if (!c) safeCategoryId = null;
       }
     } else {
       safeCategoryId = null;
     }
 
-    // 1) insert entry
-    const { data: entry, error: insErr } = await supabase
-      .from("ledger_entries")
-      .insert([
-        {
-          workspace_id,
-          entry_date,
-          type,
-          amount: amt,
-          category_id: safeCategoryId,
-          pay_method: pay_method || null,
-          merchant: merchant || null,
-          note: note || null,
-          bill_instance_id: bill_instance_id || null,
-          payer_id: payer_id || null,
-        },
-      ])
-      .select("id")
-      .single();
-
-    if (insErr) return NextResponse.json({ error: insErr.message }, { status: 500 });
-
-    // 2) insert splits (optional) ✅ 改成 entry_id
-    if (Array.isArray(splits) && splits.length > 0) {
-      const rows = splits.map((s: any) => ({
-        workspace_id,
-        entry_id: entry.id, // ✅ HERE
-        payer_id: s.payer_id,
-        amount: Number(s.amount),
-      }));
-
-      const { error: spErr } = await supabase.from("ledger_splits").insert(rows);
-      if (spErr) {
-        return NextResponse.json({ error: `記帳成功，但拆帳寫入失敗：${spErr.message}` }, { status: 500 });
+    const { data: entryId, error: rpcError } = await supabase.rpc(
+      "create_ledger_entry_atomic",
+      {
+        p_workspace_id: workspace_id,
+        p_entry_date: entry_date,
+        p_type: type,
+        p_amount: amt,
+        p_category_id: safeCategoryId,
+        p_pay_method: pay_method || null,
+        p_merchant: merchant || null,
+        p_note: note || null,
+        p_bill_instance_id: bill_instance_id || null,
+        p_payer_id: payer_id || null,
+        p_splits: Array.isArray(splits) ? splits : [],
+        p_request_key: request_key ? String(request_key) : null,
       }
-    }
+    );
 
-    return NextResponse.json({ success: true, id: entry.id });
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    if (rpcError) return apiOperationError(rpcError, { context: "Create ledger entry" });
+    return NextResponse.json({ success: true, id: entryId });
+  } catch (error) {
+    return apiOperationError(error, { context: "Create ledger entry" });
   }
 }
 
@@ -250,54 +233,31 @@ export async function PATCH(req: Request) {
           .eq("workspace_id", workspace_id)
           .eq("id", safeCategoryId)
           .maybeSingle();
-        if (cErr) return NextResponse.json({ error: cErr.message }, { status: 500 });
+        if (cErr) return apiInternalError(cErr, { context: "Validate ledger category" });
         if (!c) safeCategoryId = null;
       }
     } else {
       safeCategoryId = null;
     }
 
-    // 1) update entry
-    const { error: upErr } = await supabase
-      .from("ledger_entries")
-      .update({
-        entry_date,
-        type,
-        amount: amt,
-        category_id: safeCategoryId,
-        pay_method: pay_method || null,
-        merchant: merchant || null,
-        note: note || null,
-        payer_id: payer_id || null,
-      })
-      .eq("workspace_id", workspace_id)
-      .eq("id", id);
+    const { error: rpcError } = await supabase.rpc("update_ledger_entry_atomic", {
+      p_workspace_id: workspace_id,
+      p_entry_id: id,
+      p_entry_date: entry_date,
+      p_type: type,
+      p_amount: amt,
+      p_category_id: safeCategoryId,
+      p_pay_method: pay_method || null,
+      p_merchant: merchant || null,
+      p_note: note || null,
+      p_payer_id: payer_id || null,
+      p_splits: Array.isArray(splits) ? splits : [],
+    });
 
-    if (upErr) return NextResponse.json({ error: upErr.message }, { status: 500 });
-
-    // 2) refresh splits: delete then insert ✅ 改成 entry_id
-    const { error: delSpErr } = await supabase
-      .from("ledger_splits")
-      .delete()
-      .eq("workspace_id", workspace_id)
-      .eq("entry_id", id); // ✅ HERE
-
-    if (delSpErr) return NextResponse.json({ error: delSpErr.message }, { status: 500 });
-
-    if (Array.isArray(splits) && splits.length > 0) {
-      const rows = splits.map((s: any) => ({
-        workspace_id,
-        entry_id: id, // ✅ HERE
-        payer_id: s.payer_id,
-        amount: Number(s.amount),
-      }));
-      const { error: insSpErr } = await supabase.from("ledger_splits").insert(rows);
-      if (insSpErr) return NextResponse.json({ error: insSpErr.message }, { status: 500 });
-    }
-
+    if (rpcError) return apiOperationError(rpcError, { context: "Update ledger entry" });
     return NextResponse.json({ success: true });
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+  } catch (error) {
+    return apiOperationError(error, { context: "Update ledger entry" });
   }
 }
 
@@ -309,26 +269,13 @@ export async function DELETE(req: Request) {
     if (!workspace_id) return apiError("缺少 workspace_id");
     if (!id) return apiError("缺少 id");
 
-    // 1) delete splits first ✅ 改成 entry_id
-    const { error: delSpErr } = await supabase
-      .from("ledger_splits")
-      .delete()
-      .eq("workspace_id", workspace_id)
-      .eq("entry_id", id); // ✅ HERE
-
-    if (delSpErr) return NextResponse.json({ error: delSpErr.message }, { status: 500 });
-
-    // 2) delete entry
-    const { error: delErr } = await supabase
-      .from("ledger_entries")
-      .delete()
-      .eq("workspace_id", workspace_id)
-      .eq("id", id);
-
-    if (delErr) return NextResponse.json({ error: delErr.message }, { status: 500 });
-
+    const { error: rpcError } = await supabase.rpc("delete_ledger_entry_atomic", {
+      p_workspace_id: workspace_id,
+      p_entry_id: id,
+    });
+    if (rpcError) return apiOperationError(rpcError, { context: "Delete ledger entry" });
     return NextResponse.json({ success: true });
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+  } catch (error) {
+    return apiOperationError(error, { context: "Delete ledger entry" });
   }
 }

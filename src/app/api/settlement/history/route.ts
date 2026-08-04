@@ -1,6 +1,6 @@
 // src/app/api/settlement/history/route.ts
 import { NextResponse } from "next/server";
-import { apiError, parseJson } from "@/lib/api/http";
+import { apiError, apiInternalError, apiOperationError, parseJson } from "@/lib/api/http";
 import { getHistory, deleteHistory } from "@/services/settlement/history";
 
 
@@ -16,8 +16,8 @@ export async function GET(req: Request) {
 
     const result = await getHistory({ workspace_id, from, to, limit });
     return NextResponse.json(result);
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message, data: [] }, { status: 500 });
+  } catch (error) {
+    return apiInternalError(error, { context: "Load settlement history", data: [] });
   }
 }
 
@@ -31,7 +31,7 @@ export async function DELETE(req: Request) {
 
     const result = await deleteHistory({ workspace_id, id });
     return NextResponse.json(result);
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+  } catch (error) {
+    return apiOperationError(error, { context: "Delete settlement history" });
   }
 }

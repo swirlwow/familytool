@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { useToast } from "@/hooks/use-toast";
-import { Lock, Mail, UserPlus, LogIn, Sparkles } from "lucide-react";
+import { Lock, Mail, LogIn, Sparkles } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -13,14 +13,10 @@ export default function LoginPage() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isRegister, setIsRegister] = useState(false);
   const [isRecovery, setIsRecovery] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
-
-  // 取得環境變數設定的預設 WORKSPACE_ID
-  const defaultWorkspaceId = process.env.NEXT_PUBLIC_WORKSPACE_ID || "";
 
   useEffect(() => {
     const recoveryUrl =
@@ -139,57 +135,24 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      if (isRegister) {
-        // 註冊流程
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-        });
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-        if (error) throw error;
+      if (error) throw error;
 
-        const user = data.user;
-        if (user) {
-          // 註冊成功後，自動在 user_workspaces 表中建立預設工作區映射關係
-          if (defaultWorkspaceId) {
-            const { error: wsError } = await supabase
-              .from("user_workspaces")
-              .insert({
-                user_id: user.id,
-                workspace_id: defaultWorkspaceId,
-              });
-            if (wsError) {
-              console.error("建立工作區綁定失敗:", wsError.message);
-            }
-          }
+      toast({
+        title: "登入成功！",
+        description: "歡迎回到家庭生活工具系統。",
+      });
 
-          toast({
-            title: "註冊成功！",
-            description: "請前往信箱確認驗證信（若已關閉電子郵件驗證則可直接登入）。",
-          });
-          setIsRegister(false);
-        }
-      } else {
-        // 登入流程
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-
-        if (error) throw error;
-
-        toast({
-          title: "登入成功！",
-          description: "歡迎回到家庭生活工具系統。",
-        });
-        
-        // 強制重新導向首頁並重整狀態
-        window.location.href = "/";
-      }
+      // 強制重新導向首頁並重整狀態
+      window.location.href = "/";
     } catch (err: any) {
       toast({
         variant: "destructive",
-        title: isRegister ? "註冊失敗" : "登入失敗",
+        title: "登入失敗",
         description: err.message || "請檢查您的帳號密碼",
       });
     } finally {
@@ -210,11 +173,7 @@ export default function LoginPage() {
             家庭生活工具
           </h1>
           <p className="text-xs font-medium text-slate-500 sm:text-sm">
-            {isRecovery
-              ? "設定新的登入密碼"
-              : isRegister
-              ? "建立家庭工具帳號"
-              : "登入家庭生活工具"}
+            {isRecovery ? "設定新的登入密碼" : "登入家庭生活工具"}
           </p>
         </div>
 
@@ -317,10 +276,6 @@ export default function LoginPage() {
           >
             {loading ? (
               <span className="loading loading-spinner loading-sm"></span>
-            ) : isRegister ? (
-              <>
-                <UserPlus className="w-5 h-5" /> 註冊新帳號
-              </>
             ) : (
               <>
                 <LogIn className="w-5 h-5" /> 登入
@@ -331,22 +286,13 @@ export default function LoginPage() {
 
         {/* Footer Mode Switcher */}
         <div className="mt-2 space-y-3 border-t border-slate-200 pt-4 text-center">
-          {!isRegister && (
-            <button
-              type="button"
-              className="block w-full text-xs font-semibold text-slate-500 hover:text-slate-900 sm:text-sm"
-              onClick={sendRecoveryEmail}
-              disabled={loading}
-            >
-              忘記密碼？
-            </button>
-          )}
           <button
             type="button"
-            className="text-xs font-semibold text-sky-700 hover:text-sky-800 sm:text-sm"
-            onClick={() => setIsRegister(!isRegister)}
+            className="block w-full text-xs font-semibold text-slate-500 hover:text-slate-900 sm:text-sm"
+            onClick={sendRecoveryEmail}
+            disabled={loading}
           >
-            {isRegister ? "已有帳號？登入" : "建立新帳號"}
+            忘記密碼？
           </button>
         </div>
         </>

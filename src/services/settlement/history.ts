@@ -1,6 +1,7 @@
 // src/services/settlement/history.ts
 import { clampInt, fmtDate } from "./utils";
-import { deleteSettlementHeader, listHistory } from "./repo";
+import { supabase } from "@/lib/supabaseClient";
+import { listHistory } from "./repo";
 
 export async function getHistory(params: {
   workspace_id: string;
@@ -36,6 +37,10 @@ export async function deleteHistory(params: { workspace_id: string; id: string }
   if (!workspace_id) throw new Error("缺少 workspace_id");
   if (!id) throw new Error("缺少 id");
 
-  await deleteSettlementHeader({ workspace_id, id });
+  const { error } = await supabase.rpc("delete_settlement_atomic", {
+    p_workspace_id: workspace_id,
+    p_settlement_id: id,
+  });
+  if (error) throw error;
   return { success: true };
 }

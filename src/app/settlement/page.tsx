@@ -257,6 +257,7 @@ export default function SettlementPage() {
         creditor_id: sug.creditor_id,
         amount: amt,
         note: `跨月累計至 ${to} 整筆還款結清`,
+        request_key: crypto.randomUUID(),
       };
       const res = await fetch("/api/settlement", {
         method: "POST",
@@ -306,6 +307,7 @@ export default function SettlementPage() {
             split_id: line.split_id,
             amount: amt,
             note: `跨月累計至 ${to} split 結清`,
+            request_key: crypto.randomUUID(),
           };
 
           const res = await fetch(`/api/settlement/${line.split_id}/items`, {

@@ -122,7 +122,8 @@ export async function GET(req: Request) {
         "Cache-Control": "no-store, no-cache, must-revalidate",
       },
     });
-  } catch (e: any) {
-    return new Response(`Error: ${e.message}`, { status: 500 });
+  } catch (error) {
+    console.error("Calendar export failed", error);
+    return new Response("Calendar export failed", { status: 500 });
   }
 }

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { apiError } from "@/lib/api/http";
+import { apiError, apiOperationError } from "@/lib/api/http";
 import { undoSettlementItem } from "@/services/settlement/undo";
 
 
@@ -24,7 +24,7 @@ export async function DELETE(req: Request) {
 
     const result = await undoSettlementItem({ workspace_id, id });
     return NextResponse.json(result);
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+  } catch (error) {
+    return apiOperationError(error, { context: "Undo settlement item" });
   }
 }

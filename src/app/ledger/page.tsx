@@ -337,6 +337,7 @@ export default function LedgerPage() {
           note: note || null,
           payer_id: payerId || null,
           splits: useSplit ? splits : [],
+          request_key: crypto.randomUUID(),
         }),
       });
       if (res.ok) {

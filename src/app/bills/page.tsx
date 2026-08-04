@@ -312,6 +312,7 @@ export default function BillsPage() {
         note: payForm.note || null,
         category_id: payForm.category_id || null,
         splits: payForm.useSplit ? payForm.splits : [],
+        request_key: crypto.randomUUID(),
       }),
     });
     const j = await res.json().catch(() => ({}));

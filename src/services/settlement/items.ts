@@ -1,13 +1,34 @@
-// src/services/settlement/items.ts
 import { round2 } from "@/lib/settlementCalc";
-import { r2, toNum } from "./utils";
-import {
-  getSplitById,
-  getSettlementItemsOfSplitThroughDate,
-  insertSettlementHeader,
-  insertSettlementItems,
-} from "./repo";
-import { loadSplitLines } from "./summary";
+import { supabase } from "@/lib/supabaseClient";
+import { getSplitById } from "./repo";
+import { toNum } from "./utils";
+
+async function createSettlement(params: {
+  workspace_id: string;
+  from: string;
+  to: string;
+  debtor_id: string;
+  creditor_id: string;
+  amount: number;
+  note: string;
+  split_id: string | null;
+  request_key: string;
+}) {
+  const { data, error } = await supabase.rpc("create_settlement_atomic", {
+    p_workspace_id: params.workspace_id,
+    p_from: params.from,
+    p_to: params.to,
+    p_debtor_id: params.debtor_id,
+    p_creditor_id: params.creditor_id,
+    p_amount: params.amount,
+    p_note: params.note,
+    p_split_id: params.split_id,
+    p_request_key: params.request_key,
+  });
+
+  if (error) throw error;
+  return { success: true, settlement_id: String(data) };
+}
 
 export async function createItemForSplit(params: {
   workspace_id: string;
@@ -15,58 +36,35 @@ export async function createItemForSplit(params: {
   to: string;
   split_id: string;
   amount: number;
+  request_key: string;
   note?: string | null;
 }) {
-  const { workspace_id, from, to, split_id, note } = params;
-  const amt = round2(toNum(params.amount));
-  if (!amt || amt <= 0) throw new Error("amount 必須大於 0");
+  const { workspace_id, from, to, split_id, request_key, note } = params;
+  const amount = round2(toNum(params.amount));
+  if (amount <= 0) throw new Error("amount 必須大於 0");
+  if (!request_key) throw new Error("缺少 request_key");
 
-  const sp = await getSplitById({ workspace_id, split_id });
-  if (!sp) throw new Error("split_id 不存在");
+  const split = await getSplitById({ workspace_id, split_id });
+  if (!split) throw new Error("split_id 不存在");
 
-  const entry = (sp as any).ledger_entries;
+  const entry = (split as any).ledger_entries;
   if (!entry || entry.type !== "expense") throw new Error("此 split 不屬於支出（expense）");
-  if (String(entry.entry_date || "") < from || String(entry.entry_date || "") > to) {
-    throw new Error("此 split 不在本期期間內");
-  }
 
-  const debtor_id = String((sp as any).payer_id || "");
+  const debtor_id = String((split as any).payer_id || "");
   const creditor_id = String(entry.payer_id || "");
-  const splitAmount = r2((sp as any).amount);
-
   if (!debtor_id || !creditor_id) throw new Error("split 資料不完整");
-  if (debtor_id === creditor_id) throw new Error("split debtor/creditor 不可相同");
-  if (splitAmount <= 0) throw new Error("split amount 異常");
 
-  const items = await getSettlementItemsOfSplitThroughDate({ workspace_id, split_id, to });
-  const settled = r2((items ?? []).reduce((s: number, r: any) => s + r2(r.amount), 0));
-  const remaining = r2(Math.max(0, splitAmount - settled));
-
-  if (remaining <= 0) throw new Error("此 split 已全額結清");
-  if (amt > remaining) throw new Error(`結清金額不可大於待結清（最多 ${remaining}）`);
-
-  const header = await insertSettlementHeader({
+  return createSettlement({
     workspace_id,
-    debtor_id,
-    creditor_id,
-    amount: amt,
     from,
     to,
+    debtor_id,
+    creditor_id,
+    amount,
     note: note ? String(note) : `${from.slice(0, 7)} split 結清`,
+    split_id,
+    request_key,
   });
-
-  await insertSettlementItems({
-    items: [
-      {
-        workspace_id,
-        settlement_id: header.id,
-        split_id,
-        amount: amt,
-      },
-    ],
-  });
-
-  return { success: true, settlement_id: header.id };
 }
 
 export async function createSettlementByDebtorCreditor(params: {
@@ -76,50 +74,25 @@ export async function createSettlementByDebtorCreditor(params: {
   debtor_id: string;
   creditor_id: string;
   amount: number;
+  request_key: string;
   note?: string | null;
 }) {
-  const { workspace_id, from, to, debtor_id, creditor_id, note } = params;
-  const amt = round2(toNum(params.amount));
-  if (!amt || amt <= 0) throw new Error("amount 必須大於 0");
+  const { workspace_id, from, to, debtor_id, creditor_id, request_key, note } = params;
+  const amount = round2(toNum(params.amount));
+  if (amount <= 0) throw new Error("amount 必須大於 0");
   if (!debtor_id || !creditor_id) throw new Error("缺少 debtor_id / creditor_id");
   if (debtor_id === creditor_id) throw new Error("debtor_id 不可等於 creditor_id");
+  if (!request_key) throw new Error("缺少 request_key");
 
-  const splitLines = await loadSplitLines({ workspace_id, from, to });
-  const candidates = splitLines
-    .filter((x) => x.debtor_id === debtor_id && x.creditor_id === creditor_id && x.remaining_amount > 0)
-    .sort((a, b) => a.entry_date.localeCompare(b.entry_date));
-
-  const header = await insertSettlementHeader({
+  return createSettlement({
     workspace_id,
-    debtor_id,
-    creditor_id,
-    amount: amt,
     from,
     to,
+    debtor_id,
+    creditor_id,
+    amount,
     note: note ? String(note) : `${from.slice(0, 7)} 拆帳結清`,
+    split_id: null,
+    request_key,
   });
-
-  let remain = amt;
-  const items: Array<{ workspace_id: string; settlement_id: string; split_id: string; amount: number }> = [];
-
-  for (const c of candidates) {
-    if (remain <= 0) break;
-    const take = round2(Math.min(remain, c.remaining_amount));
-    if (take <= 0) continue;
-
-    items.push({
-      workspace_id,
-      settlement_id: header.id,
-      split_id: c.split_id,
-      amount: take,
-    });
-
-    remain = round2(remain - take);
-  }
-
-  // 僅在有可折抵的拆帳明細時才寫入 settlement_items，多餘的溢付款會留存在 header 中並透過計算引擎進行反向折抵
-  if (items.length > 0) {
-    await insertSettlementItems({ items });
-  }
-  return { success: true, settlement_id: header.id };
 }
