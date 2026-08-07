@@ -330,6 +330,11 @@ export default function BillsPage() {
     return { due, paid, remain, awaiting };
   }, [rows]);
 
+  const displayRows = useMemo(
+    () => [...rows].sort((a, b) => Number(a.status === "paid") - Number(b.status === "paid")),
+    [rows],
+  );
+
   function billActions(b: BillInstance) {
     const due = round2(n(b.amount_due));
     const paid = round2(n(b.paid_total));
@@ -507,7 +512,7 @@ export default function BillsPage() {
           ) : (
             <>
               <div className="divide-y divide-slate-100 md:hidden">
-                {rows.map((b) => {
+                {displayRows.map((b) => {
                   const due = round2(n(b.amount_due));
                   const paid = round2(n(b.paid_total));
                   const remain = round2(due - paid);
@@ -557,7 +562,7 @@ export default function BillsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((b) => {
+                  {displayRows.map((b) => {
                     const due = round2(n(b.amount_due));
                     const paid = round2(n(b.paid_total));
                     const remain = round2(due - paid);
