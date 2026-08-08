@@ -531,28 +531,34 @@ export default function SettlementPage() {
                   </div>
                 </div>
 
-                <div className="flex min-h-24 flex-col justify-center border-t border-slate-100 px-4 py-3 lg:border-l lg:border-t-0">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-bold text-emerald-600">
-                      實際還款
+                <div className="flex min-h-28 flex-col justify-center border-t border-emerald-100 bg-emerald-50/60 px-4 py-3 lg:border-l lg:border-t-0">
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
+                      <CheckCircle2 className="h-4 w-4" />
+                    </span>
+                    <span className="text-xs font-black text-emerald-700">
+                      已結清
                     </span>
                   </div>
-                  <div className="text-xl font-black tabular-nums text-emerald-600">
+                  <div className="mt-2 text-xl font-black tabular-nums text-emerald-700">
                     ${totals.settled_amount.toLocaleString()}
                   </div>
-                  <div className="text-xs text-slate-400 mt-1">依結算紀錄加總</div>
+                  <div className="mt-1 text-xs font-medium text-emerald-700/70">依結算紀錄加總</div>
                 </div>
 
-                <div className="flex min-h-24 flex-col justify-center border-l border-t border-slate-100 px-4 py-3 lg:border-t-0">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-bold text-amber-600">
-                      目前淨額
+                <div className="flex min-h-28 flex-col justify-center border-l border-t border-amber-100 bg-amber-50/70 px-4 py-3 lg:border-t-0">
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
+                      <History className="h-4 w-4" />
+                    </span>
+                    <span className="text-xs font-black text-amber-700">
+                      待結清
                     </span>
                   </div>
-                  <div className="text-xl font-black tabular-nums text-amber-600">
+                  <div className="mt-2 text-xl font-black tabular-nums text-amber-700">
                     ${totals.remaining_amount.toLocaleString()}
                   </div>
-                  <div className="text-xs text-slate-400 mt-1">
+                  <div className="mt-1 truncate text-xs font-medium text-amber-700/70">
                     {suggestions[0]
                       ? `${nameOf(suggestions[0].debtor_id)} → ${nameOf(suggestions[0].creditor_id)}`
                       : "已互抵完成"}
