@@ -93,6 +93,18 @@ export default function SettlementPage() {
   const [settledItems, setSettledItems] = useState<any[]>([]);
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [preSettlementSuggestions, setPreSettlementSuggestions] = useState<any[]>([]);
+  const displaySplits = useMemo(
+    () =>
+      splits
+        .map((split, index) => ({ split, index }))
+        .sort(
+          (a, b) =>
+            Number(a.split.remaining_amount <= 0) - Number(b.split.remaining_amount <= 0) ||
+            a.index - b.index,
+        )
+        .map(({ split }) => split),
+    [splits],
+  );
   const [totals, setTotals] = useState({
     split_amount: 0,
     pre_settlement_amount: 0,
@@ -769,7 +781,7 @@ export default function SettlementPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {splits.map((s) => {
+                  {displaySplits.map((s) => {
                     const disabled = s.remaining_amount <= 0;
                     const actionKey = `settle:${s.split_id}`;
                     const isBusy = !!busy[actionKey];
@@ -804,12 +816,23 @@ export default function SettlementPage() {
                         <td className="text-right font-mono text-slate-400 font-medium">
                           ${s.settled_amount}
                         </td>
-                        <td
-                          className={`text-right font-mono font-black ${
-                            s.remaining_amount > 0 ? "text-rose-500" : "text-slate-300"
-                          }`}
-                        >
-                          ${s.remaining_amount}
+                        <td className="text-right">
+                          <div
+                            className={`font-mono font-black ${
+                              s.remaining_amount > 0 ? "text-rose-500" : "text-slate-400"
+                            }`}
+                          >
+                            ${s.remaining_amount}
+                          </div>
+                          <span
+                            className={`mt-1 inline-flex rounded-md px-2 py-0.5 text-[10px] font-black ${
+                              s.remaining_amount > 0
+                                ? "bg-amber-50 text-amber-700"
+                                : "bg-emerald-50 text-emerald-700"
+                            }`}
+                          >
+                            {s.remaining_amount > 0 ? "未結清" : "已結清"}
+                          </span>
                         </td>
                         <td className="text-right">
                           <input
