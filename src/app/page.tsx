@@ -8,6 +8,7 @@ import {
   Calculator,
   Receipt,
   CalendarDays,
+  Sun,
   StickyNote,
   ArrowRight,
   DatabaseBackup,
@@ -43,6 +44,7 @@ const financeTools = [
 const lifeTools = [
   { name: "行事曆", desc: "全家行程與排班規劃", href: "/calendar", icon: CalendarDays, theme: "orange" },
   { name: "便條紙", desc: "隨手紀錄與牆上便利貼", href: "/stickies", icon: StickyNote, theme: "yellow" },
+  { name: "值班休假", desc: "值班、補休與特休管理", href: "https://shift-leave-manager.vercel.app/", icon: Sun, theme: "pink" },
 ];
 
 // 設定與備份清單
@@ -112,7 +114,13 @@ export default function HomePage() {
                     const Icon = tool.icon;
                     const colors = getThemeClasses(tool.theme);
                     return (
-                      <Link key={tool.name} href={tool.href} className="group flex items-center gap-3 px-4 py-3 hover:bg-slate-50">
+                      <Link
+                        key={tool.name}
+                        href={tool.href}
+                        target={tool.href.startsWith("http") ? "_blank" : undefined}
+                        rel={tool.href.startsWith("http") ? "noreferrer" : undefined}
+                        className="group flex items-center gap-3 px-4 py-3 hover:bg-slate-50"
+                      >
                         <span className={`rounded-lg p-2 ring-1 ring-inset ${colors}`}>
                           <Icon className="h-4 w-4" />
                         </span>
