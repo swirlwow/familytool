@@ -26,5 +26,5 @@ export async function POST(request: Request) {
     ? await supabase.auth.oauth.approveAuthorization(authorizationId)
     : await supabase.auth.oauth.denyAuthorization(authorizationId);
   if (result.error) return NextResponse.json({ error: result.error.message }, { status: 400 });
-  return NextResponse.redirect(result.data.redirect_url);
+  return NextResponse.redirect(result.data.redirect_url, 303);
 }
