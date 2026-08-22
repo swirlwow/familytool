@@ -18,6 +18,11 @@ export default function LoginPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
+  function getRedirectPath() {
+    const redirect = new URLSearchParams(window.location.search).get("redirect");
+    return redirect?.startsWith("/") && !redirect.startsWith("//") ? redirect : "/";
+  }
+
   useEffect(() => {
     const recoveryUrl =
       window.location.hash.includes("type=recovery") ||
@@ -33,11 +38,11 @@ export default function LoginPage() {
         return;
       }
 
-      if (session && !recoveryUrl) router.push("/");
+      if (session && !recoveryUrl) router.push(getRedirectPath());
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session && !recoveryUrl) router.push("/");
+      if (session && !recoveryUrl) router.push(getRedirectPath());
     });
 
     return () => subscription.unsubscribe();
@@ -148,7 +153,7 @@ export default function LoginPage() {
       });
 
       // 強制重新導向首頁並重整狀態
-      window.location.href = "/";
+      window.location.href = getRedirectPath();
     } catch (err: any) {
       toast({
         variant: "destructive",
