@@ -166,7 +166,7 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-100 px-4 py-8">
+    <main className="family-login flex min-h-screen items-center justify-center px-4 py-8">
       <div className="relative z-10 flex w-full max-w-md flex-col gap-6 rounded-lg border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
         
         {/* Header Logo & Title */}

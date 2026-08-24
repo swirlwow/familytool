@@ -1,4 +1,5 @@
 import "./globals.css";
+import "./family-theme.css";
 import AppShell from "@/components/AppShell";
 import { Toaster } from "@/components/ui/toaster";
 
@@ -10,7 +11,8 @@ export const metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="zh-Hant" data-theme="light" style={{ colorScheme: "light" }}>
-      <body className="bg-base-200 text-base-content">
+      <head><link rel="stylesheet" href="/fonts/chiron-go-round/css/vf.css" /></head>
+      <body>
         <AppShell>
           {children}
         </AppShell>
