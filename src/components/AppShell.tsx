@@ -11,7 +11,6 @@ import {
   CreditCard,
   DatabaseBackup,
   History,
-  Home,
   HouseHeart,
   LayoutDashboard,
   LogOut,
@@ -103,9 +102,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           </Link>
 
           <nav className="family-nav flex-1" aria-label="主要導覽">
-            <Link href="/" className={isActive("/") ? "family-nav-link active" : "family-nav-link"}>
-              <Home aria-hidden="true" /><span>首頁</span>
-            </Link>
             {NAV_GROUPS.map((group) => (
               <div key={group.title} className="family-nav-group">
                 <h3>{group.title}</h3>
