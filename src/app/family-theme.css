@@ -369,7 +369,9 @@ body {
 }
 
 @media (min-width: 1024px) {
-  .app-header {
+  .app-header,
+  .bills-page-header,
+  .family-bottom-nav {
     display: none !important;
   }
 }
