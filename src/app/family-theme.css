@@ -367,3 +367,9 @@ body {
     padding-bottom: 84px !important;
   }
 }
+
+@media (min-width: 1024px) {
+  .app-header {
+    display: none !important;
+  }
+}
