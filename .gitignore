@@ -4,3 +4,11 @@ next-env.d.ts
 .env.local
 .env
 dist
+.vercel
+.env*
+
+# Sensitive local files
+*.xlsx
+*.pem
+*.key
+service-account.json
