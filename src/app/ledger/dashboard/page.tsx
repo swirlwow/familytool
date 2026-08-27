@@ -899,7 +899,7 @@ export default function LedgerDashboardPage() {
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {(() => {
                 const list = typeFilter === "income" ? groupSummaryIncome : groupSummaryExpense;
                 const colorClass = typeFilter === "income" ? "text-green-600" : "text-red-600";
