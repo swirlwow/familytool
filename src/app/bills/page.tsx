@@ -349,14 +349,25 @@ export default function BillsPage() {
             填寫資料
           </button>
         ) : b.payment_mode === "status_only" ? (
-          <button
-            className="btn btn-sm rounded-lg border-none bg-emerald-600 text-white hover:bg-emerald-700"
-            onClick={() => void markPaid(b)}
-            disabled={b.status === "paid" || markingPaidId === b.id}
-          >
-            <CheckCircle2 className="h-4 w-4" />
-            {b.status === "paid" ? "已繳" : "標記已繳"}
-          </button>
+          <>
+            {b.status !== "paid" ? (
+              <button
+                className="btn btn-sm rounded-lg border border-sky-200 bg-white text-sky-700 hover:border-sky-300 hover:bg-sky-50"
+                onClick={() => openDetails(b)}
+              >
+                <FilePenLine className="h-4 w-4" />
+                修改金額
+              </button>
+            ) : null}
+            <button
+              className="btn btn-sm rounded-lg border-none bg-emerald-600 text-white hover:bg-emerald-700"
+              onClick={() => void markPaid(b)}
+              disabled={b.status === "paid" || markingPaidId === b.id}
+            >
+              <CheckCircle2 className="h-4 w-4" />
+              {b.status === "paid" ? "已繳" : "標記已繳"}
+            </button>
+          </>
         ) : (
           <button className="btn btn-sm rounded-lg border-none bg-rose-500 text-white hover:bg-rose-600" onClick={() => openPay(b)} disabled={remain <= 0}>
             <CreditCard className="h-4 w-4" />
@@ -656,7 +667,9 @@ export default function BillsPage() {
           <div className="modal modal-open bg-slate-900/40">
             <div className="modal-box max-w-md rounded-lg p-0">
               <div className="border-b border-slate-200 px-5 py-4">
-                <h3 className="font-black text-slate-800">填寫帳單資料</h3>
+                <h3 className="font-black text-slate-800">
+                  {detailing.status === "awaiting_details" ? "填寫帳單資料" : "修改帳單資料"}
+                </h3>
                 <p className="mt-1 text-sm font-medium text-slate-500">{detailing.name_snapshot}</p>
               </div>
               <div className="space-y-4 p-5">
