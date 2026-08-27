@@ -342,9 +342,9 @@ export default function BillsPage() {
     const needsDetails = b.status === "awaiting_details" || !b.due_date || due <= 0;
 
     return (
-      <div className="flex flex-wrap items-center justify-end gap-2">
+      <div className="flex flex-wrap items-center justify-end gap-1.5">
         {needsDetails ? (
-          <button className="btn btn-sm rounded-lg border-none bg-sky-600 text-white hover:bg-sky-700" onClick={() => openDetails(b)}>
+          <button className="btn btn-sm h-8 min-h-8 rounded-full border border-violet-200 bg-violet-50 px-3 text-xs font-bold text-violet-700 shadow-none hover:border-violet-300 hover:bg-violet-100" onClick={() => openDetails(b)}>
             <FilePenLine className="h-4 w-4" />
             填寫資料
           </button>
@@ -352,7 +352,7 @@ export default function BillsPage() {
           <>
             {b.status !== "paid" ? (
               <button
-                className="btn btn-sm rounded-lg border border-sky-200 bg-white text-sky-700 hover:border-sky-300 hover:bg-sky-50"
+                className="btn btn-sm h-8 min-h-8 rounded-full border border-violet-200 bg-violet-50 px-3 text-xs font-bold text-violet-700 shadow-none hover:border-violet-300 hover:bg-violet-100"
                 onClick={() => openDetails(b)}
               >
                 <FilePenLine className="h-4 w-4" />
@@ -360,7 +360,7 @@ export default function BillsPage() {
               </button>
             ) : null}
             <button
-              className="btn btn-sm rounded-lg border-none bg-emerald-600 text-white hover:bg-emerald-700"
+              className="btn btn-sm h-8 min-h-8 rounded-full border border-emerald-200 bg-emerald-50 px-3 text-xs font-bold text-emerald-700 shadow-none hover:border-emerald-300 hover:bg-emerald-100"
               onClick={() => void markPaid(b)}
               disabled={b.status === "paid" || markingPaidId === b.id}
             >
@@ -369,12 +369,12 @@ export default function BillsPage() {
             </button>
           </>
         ) : (
-          <button className="btn btn-sm rounded-lg border-none bg-rose-500 text-white hover:bg-rose-600" onClick={() => openPay(b)} disabled={remain <= 0}>
+          <button className="btn btn-sm h-8 min-h-8 rounded-full border border-rose-200 bg-rose-50 px-3 text-xs font-bold text-rose-600 shadow-none hover:border-rose-300 hover:bg-rose-100" onClick={() => openPay(b)} disabled={remain <= 0}>
             <CreditCard className="h-4 w-4" />
             付款
           </button>
         )}
-        <button className="btn btn-ghost btn-sm rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-500" onClick={() => void deleteBill(b)} title="刪除">
+        <button className="btn btn-ghost btn-sm btn-square h-8 min-h-8 w-8 rounded-full text-slate-400 hover:bg-rose-50 hover:text-rose-500" onClick={() => void deleteBill(b)} title="刪除">
           <Trash2 className="h-4 w-4" />
         </button>
       </div>
@@ -528,7 +528,7 @@ export default function BillsPage() {
                   const paid = round2(n(b.paid_total));
                   const remain = round2(due - paid);
                   return (
-                    <article key={b.id} className="space-y-3 p-4">
+                    <article key={b.id} className="space-y-2.5 px-4 py-3">
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
                           <h3 className="truncate font-bold text-slate-800">{b.name_snapshot}</h3>
@@ -579,18 +579,18 @@ export default function BillsPage() {
                     const remain = round2(due - paid);
                     return (
                       <tr key={b.id} className="group border-b border-slate-50 last:border-0 hover:bg-slate-50/80 transition-colors">
-                        <td className="whitespace-nowrap py-3 pl-5 font-mono text-sm font-medium text-slate-600">
+                        <td className="whitespace-nowrap py-2.5 pl-5 font-mono text-sm font-medium text-slate-600">
                           <div className="flex items-center gap-2"><Clock className="w-3.5 h-3.5 text-slate-300" />{b.due_date || "待填"}</div>
                         </td>
-                        <td className="font-bold text-slate-700 text-base">
+                        <td className="py-2.5 font-bold text-slate-700 text-base">
                           <div>{b.name_snapshot}</div>
                           {(b.billing_start || b.billing_end) && <div className="text-[10px] text-slate-400 font-normal mt-0.5">{b.billing_start || "—"} ~ {b.billing_end || "—"}</div>}
                         </td>
-                        <td className="text-right font-black font-mono text-slate-800 text-base">{b.amount_due == null ? "待填" : `$${due.toLocaleString()}`}</td>
-                        <td className="text-right font-mono font-medium text-emerald-600">${paid.toLocaleString()}</td>
-                        <td className={`text-right font-mono font-black ${remain > 0 ? "text-rose-500" : "text-slate-300"}`}>${remain.toLocaleString()}</td>
-                        <td><span className={statusBadge(b.status)}>{statusLabel(b.status)}</span></td>
-                        <td className="pr-5 text-right">
+                        <td className="py-2.5 text-right font-black font-mono text-slate-800 text-base">{b.amount_due == null ? "待填" : `$${due.toLocaleString()}`}</td>
+                        <td className="py-2.5 text-right font-mono font-medium text-emerald-600">${paid.toLocaleString()}</td>
+                        <td className={`py-2.5 text-right font-mono font-black ${remain > 0 ? "text-rose-500" : "text-slate-300"}`}>${remain.toLocaleString()}</td>
+                        <td className="py-2.5"><span className={statusBadge(b.status)}>{statusLabel(b.status)}</span></td>
+                        <td className="py-2.5 pr-5 text-right">
                           {billActions(b)}
                         </td>
                       </tr>
