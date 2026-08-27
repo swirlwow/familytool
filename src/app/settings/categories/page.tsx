@@ -23,7 +23,7 @@ import {
   SortableContext,
   useSortable,
   arrayMove,
-  verticalListSortingStrategy,
+  rectSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
@@ -786,9 +786,9 @@ export default function CategoriesPage() {
                 >
                   <SortableContext
                     items={groupsOrdered.map((g) => g.id)}
-                    strategy={verticalListSortingStrategy}
+                    strategy={rectSortingStrategy}
                   >
-                    <div className="space-y-1.5">
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
                       {groupsOrdered.map((g) => (
                         <SortableGroupCard
                           key={g.id}
@@ -898,9 +898,9 @@ export default function CategoriesPage() {
                           >
                             <SortableContext
                               items={orderedList.map((x) => x.id)}
-                              strategy={verticalListSortingStrategy}
+                              strategy={rectSortingStrategy}
                             >
-                              <div className="space-y-1.5">
+                              <div className="grid grid-cols-1 gap-2 lg:grid-cols-2">
                                 {orderedList.map((r) => {
                                   const currentGroup = normGroupName(r.group_name || gname);
 
