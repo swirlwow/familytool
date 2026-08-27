@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
+import type { User as SupabaseUser } from "@supabase/supabase-js";
 import {
   ArrowUpRight,
   Calculator,
@@ -47,14 +48,14 @@ const NAV_GROUPS = [
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<SupabaseUser | null>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => setUser(user));
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_OUT") {
         setUser(null);
-        window.location.href = "/login";
+        router.replace("/login");
       } else if (event === "SIGNED_IN") {
         setUser(session?.user ?? null);
       }

@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { StickyNote, Plus, Search, Trash2, Pencil, Save, X, Filter } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { ConfirmActionDialog } from "@/components/ui/confirm-action-dialog";
 
 const WORKSPACE_ID = process.env.NEXT_PUBLIC_WORKSPACE_ID || "";
 
@@ -47,6 +48,8 @@ export default function StickiesPage() {
   const [draftTitle, setDraftTitle] = useState<string>("");
   const [draftContent, setDraftContent] = useState<string>("");
   const [saving, setSaving] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<StickyRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   async function load() {
     if (!WORKSPACE_ID) return;
@@ -174,8 +177,7 @@ export default function StickiesPage() {
   async function deleteRow(row: StickyRow) {
     const id = String(row?.id || "").trim();
     if (!WORKSPACE_ID || !id) return;
-    if (!confirm("確定刪除這張便條紙？")) return;
-
+    setDeleting(true);
     try {
       const res = await fetch(`/api/stickies/${encodeURIComponent(id)}?workspace_id=${WORKSPACE_ID}`, {
         method: "DELETE",
@@ -188,6 +190,9 @@ export default function StickiesPage() {
       if (editingId === id) cancelEdit();
     } catch {
       toast({ variant: "destructive", title: "刪除失敗", description: "請稍後再試。" });
+    } finally {
+      setDeleting(false);
+      setPendingDelete(null);
     }
   }
 
@@ -369,7 +374,11 @@ export default function StickiesPage() {
                             <button className="btn btn-ghost btn-xs btn-square rounded-md hover:bg-black/10" onClick={() => beginEdit(s)}>
                               <Pencil className="w-3.5 h-3.5 text-slate-600" />
                             </button>
-                            <button className="btn btn-ghost btn-xs btn-square rounded-md hover:bg-black/10" onClick={() => deleteRow(s)}>
+                            <button
+                              className="btn btn-ghost btn-xs btn-square rounded-md hover:bg-black/10"
+                              onClick={() => setPendingDelete(s)}
+                              aria-label={`刪除便條紙「${s.title || "未命名"}」`}
+                            >
                               <Trash2 className="w-3.5 h-3.5 text-rose-600" />
                             </button>
                           </>
@@ -448,6 +457,21 @@ export default function StickiesPage() {
       >
         <Plus className="w-6 h-6" />
       </button>
+
+      <ConfirmActionDialog
+        open={pendingDelete !== null}
+        title="刪除便條紙？"
+        description={pendingDelete ? `「${pendingDelete.title || "未命名"}」刪除後無法復原。` : undefined}
+        confirmLabel="確認刪除"
+        busy={deleting}
+        destructive
+        onConfirm={async () => {
+          if (pendingDelete) await deleteRow(pendingDelete);
+        }}
+        onOpenChange={(open) => {
+          if (!open) setPendingDelete(null);
+        }}
+      />
 
     </main>
   );

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabaseClient";
+import { assertWorkspaceAccess, WorkspaceAccessError } from "@/lib/api/workspaceAccess";
 
 const WORKSPACE_TABLES = [
   "user_workspaces",
@@ -33,10 +34,7 @@ async function readWorkspaceTable(table: string, workspaceId: string) {
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const workspaceId = searchParams.get("workspace_id") || "";
-    if (!workspaceId) {
-      return NextResponse.json({ error: "缺少 workspace_id" }, { status: 400 });
-    }
+    const workspaceId = await assertWorkspaceAccess(searchParams.get("workspace_id") || "");
 
     const { data: workspace, error: workspaceError } = await supabase
       .from("workspaces")
@@ -79,6 +77,9 @@ export async function GET(request: Request) {
       },
     });
   } catch (error) {
+    if (error instanceof WorkspaceAccessError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
     console.error("Workspace export failed", error);
     return NextResponse.json({ error: "備份失敗，請稍後再試" }, { status: 500 });
   }

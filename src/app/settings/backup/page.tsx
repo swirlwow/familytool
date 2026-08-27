@@ -3,11 +3,12 @@
 
 import { DatabaseBackup, Download, ShieldCheck } from "lucide-react";
 import { WORKSPACE_ID } from "@/lib/appConfig";
+import { toast } from "@/hooks/use-toast";
 
 export default function BackupPage() {
   function handleDownload() {
     if (!WORKSPACE_ID) {
-      alert("未設定 WORKSPACE_ID");
+      toast({ variant: "destructive", title: "無法下載備份", description: "尚未設定工作區" });
       return;
     }
     // 直接開啟 API 網址，瀏覽器會自動下載 JSON 檔案

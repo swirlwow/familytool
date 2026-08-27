@@ -1,5 +1,5 @@
 // src/lib/domain/settlement/calc.ts
-export function toNum(v: any) {
+export function toNum(v: unknown) {
   const n = Number(v);
   return Number.isFinite(n) ? n : 0;
 }
@@ -8,11 +8,11 @@ export function round2(n: number) {
   return Math.round((n + Number.EPSILON) * 100) / 100;
 }
 
-export function sumAmounts(rows: Array<{ amount?: any }>) {
+export function sumAmounts(rows: Array<{ amount?: unknown }>) {
   return round2((rows ?? []).reduce((s, r) => s + round2(toNum(r.amount)), 0));
 }
 
-export function remainingAmount(total: any, settled: any) {
+export function remainingAmount(total: unknown, settled: unknown) {
   const t = round2(toNum(total));
   const s = round2(toNum(settled));
   return round2(Math.max(0, t - s));

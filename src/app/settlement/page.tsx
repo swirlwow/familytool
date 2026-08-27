@@ -16,6 +16,8 @@ import {
 } from "lucide-react";
 
 import { useToast } from "@/hooks/use-toast";
+import { downloadInternalFile } from "@/lib/client/download";
+import { TextInputDialog } from "@/components/ui/text-input-dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -47,6 +49,12 @@ type SplitLine = {
   split_amount: number;
   settled_amount: number;
   remaining_amount: number;
+};
+
+type RepaymentSuggestion = {
+  debtor_id: string;
+  creditor_id: string;
+  amount: number;
 };
 
 type ConfirmState =
@@ -91,8 +99,8 @@ export default function SettlementPage() {
   const [recent, setRecent] = useState<any[]>([]);
   const [splits, setSplits] = useState<SplitLine[]>([]);
   const [settledItems, setSettledItems] = useState<any[]>([]);
-  const [suggestions, setSuggestions] = useState<any[]>([]);
-  const [preSettlementSuggestions, setPreSettlementSuggestions] = useState<any[]>([]);
+  const [suggestions, setSuggestions] = useState<RepaymentSuggestion[]>([]);
+  const [preSettlementSuggestions, setPreSettlementSuggestions] = useState<RepaymentSuggestion[]>([]);
   const displaySplits = useMemo(
     () =>
       splits
@@ -124,6 +132,8 @@ export default function SettlementPage() {
 
   // Confirm dialog
   const [confirmState, setConfirmState] = useState<ConfirmState>(null);
+  const [repaymentSuggestion, setRepaymentSuggestion] = useState<RepaymentSuggestion | null>(null);
+  const [repaymentAmount, setRepaymentAmount] = useState("");
 
   function showOk(title: string, description?: string) {
     toast({ title, description: description || "" });
@@ -242,21 +252,27 @@ export default function SettlementPage() {
       format: "csv",
     });
     if (settlementId) qs.set("settlement_id", settlementId);
-    window.location.href = `/api/settlement/reconciliation?${qs.toString()}`;
+    downloadInternalFile(`/api/settlement/reconciliation?${qs.toString()}`);
   }
 
-  async function doLumpSumRepayment(sug: { debtor_id: string; creditor_id: string; amount: number }) {
+  function requestLumpSumRepayment(sug: RepaymentSuggestion) {
+    setRepaymentSuggestion(sug);
+    setRepaymentAmount(String(sug.amount));
+  }
+
+  async function confirmLumpSumRepayment() {
+    const sug = repaymentSuggestion;
+    if (!sug) return false;
     const debtor = nameOf(sug.debtor_id);
     const creditor = nameOf(sug.creditor_id);
-    const inputAmt = window.prompt(
-      `【整筆結算還款】\n成員：${debtor} 還款給 ${creditor}\n\n請輸入還款金額 (最大額為 $${sug.amount})：`,
-      String(sug.amount)
-    );
-    if (inputAmt === null) return; // 使用者取消
-    
-    const amt = Number(inputAmt);
-    if (isNaN(amt) || amt <= 0) {
-      return showError("還款失敗", { error: "還款金額必須大於 0" });
+    const amt = Number(repaymentAmount);
+    if (!Number.isFinite(amt) || amt <= 0) {
+      showError("還款失敗", { error: "還款金額必須大於 0" });
+      return false;
+    }
+    if (amt > sug.amount) {
+      showError("還款失敗", { error: `還款金額不可超過 $${sug.amount.toLocaleString()}` });
+      return false;
     }
     
     setLoading(true);
@@ -278,12 +294,17 @@ export default function SettlementPage() {
       });
       
       const j = await fetchJson(res);
-      if (!j.ok) return showError("還款失敗", j.data);
+      if (!j.ok) {
+        showError("還款失敗", j.data);
+        return false;
+      }
       
       showOk("還款成功", `${debtor} 已成功還款給 ${creditor}：$${amt}`);
       await loadSettlement();
-    } catch (e: any) {
-      showError("還款失敗", { error: e.message });
+      return true;
+    } catch (error: unknown) {
+      showError("還款失敗", error);
+      return false;
     } finally {
       setLoading(false);
     }
@@ -738,7 +759,7 @@ export default function SettlementPage() {
                       </div>
                       <button
                         className="btn btn-sm bg-amber-500 hover:bg-amber-600 border-none text-white font-bold rounded-xl shadow-sm px-4"
-                        onClick={() => doLumpSumRepayment(sug)}
+                        onClick={() => requestLumpSumRepayment(sug)}
                         disabled={loading}
                       >
                         整筆還款 / 結清
@@ -1061,6 +1082,26 @@ export default function SettlementPage() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        <TextInputDialog
+          open={repaymentSuggestion !== null}
+          title="整筆還款／結清"
+          description={
+            repaymentSuggestion
+              ? `${nameOf(repaymentSuggestion.debtor_id)} 還款給 ${nameOf(repaymentSuggestion.creditor_id)}，最多可輸入 $${repaymentSuggestion.amount.toLocaleString()}。`
+              : undefined
+          }
+          label="本次還款金額"
+          value={repaymentAmount}
+          inputMode="decimal"
+          busy={loading}
+          confirmLabel="確認還款"
+          onValueChange={setRepaymentAmount}
+          onConfirm={confirmLumpSumRepayment}
+          onOpenChange={(open) => {
+            if (!open) setRepaymentSuggestion(null);
+          }}
+        />
       </div>
 
     </main>

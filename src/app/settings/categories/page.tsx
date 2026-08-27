@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { WORKSPACE_ID } from "@/lib/appConfig";
 
@@ -9,11 +9,15 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ConfirmActionDialog } from "@/components/ui/confirm-action-dialog";
+import { toast } from "@/hooks/use-toast";
+import { getErrorMessage } from "@/lib/client/feedback";
 
 // dnd-kit
 import {
   DndContext,
   DragEndEvent,
+  KeyboardSensor,
   PointerSensor,
   closestCenter,
   useSensor,
@@ -24,6 +28,7 @@ import {
   useSortable,
   arrayMove,
   rectSortingStrategy,
+  sortableKeyboardCoordinates,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
@@ -47,12 +52,12 @@ type CatGroup = {
   is_active: boolean;
 };
 
-function n(v: any) {
+function n(v: unknown) {
   const x = Number(v);
   return Number.isFinite(x) ? x : 0;
 }
 
-function normGroupName(s: any) {
+function normGroupName(s: unknown) {
   const t = String(s || "").trim();
   return t ? t : "（未分類）";
 }
@@ -103,14 +108,16 @@ function SortableGroupCard({
       ].join(" ")}
     >
       {/* 拖曳手柄 */}
-      <div
+      <button
+        type="button"
         {...attributes}
         {...listeners}
         className="flex h-9 w-8 shrink-0 cursor-grab items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-violet-50 hover:text-violet-600 active:cursor-grabbing touch-none"
         title="按住拖曳排序"
+        aria-label={`調整大分類「${group.name}」順序`}
       >
-        <GripVertical className="h-5 w-5" />
-      </div>
+        <GripVertical className="h-5 w-5" aria-hidden="true" />
+      </button>
 
       <div className="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-center">
         <div className="min-w-0 flex-1 flex items-center gap-3">
@@ -171,6 +178,7 @@ function SortableGroupCard({
               className="h-8 w-8 p-0 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
               onClick={onDelete}
               title="刪除"
+              aria-label={`刪除大分類「${group.name}」`}
               onPointerDown={(e) => e.stopPropagation()}
             >
               <span className="text-lg leading-none">×</span>
@@ -228,14 +236,16 @@ function SortableCategoryCard({
       ].join(" ")}
     >
       {/* 拖曳手柄 */}
-      <div
+      <button
+        type="button"
         {...attributes}
         {...listeners}
         className="flex h-9 w-8 shrink-0 cursor-grab items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-violet-50 hover:text-violet-600 active:cursor-grabbing touch-none"
         title="按住拖曳排序"
+        aria-label={`調整小分類「${row.name}」順序`}
       >
-        <GripVertical className="h-5 w-5" />
-      </div>
+        <GripVertical className="h-5 w-5" aria-hidden="true" />
+      </button>
 
       <div className="flex min-w-0 flex-1 flex-col gap-3 lg:flex-row lg:items-center">
         <div className="flex min-w-0 flex-1 items-center gap-3">
@@ -298,6 +308,7 @@ function SortableCategoryCard({
               className="h-8 w-8 p-0 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
               onClick={onDelete}
               title="刪除"
+              aria-label={`刪除小分類「${row.name}」`}
               onPointerDown={(e) => e.stopPropagation()}
             >
               <span className="text-lg leading-none">×</span>
@@ -325,12 +336,19 @@ export default function CategoriesPage() {
   const [newGroup, setNewGroup] = useState("");
   const [newName, setNewName] = useState("");
   const [newGroupName, setNewGroupName] = useState(type === "income" ? "收入" : "");
+  const [pendingDelete, setPendingDelete] = useState<
+    | { kind: "group"; id: string; name: string }
+    | { kind: "category"; id: string; name: string }
+    | null
+  >(null);
+  const [deleting, setDeleting] = useState(false);
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 3 } })
+    useSensor(PointerSensor, { activationConstraint: { distance: 3 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-  async function loadCats(includeInactive = true) {
+  const loadCats = useCallback(async (includeInactive = true) => {
     if (!WORKSPACE_ID) return;
     setLoading(true);
     try {
@@ -339,13 +357,16 @@ export default function CategoriesPage() {
       }`;
       const res = await fetch(url, { cache: "no-store" });
       const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(getErrorMessage(json, "小分類讀取失敗"));
       setRows(Array.isArray(json?.data) ? json.data : []);
+    } catch (error: unknown) {
+      toast({ variant: "destructive", title: "小分類讀取失敗", description: getErrorMessage(error, "請稍後再試") });
     } finally {
       setLoading(false);
     }
-  }
+  }, [type]);
 
-  async function loadGroups(includeInactive = true) {
+  const loadGroups = useCallback(async (includeInactive = true) => {
     if (!WORKSPACE_ID) return;
     setGroupsLoading(true);
     try {
@@ -354,19 +375,20 @@ export default function CategoriesPage() {
       }`;
       const res = await fetch(url, { cache: "no-store" });
       const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(getErrorMessage(json, "大分類讀取失敗"));
       setGroups(Array.isArray(json?.data) ? json.data : []);
+    } catch (error: unknown) {
+      toast({ variant: "destructive", title: "大分類讀取失敗", description: getErrorMessage(error, "請稍後再試") });
     } finally {
       setGroupsLoading(false);
     }
-  }
+  }, [type]);
 
   useEffect(() => {
     setNewGroup("");
     setNewGroupName(type === "income" ? "收入" : "");
-    loadCats(true);
-    loadGroups(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [type]);
+    void Promise.all([loadCats(true), loadGroups(true)]);
+  }, [loadCats, loadGroups, type]);
 
   // --- Groups ---------------------------------------------------------
 
@@ -376,7 +398,10 @@ export default function CategoriesPage() {
       .sort((a, b) => n(a.sort_order) - n(b.sort_order) || a.name.localeCompare(b.name, "zh-Hant"));
   }, [groups]);
 
-  async function patchGroup(id: string, patchBody: any) {
+  async function patchGroup(
+    id: string,
+    patchBody: Partial<Pick<CatGroup, "name" | "sort_order" | "is_active">>
+  ) {
     if (!WORKSPACE_ID) return;
     const res = await fetch("/api/category-groups", {
       method: "PATCH",
@@ -384,13 +409,21 @@ export default function CategoriesPage() {
       body: JSON.stringify({ workspace_id: WORKSPACE_ID, id, ...patchBody }),
     });
     const json = await res.json().catch(() => ({}));
-    if (!res.ok) alert(json?.error || "更新大分類失敗");
+    if (!res.ok) {
+      toast({ variant: "destructive", title: "大分類更新失敗", description: getErrorMessage(json, "請稍後再試") });
+    }
   }
 
   async function addGroup() {
-    if (!WORKSPACE_ID) return alert("未設定 WORKSPACE_ID");
+    if (!WORKSPACE_ID) {
+      toast({ variant: "destructive", title: "無法新增", description: "尚未設定工作區" });
+      return;
+    }
     const nm = newGroupName.trim();
-    if (!nm) return alert("請輸入大分類名稱");
+    if (!nm) {
+      toast({ variant: "destructive", title: "請輸入大分類名稱" });
+      return;
+    }
 
     const maxSort = groupsOrdered.reduce((m, g) => Math.max(m, n(g.sort_order)), 0);
 
@@ -407,27 +440,29 @@ export default function CategoriesPage() {
     });
 
     const json = await res.json().catch(() => ({}));
-    if (!res.ok) return alert(json?.error || "新增大分類失敗");
+    if (!res.ok) {
+      toast({ variant: "destructive", title: "大分類新增失敗", description: getErrorMessage(json, "請稍後再試") });
+      return;
+    }
 
     setNewGroupName(type === "income" ? "收入" : "");
     await loadGroups(true);
     await loadCats(true);
+    toast({ title: "已新增大分類", description: nm });
   }
 
-  async function deleteGroup(id: string, name: string) {
-    if (!WORKSPACE_ID) return;
-    if (!confirm(`確定刪除大分類「${name}」？\n（若尚有小分類仍掛在此分類，可能會失敗）`)) return;
-
+  async function removeGroup(id: string, name: string) {
     const res = await fetch("/api/category-groups", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ workspace_id: WORKSPACE_ID, id }),
     });
     const json = await res.json().catch(() => ({}));
-    if (!res.ok) return alert(json?.error || "刪除大分類失敗");
+    if (!res.ok) throw new Error(getErrorMessage(json, "可能仍有小分類使用此大分類"));
 
     await loadGroups(true);
     await loadCats(true);
+    toast({ title: "已刪除大分類", description: name });
   }
 
   async function fixGroupSort() {
@@ -479,7 +514,10 @@ export default function CategoriesPage() {
 
   // --- Categories -----------------------------------------------------
 
-  async function patchCategory(id: string, patchBody: any) {
+  async function patchCategory(
+    id: string,
+    patchBody: Partial<Pick<Category, "name" | "group_name" | "sort_order" | "is_active">>
+  ) {
     if (!WORKSPACE_ID) return;
     const res = await fetch("/api/categories", {
       method: "PATCH",
@@ -487,15 +525,26 @@ export default function CategoriesPage() {
       body: JSON.stringify({ workspace_id: WORKSPACE_ID, id, ...patchBody }),
     });
     const json = await res.json().catch(() => ({}));
-    if (!res.ok) alert(json?.error || "更新小分類失敗");
+    if (!res.ok) {
+      toast({ variant: "destructive", title: "小分類更新失敗", description: getErrorMessage(json, "請稍後再試") });
+    }
   }
 
   async function addCategory() {
-    if (!WORKSPACE_ID) return alert("未設定 WORKSPACE_ID");
+    if (!WORKSPACE_ID) {
+      toast({ variant: "destructive", title: "無法新增", description: "尚未設定工作區" });
+      return;
+    }
     const g = newGroup.trim();
     const nm = newName.trim();
-    if (!g) return alert("請輸入大分類");
-    if (!nm) return alert("請輸入小分類名稱");
+    if (!g) {
+      toast({ variant: "destructive", title: "請先選擇大分類" });
+      return;
+    }
+    if (!nm) {
+      toast({ variant: "destructive", title: "請輸入小分類名稱" });
+      return;
+    }
 
     const sameGroup = rows.filter((r) => normGroupName(r.group_name) === normGroupName(g));
     const maxSort = sameGroup.reduce((m, r) => Math.max(m, n(r.sort_order)), 0);
@@ -514,25 +563,46 @@ export default function CategoriesPage() {
     });
 
     const json = await res.json().catch(() => ({}));
-    if (!res.ok) return alert(json?.error || "新增小分類失敗");
+    if (!res.ok) {
+      toast({ variant: "destructive", title: "小分類新增失敗", description: getErrorMessage(json, "請稍後再試") });
+      return;
+    }
 
     setNewName("");
     await loadCats(true);
+    toast({ title: "已新增小分類", description: `${g}／${nm}` });
   }
 
-  async function deleteCategory(id: string, name: string) {
-    if (!WORKSPACE_ID) return;
-    if (!confirm(`確定刪除小分類「${name}」？`)) return;
-
+  async function removeCategory(id: string, name: string) {
     const res = await fetch("/api/categories", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ workspace_id: WORKSPACE_ID, id }),
     });
     const json = await res.json().catch(() => ({}));
-    if (!res.ok) return alert(json?.error || "刪除小分類失敗");
+    if (!res.ok) throw new Error(getErrorMessage(json, "可能仍有帳務資料使用此小分類"));
 
     await loadCats(true);
+    toast({ title: "已刪除小分類", description: name });
+  }
+
+  async function confirmDelete() {
+    if (!pendingDelete) return;
+    const target = pendingDelete;
+    setDeleting(true);
+    try {
+      if (target.kind === "group") await removeGroup(target.id, target.name);
+      else await removeCategory(target.id, target.name);
+      setPendingDelete(null);
+    } catch (error: unknown) {
+      toast({
+        variant: "destructive",
+        title: target.kind === "group" ? "大分類刪除失敗" : "小分類刪除失敗",
+        description: getErrorMessage(error, "請稍後再試"),
+      });
+    } finally {
+      setDeleting(false);
+    }
   }
 
   async function fixCategorySortAll() {
@@ -679,7 +749,12 @@ export default function CategoriesPage() {
         </div>
 
         {/* Tabs */}
-        <Tabs value={type} onValueChange={(v) => setType(v as any)}>
+        <Tabs
+          value={type}
+          onValueChange={(value) => {
+            if (value === "expense" || value === "income") setType(value);
+          }}
+        >
           <div className="mb-4 flex items-center justify-between gap-4">
             <TabsList className="rounded-full bg-white border border-slate-200 p-1 shadow-sm h-11">
               <TabsTrigger
@@ -785,7 +860,7 @@ export default function CategoriesPage() {
                             await loadGroups(true);
                             await loadCats(true);
                           }}
-                          onDelete={() => deleteGroup(g.id, g.name)}
+                          onDelete={() => setPendingDelete({ kind: "group", id: g.id, name: g.name })}
                         />
                       ))}
                     </div>
@@ -805,7 +880,7 @@ export default function CategoriesPage() {
                 </div>
               </CardHeader>
 
-              <CardContent className="min-h-[260px] rounded-b-3xl bg-slate-50/50 p-3 sm:bg-white sm:p-4">
+              <CardContent className="min-h-[160px] rounded-b-3xl bg-slate-50/50 p-3 sm:bg-white sm:p-4">
                 {/* Create Category */}
                 <div className="mb-4 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-2 sm:p-3">
                   <div className="flex flex-col gap-3 sm:flex-row">
@@ -851,7 +926,7 @@ export default function CategoriesPage() {
                 <div className="space-y-4">
                   {rows.length === 0 ? (
                     <div className="py-14 text-center text-slate-400 font-semibold opacity-50">
-                      目前沒有小分類資料。
+                      目前沒有小分類資料，請在上方選擇大分類並新增。
                     </div>
                   ) : (
                     rowsByGroup.map(([gname, list]) => {
@@ -897,7 +972,7 @@ export default function CategoriesPage() {
                                         await patchCategory(r.id, { is_active: r.is_active === false });
                                         await loadCats(true);
                                       }}
-                                      onDelete={() => deleteCategory(r.id, r.name)}
+                                      onDelete={() => setPendingDelete({ kind: "category", id: r.id, name: r.name })}
                                     />
                                   );
                                 })}
@@ -911,13 +986,29 @@ export default function CategoriesPage() {
                 </div>
 
                 <div className="mt-4 text-center text-xs text-slate-400">
-                  💡 提示：按住卡片左側圖示即可上下拖曳排序
+                  💡 提示：可拖曳卡片左側圖示，或使用鍵盤方向鍵調整順序
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
       </div>
+      <ConfirmActionDialog
+        open={pendingDelete !== null}
+        title={pendingDelete?.kind === "group" ? "刪除大分類？" : "刪除小分類？"}
+        description={
+          pendingDelete
+            ? pendingDelete.kind === "group"
+              ? `「${pendingDelete.name}」刪除後無法復原。若仍有小分類使用，系統會阻止刪除。`
+              : `「${pendingDelete.name}」刪除後無法復原。若仍有帳務資料使用，系統會阻止刪除。`
+            : undefined
+        }
+        confirmLabel="刪除"
+        destructive
+        busy={deleting}
+        onConfirm={confirmDelete}
+        onOpenChange={(open) => !open && setPendingDelete(null)}
+      />
     </main>
   );
 }

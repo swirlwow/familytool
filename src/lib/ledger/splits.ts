@@ -23,7 +23,7 @@ export function validateSplits(params: {
     if (!s?.payer_id) return { ok: false as const, error: "拆帳：請選擇應付者" };
     if (s.payer_id === payer_id) return { ok: false as const, error: "拆帳：應付者不可等於付款人" };
 
-    const a = Number((s as any)?.amount);
+    const a = Number(s.amount);
     if (!a || a <= 0) return { ok: false as const, error: "拆帳：金額需大於 0" };
     sum += a;
   }

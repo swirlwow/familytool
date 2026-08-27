@@ -1,6 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
+type LedgerMonthCacheEntry = {
+  rows: unknown[];
+  updatedAt: number;
+};
+
+const ledgerMonthCache = new Map<string, LedgerMonthCacheEntry>();
+const ledgerMonthRequests = new Map<string, Promise<unknown[]>>();
+const LEDGER_CACHE_TTL_MS = 30_000;
 
 function monthRange(ym: string) {
   const [y, m] = ym.split("-").map(Number);
@@ -10,34 +19,83 @@ function monthRange(ym: string) {
   return { from, to };
 }
 
-export function useLedgerMonth(workspaceId: string, ym: string) {
-  const { from, to } = useMemo(() => monthRange(ym), [ym]);
+async function fetchLedgerMonth(key: string, url: string) {
+  const existing = ledgerMonthRequests.get(key);
+  if (existing) return existing;
 
-  const [loading, setLoading] = useState(false);
-  const [rows, setRows] = useState<any[]>([]); // 暫用 any 以相容您的 LedgerRow
+  const request = (async () => {
+    const res = await fetch(url, { cache: "no-store" });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(json?.error || "記帳資料讀取失敗");
+    const data = Array.isArray(json?.data)
+      ? json.data
+      : Array.isArray(json?.rows)
+        ? json.rows
+        : [];
+    ledgerMonthCache.set(key, { rows: data, updatedAt: Date.now() });
+    return data as unknown[];
+  })();
 
-  async function refresh() {
-    if (!workspaceId) return;
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/ledger?workspace_id=${workspaceId}&from=${from}&to=${to}`, {
-        cache: "no-store",
-      });
-      const json = await res.json().catch(() => ({}));
-      const data = Array.isArray(json?.data) ? json.data : Array.isArray(json?.rows) ? json.rows : [];
-      setRows(data);
-    } catch (e) {
-      console.error(e);
-      setRows([]);
-    } finally {
-      setLoading(false);
-    }
+  ledgerMonthRequests.set(key, request);
+  try {
+    return await request;
+  } finally {
+    ledgerMonthRequests.delete(key);
   }
+}
+
+export function useLedgerMonth<T = Record<string, unknown>>(workspaceId: string, ym: string) {
+  const { from, to } = useMemo(() => monthRange(ym), [ym]);
+  const cacheKey = `${workspaceId}:${from}:${to}`;
+  const requestUrl = `/api/ledger?workspace_id=${encodeURIComponent(workspaceId)}&from=${from}&to=${to}`;
+  const activeCacheKey = useRef(cacheKey);
+  activeCacheKey.current = cacheKey;
+
+  const [loading, setLoading] = useState(() => !ledgerMonthCache.has(cacheKey));
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState("");
+  const [rows, setRows] = useState<T[]>(() =>
+    (ledgerMonthCache.get(cacheKey)?.rows ?? []) as T[]
+  );
+
+  const load = useCallback(async (force = false) => {
+    if (!workspaceId) return;
+
+    const cached = ledgerMonthCache.get(cacheKey);
+    const cacheIsFresh = cached && Date.now() - cached.updatedAt < LEDGER_CACHE_TTL_MS;
+    if (cached) {
+      setRows(cached.rows as T[]);
+      setLoading(false);
+    } else {
+      setRows([]);
+      setLoading(true);
+    }
+
+    if (cacheIsFresh && !force) return;
+
+    setRefreshing(Boolean(cached));
+    setError("");
+    try {
+      const data = await fetchLedgerMonth(cacheKey, requestUrl);
+      if (activeCacheKey.current === cacheKey) setRows(data as T[]);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "記帳資料讀取失敗");
+      if (!cached && activeCacheKey.current === cacheKey) setRows([]);
+    } finally {
+      if (activeCacheKey.current === cacheKey) {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    }
+  }, [cacheKey, requestUrl, workspaceId]);
 
   useEffect(() => {
-    refresh();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [workspaceId, from, to]);
+    void load(false);
+  }, [load]);
 
-  return { from, to, rows, loading, refresh };
+  const refresh = useCallback(async () => {
+    await load(true);
+  }, [load]);
+
+  return { from, to, rows, loading, refreshing, error, refresh };
 }

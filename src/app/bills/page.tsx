@@ -5,6 +5,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { WORKSPACE_ID } from "@/lib/appConfig";
 import { BillTemplateManager } from "@/components/bills/BillTemplateManager";
+import { ConfirmActionDialog } from "@/components/ui/confirm-action-dialog";
+import { toast } from "@/hooks/use-toast";
+import { getErrorMessage } from "@/lib/client/feedback";
+import { validateSplits } from "@/lib/ledger/splits";
 import {
   Receipt,
   Calendar,
@@ -42,6 +46,7 @@ type Payer = { id: string; name: string };
 type Category = { id: string; name: string; group_name?: string | null; sort_order?: number };
 
 type SplitRow = { payer_id: string; amount: number };
+type BillConfirmAction = { kind: "delete" | "markPaid"; bill: BillInstance };
 
 function n(v: unknown) { const x = Number(v); return Number.isFinite(x) ? x : 0; }
 function round2(v: number) { return Math.round((v + Number.EPSILON) * 100) / 100; }
@@ -77,6 +82,8 @@ export default function BillsPage() {
   const [detailing, setDetailing] = useState<BillInstance | null>(null);
   const [detailForm, setDetailForm] = useState({ amount_due: "", due_date: "" });
   const [markingPaidId, setMarkingPaidId] = useState<string | null>(null);
+  const [pendingAction, setPendingAction] = useState<BillConfirmAction | null>(null);
+  const [confirmBusy, setConfirmBusy] = useState(false);
 
   const [payMethods, setPayMethods] = useState<PayMethod[]>([]);
   const [payers, setPayers] = useState<Payer[]>([]);
@@ -125,32 +132,36 @@ export default function BillsPage() {
       const j = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(j?.error || "讀取失敗");
       setRows(Array.isArray(j?.data) ? j.data : []);
-    } catch (e: any) { setError(e.message); setRows([]); } finally { setLoading(false); }
+    } catch (caught: unknown) {
+      setError(getErrorMessage(caught, "帳單讀取失敗"));
+      setRows([]);
+    } finally {
+      setLoading(false);
+    }
   }, [ym]);
 
-  async function loadPayMethods() {
+  const loadLookups = useCallback(async () => {
     if (!WORKSPACE_ID) return;
-    const res = await fetch(`/api/payment-methods?workspace_id=${WORKSPACE_ID}`, { cache: "no-store" });
-    const j = await res.json().catch(() => ({}));
-    setPayMethods(Array.isArray(j?.data) ? j.data : []);
-  }
-
-  async function loadPayers() {
-    if (!WORKSPACE_ID) return;
-    const res = await fetch(`/api/payers?workspace_id=${WORKSPACE_ID}`, { cache: "no-store" });
-    const j = await res.json().catch(() => ({}));
-    setPayers(Array.isArray(j?.data) ? j.data : []);
-  }
-
-  async function loadExpenseCats() {
-    if (!WORKSPACE_ID) return;
-    const res = await fetch(`/api/categories?workspace_id=${WORKSPACE_ID}&type=expense`, { cache: "no-store" });
-    const j = await res.json().catch(() => ({}));
-    setCatsExpense(Array.isArray(j?.data) ? j.data : []);
-  }
+    try {
+      const urls = [
+        `/api/payment-methods?workspace_id=${WORKSPACE_ID}`,
+        `/api/payers?workspace_id=${WORKSPACE_ID}`,
+        `/api/categories?workspace_id=${WORKSPACE_ID}&type=expense`,
+      ];
+      const responses = await Promise.all(urls.map((url) => fetch(url, { cache: "no-store" })));
+      const payloads = await Promise.all(responses.map((response) => response.json().catch(() => ({}))));
+      const failedIndex = responses.findIndex((response) => !response.ok);
+      if (failedIndex >= 0) throw new Error(getErrorMessage(payloads[failedIndex], "選單資料讀取失敗"));
+      setPayMethods(Array.isArray(payloads[0]?.data) ? payloads[0].data : []);
+      setPayers(Array.isArray(payloads[1]?.data) ? payloads[1].data : []);
+      setCatsExpense(Array.isArray(payloads[2]?.data) ? payloads[2].data : []);
+    } catch (caught: unknown) {
+      toast({ variant: "destructive", title: "帳單選單讀取失敗", description: getErrorMessage(caught, "請稍後重新整理") });
+    }
+  }, []);
 
   useEffect(() => { void loadBills(); }, [loadBills]);
-  useEffect(() => { loadPayMethods(); loadPayers(); loadExpenseCats(); }, []);
+  useEffect(() => { void loadLookups(); }, [loadLookups]);
 
   useEffect(() => {
     if (!payForm.useSplit) return;
@@ -170,11 +181,23 @@ export default function BillsPage() {
   }, [catsExpense, payForm.category_group]);
 
   async function createBill() {
-    if (!WORKSPACE_ID) return alert("未設定 WORKSPACE_ID");
-    if (!newBill.name_snapshot.trim()) return alert("請輸入帳單名稱");
+    if (!WORKSPACE_ID) {
+      toast({ variant: "destructive", title: "無法新增", description: "尚未設定工作區" });
+      return;
+    }
+    if (!newBill.name_snapshot.trim()) {
+      toast({ variant: "destructive", title: "請輸入帳單名稱" });
+      return;
+    }
     const amt = round2(n(newBill.amount_due));
-    if (!amt || amt <= 0) return alert("金額需大於 0");
-    if (!newBill.due_date) return alert("請選擇到期日");
+    if (!amt || amt <= 0) {
+      toast({ variant: "destructive", title: "金額需大於 0" });
+      return;
+    }
+    if (!newBill.due_date) {
+      toast({ variant: "destructive", title: "請選擇到期日" });
+      return;
+    }
 
     const res = await fetch("/api/bills", {
       method: "POST",
@@ -191,18 +214,23 @@ export default function BillsPage() {
       }),
     });
     const j = await res.json().catch(() => ({}));
-    if (!res.ok) return alert(j?.error || "新增失敗");
+    if (!res.ok) {
+      toast({ variant: "destructive", title: "帳單新增失敗", description: getErrorMessage(j, "請稍後再試") });
+      return;
+    }
+    const createdName = newBill.name_snapshot.trim();
     setNewBill({ name_snapshot: "", due_date: todayStr(), amount_due: 0, billing_start: "", billing_end: "" });
     await loadBills();
+    toast({ title: "帳單已新增", description: createdName });
   }
 
   async function deleteBill(b: BillInstance) {
     if (!WORKSPACE_ID) return;
-    if (!confirm(`確定刪除帳單？\n${b.name_snapshot}\n${b.due_date || "尚未填日期"} 金額 ${b.amount_due ?? "尚未填寫"}`)) return;
     const res = await fetch("/api/bills", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ workspace_id: WORKSPACE_ID, id: b.id }) });
     const j = await res.json().catch(() => ({}));
-    if (!res.ok) return alert(j?.error || "刪除失敗");
+    if (!res.ok) throw new Error(getErrorMessage(j, "刪除失敗"));
     await loadBills();
+    toast({ title: "帳單已刪除", description: b.name_snapshot });
   }
 
   function openDetails(b: BillInstance) {
@@ -216,8 +244,14 @@ export default function BillsPage() {
   async function saveDetails() {
     if (!WORKSPACE_ID || !detailing) return;
     const amount = round2(n(detailForm.amount_due));
-    if (amount <= 0) return alert("請填寫大於 0 的金額");
-    if (!detailForm.due_date) return alert("請選擇到期日");
+    if (amount <= 0) {
+      toast({ variant: "destructive", title: "請填寫大於 0 的金額" });
+      return;
+    }
+    if (!detailForm.due_date) {
+      toast({ variant: "destructive", title: "請選擇到期日" });
+      return;
+    }
 
     const response = await fetch("/api/bills", {
       method: "PATCH",
@@ -230,15 +264,18 @@ export default function BillsPage() {
       }),
     });
     const payload = await response.json().catch(() => ({}));
-    if (!response.ok) return alert(payload?.error || "更新帳單失敗");
+    if (!response.ok) {
+      toast({ variant: "destructive", title: "帳單更新失敗", description: getErrorMessage(payload, "請稍後再試") });
+      return;
+    }
     setDetailing(null);
     await loadBills();
+    toast({ title: "帳單資料已更新" });
   }
 
   async function markPaid(b: BillInstance) {
     if (!WORKSPACE_ID) return;
     if (!b.amount_due || b.amount_due <= 0) return openDetails(b);
-    if (!confirm(`將「${b.name_snapshot}」標記為已繳？\n此操作不會新增記帳紀錄。`)) return;
 
     setMarkingPaidId(b.id);
     try {
@@ -253,10 +290,30 @@ export default function BillsPage() {
         }),
       });
       const payload = await response.json().catch(() => ({}));
-      if (!response.ok) return alert(payload?.error || "標記已繳失敗");
+      if (!response.ok) throw new Error(getErrorMessage(payload, "標記已繳失敗"));
       await loadBills();
+      toast({ title: "帳單已標記為已繳", description: b.name_snapshot });
     } finally {
       setMarkingPaidId(null);
+    }
+  }
+
+  async function confirmBillAction() {
+    if (!pendingAction) return;
+    const target = pendingAction;
+    setConfirmBusy(true);
+    try {
+      if (target.kind === "delete") await deleteBill(target.bill);
+      else await markPaid(target.bill);
+      setPendingAction(null);
+    } catch (caught: unknown) {
+      toast({
+        variant: "destructive",
+        title: target.kind === "delete" ? "帳單刪除失敗" : "標記已繳失敗",
+        description: getErrorMessage(caught, "請稍後再試"),
+      });
+    } finally {
+      setConfirmBusy(false);
     }
   }
 
@@ -279,22 +336,31 @@ export default function BillsPage() {
 
   async function payToLedger() {
     if (!WORKSPACE_ID || !paying) return;
-    if (!payForm.entry_date) return alert("請選擇付款日期");
+    if (!payForm.entry_date) {
+      toast({ variant: "destructive", title: "請選擇付款日期" });
+      return;
+    }
     const amt = round2(n(payForm.pay_amount));
-    if (!amt || amt <= 0) return alert("付款金額需大於 0");
-    if (!payForm.payer_id) return alert("請選擇付款人");
+    if (!amt || amt <= 0) {
+      toast({ variant: "destructive", title: "付款金額需大於 0" });
+      return;
+    }
+    if (!payForm.payer_id) {
+      toast({ variant: "destructive", title: "請選擇付款人" });
+      return;
+    }
 
     if (payForm.useSplit) {
-      if (!payForm.splits.length) return alert("請至少新增一筆分帳");
-      let sum = 0;
-      for (const s of payForm.splits) {
-        if (!s.payer_id) return alert("分帳：請選擇應付者");
-        if (s.payer_id === payForm.payer_id) return alert("分帳：應付者不可等於付款人");
-        const a = round2(n(s.amount));
-        if (!a || a <= 0) return alert("分帳：金額需大於 0");
-        sum += a;
+      const check = validateSplits({
+        type: "expense",
+        amount: amt,
+        payer_id: payForm.payer_id,
+        splits: payForm.splits,
+      });
+      if (!check.ok) {
+        toast({ variant: "destructive", title: "分帳資料不完整", description: check.error });
+        return;
       }
-      if (round2(sum) > amt) return alert("分帳：應付總和不可大於付款金額");
     }
 
     const res = await fetch("/api/bills", {
@@ -316,10 +382,13 @@ export default function BillsPage() {
       }),
     });
     const j = await res.json().catch(() => ({}));
-    if (!res.ok) return alert(j?.error || "付款寫入記帳失敗");
+    if (!res.ok) {
+      toast({ variant: "destructive", title: "付款寫入記帳失敗", description: getErrorMessage(j, "請稍後再試") });
+      return;
+    }
     setPaying(null);
     await loadBills();
-    alert("已寫入記帳，並更新帳單已付金額/狀態");
+    toast({ title: "付款已寫入記帳", description: "帳單已付金額與狀態已同步更新" });
   }
 
   const summary = useMemo(() => {
@@ -361,7 +430,7 @@ export default function BillsPage() {
             ) : null}
             <button
               className="btn btn-sm h-8 min-h-8 rounded-full border border-emerald-200 bg-emerald-50 px-3 text-xs font-bold text-emerald-700 shadow-none hover:border-emerald-300 hover:bg-emerald-100"
-              onClick={() => void markPaid(b)}
+              onClick={() => setPendingAction({ kind: "markPaid", bill: b })}
               disabled={b.status === "paid" || markingPaidId === b.id}
             >
               <CheckCircle2 className="h-4 w-4" />
@@ -374,7 +443,7 @@ export default function BillsPage() {
             付款
           </button>
         )}
-        <button className="btn btn-ghost btn-sm btn-square h-8 min-h-8 w-8 rounded-full text-slate-400 hover:bg-rose-50 hover:text-rose-500" onClick={() => void deleteBill(b)} title="刪除">
+        <button className="btn btn-ghost btn-sm btn-square h-8 min-h-8 w-8 rounded-full text-slate-400 hover:bg-rose-50 hover:text-rose-500" onClick={() => setPendingAction({ kind: "delete", bill: b })} title="刪除" aria-label={`刪除帳單「${b.name_snapshot}」`}>
           <Trash2 className="h-4 w-4" />
         </button>
       </div>
@@ -703,6 +772,23 @@ export default function BillsPage() {
             <button type="button" className="modal-backdrop" onClick={() => setDetailing(null)} aria-label="關閉帳單資料視窗" />
           </div>
         ) : null}
+
+        <ConfirmActionDialog
+          open={pendingAction !== null}
+          title={pendingAction?.kind === "delete" ? "刪除這筆帳單？" : "標記為已繳？"}
+          description={
+            pendingAction
+              ? pendingAction.kind === "delete"
+                ? `${pendingAction.bill.name_snapshot}\n${pendingAction.bill.due_date || "尚未填日期"}　金額 ${pendingAction.bill.amount_due ?? "尚未填寫"}\n刪除後無法復原。`
+                : `「${pendingAction.bill.name_snapshot}」將標記為已繳。\n此操作不會新增記帳紀錄。`
+              : undefined
+          }
+          confirmLabel={pendingAction?.kind === "delete" ? "刪除" : "標記已繳"}
+          destructive={pendingAction?.kind === "delete"}
+          busy={confirmBusy}
+          onConfirm={confirmBillAction}
+          onOpenChange={(open) => !open && setPendingAction(null)}
+        />
 
         {error && (<div className="toast toast-bottom toast-center"><div className="alert alert-error shadow-lg"><span>{error}</span></div></div>)}
       </div>

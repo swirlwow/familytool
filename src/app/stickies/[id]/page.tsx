@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Plus, Save, Trash2, GripVertical } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { ConfirmActionDialog } from "@/components/ui/confirm-action-dialog";
 
 // dnd-kit
 import {
@@ -40,6 +41,10 @@ type ItemRow = {
   is_done: boolean;
   sort: number;
 };
+
+type PendingDelete =
+  | { kind: "sticky" }
+  | { kind: "item"; itemId: string; label: string };
 
 const OWNERS = ["家庭", "雅惠", "昱元", "子逸", "英茵"] as const;
 
@@ -120,6 +125,8 @@ export default function StickyDetailPage() {
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null);
 
   const [sticky, setSticky] = useState<StickyRow | null>(null);
   const [items, setItems] = useState<ItemRow[]>([]);
@@ -187,8 +194,7 @@ export default function StickyDetailPage() {
 
   async function deleteSticky() {
     if (!WORKSPACE_ID || !id) return;
-    if (!confirm("確定刪除這張便條紙？（會一併刪除清單項目）")) return;
-
+    setDeleting(true);
     try {
       const res = await fetch(`/api/stickies/${encodeURIComponent(id)}?workspace_id=${WORKSPACE_ID}`, {
         method: "DELETE",
@@ -200,6 +206,9 @@ export default function StickyDetailPage() {
       router.push("/stickies");
     } catch (e: any) {
       toast({ variant: "destructive", title: "刪除失敗", description: e.message });
+    } finally {
+      setDeleting(false);
+      setPendingDelete(null);
     }
   }
 
@@ -261,8 +270,7 @@ export default function StickyDetailPage() {
   }
 
   async function deleteItem(itemId: string) {
-    if (!confirm("刪除此項目？")) return;
-
+    setDeleting(true);
     try {
       const res = await fetch(`/api/sticky-items/${encodeURIComponent(itemId)}?workspace_id=${WORKSPACE_ID}`, {
         method: "DELETE",
@@ -273,6 +281,9 @@ export default function StickyDetailPage() {
       await load();
     } catch (e: any) {
       toast({ variant: "destructive", title: "刪除失敗", description: e.message });
+    } finally {
+      setDeleting(false);
+      setPendingDelete(null);
     }
   }
 
@@ -322,7 +333,11 @@ export default function StickyDetailPage() {
             </div>
 
             <div className="flex gap-2">
-              <button className="btn btn-outline btn-sm rounded-xl" onClick={deleteSticky} disabled={saving || loading}>
+              <button
+                className="btn btn-outline btn-sm rounded-xl"
+                onClick={() => setPendingDelete({ kind: "sticky" })}
+                disabled={saving || loading || deleting}
+              >
                 <Trash2 className="w-4 h-4 text-rose-500" /> 刪除
               </button>
               <button className="btn btn-primary btn-sm rounded-xl" onClick={saveSticky} disabled={saving || loading}>
@@ -424,7 +439,15 @@ export default function StickyDetailPage() {
                           if (e.key === "Enter") (e.target as HTMLElement).blur();
                         }}
                       >
-                        <SortableItemRow item={it} onToggle={toggleItem} onEditText={editItemText} onDelete={deleteItem} />
+                        <SortableItemRow
+                          item={it}
+                          onToggle={toggleItem}
+                          onEditText={editItemText}
+                          onDelete={(itemId) => {
+                            const item = items.find((entry) => entry.id === itemId);
+                            setPendingDelete({ kind: "item", itemId, label: item?.text.trim() || "未命名項目" });
+                          }}
+                        />
                       </div>
                     ))}
                   </div>
@@ -435,6 +458,28 @@ export default function StickyDetailPage() {
           </section>
         )}
       </div>
+
+      <ConfirmActionDialog
+        open={pendingDelete !== null}
+        title={pendingDelete?.kind === "sticky" ? "刪除整張便條紙？" : "刪除清單項目？"}
+        description={
+          pendingDelete?.kind === "sticky"
+            ? `「${sticky?.title?.trim() || "未命名便條紙"}」及其中所有清單項目都會刪除，且無法復原。`
+            : pendingDelete?.kind === "item"
+              ? `「${pendingDelete.label}」刪除後無法復原。`
+              : undefined
+        }
+        confirmLabel="確認刪除"
+        busy={deleting}
+        destructive
+        onConfirm={async () => {
+          if (pendingDelete?.kind === "sticky") await deleteSticky();
+          if (pendingDelete?.kind === "item") await deleteItem(pendingDelete.itemId);
+        }}
+        onOpenChange={(open) => {
+          if (!open) setPendingDelete(null);
+        }}
+      />
     </main>
   );
 }

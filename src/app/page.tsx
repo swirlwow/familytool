@@ -74,7 +74,7 @@ export default function HomePage() {
           </span>
         </header>
 
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(280px,0.8fr)]">
+        <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(280px,0.8fr)]">
           <section className="app-panel overflow-hidden">
             <div className="app-panel-header">
               <h2 className="font-black text-slate-800">常用帳務</h2>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { WORKSPACE_ID } from "@/lib/appConfig";
 
@@ -8,11 +8,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ConfirmActionDialog } from "@/components/ui/confirm-action-dialog";
+import { toast } from "@/hooks/use-toast";
+import { getErrorMessage } from "@/lib/client/feedback";
 
 // dnd-kit
 import {
   DndContext,
   DragEndEvent,
+  KeyboardSensor,
   PointerSensor,
   closestCenter,
   useSensor,
@@ -23,6 +27,7 @@ import {
   useSortable,
   arrayMove,
   rectSortingStrategy,
+  sortableKeyboardCoordinates,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
@@ -87,14 +92,16 @@ function SortablePayMethodCard({
       ].join(" ")}
     >
       {/* 拖曳手柄 */}
-      <div
+      <button
+        type="button"
         {...attributes}
         {...listeners}
         className="flex h-9 w-8 shrink-0 cursor-grab items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-sky-50 hover:text-sky-600 active:cursor-grabbing touch-none"
         title="按住拖曳排序"
+        aria-label={`調整付款方式「${row.name}」順序`}
       >
-        <GripVertical className="h-5 w-5" />
-      </div>
+        <GripVertical className="h-5 w-5" aria-hidden="true" />
+      </button>
 
       <div className="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-center">
         {/* 輸入框 */}
@@ -165,8 +172,9 @@ function SortablePayMethodCard({
               }}
               onPointerDown={stopDrag}
               title="刪除"
+              aria-label={`刪除付款方式「${row.name}」`}
             >
-              <Trash2 className="w-4 h-4" />
+              <Trash2 className="w-4 h-4" aria-hidden="true" />
             </Button>
           </div>
         </div>
@@ -180,45 +188,57 @@ export default function PaymentMethodsPage() {
   const [rows, setRows] = useState<PayMethod[]>([]);
   const [loading, setLoading] = useState(false);
   const [newName, setNewName] = useState("");
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 3 },
-    })
+    }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
   const ordered = useMemo(() => orderBySortName(rows), [rows]);
 
-  async function load() {
+  const load = useCallback(async () => {
     if (!WORKSPACE_ID) return;
     setLoading(true);
     try {
       const j = await apiGetPaymentMethods({ workspace_id: WORKSPACE_ID, include_inactive: 1 });
       setRows(Array.isArray(j?.data) ? j.data : []);
-    } catch (e: any) {
-      alert(e?.message || "讀取失敗");
+    } catch (error: unknown) {
+      toast({ variant: "destructive", title: "付款方式讀取失敗", description: getErrorMessage(error, "請稍後再試") });
     } finally {
       setLoading(false);
     }
-  }
-
-  useEffect(() => {
-    load();
   }, []);
 
-  async function patch(id: string, patchBody: any) {
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  async function patch(
+    id: string,
+    patchBody: { name?: string; sort_order?: number; is_active?: boolean }
+  ) {
     if (!WORKSPACE_ID) return;
     try {
       await apiPatchPaymentMethod({ workspace_id: WORKSPACE_ID, id, ...patchBody });
-    } catch (e: any) {
-      alert(e?.message || "更新失敗");
+    } catch (error: unknown) {
+      toast({ variant: "destructive", title: "付款方式更新失敗", description: getErrorMessage(error, "請稍後再試") });
     }
   }
 
   async function add() {
-    if (!WORKSPACE_ID) return alert("未設定 WORKSPACE_ID");
+    if (!WORKSPACE_ID) {
+      toast({ variant: "destructive", title: "無法新增", description: "尚未設定工作區" });
+      return;
+    }
     const nm = newName.trim();
-    if (!nm) return alert("請輸入付款方式名稱");
+    if (!nm) {
+      toast({ variant: "destructive", title: "請輸入付款方式名稱" });
+      return;
+    }
 
     const maxSort = ordered.reduce((m, r) => Math.max(m, n(r.sort_order)), 0);
 
@@ -231,20 +251,25 @@ export default function PaymentMethodsPage() {
       });
       setNewName("");
       await load();
-    } catch (e: any) {
-      alert(e?.message || "新增失敗");
+      toast({ title: "已新增付款方式", description: nm });
+    } catch (error: unknown) {
+      toast({ variant: "destructive", title: "付款方式新增失敗", description: getErrorMessage(error, "請稍後再試") });
     }
   }
 
-  async function del(id: string, name: string) {
-    if (!WORKSPACE_ID) return;
-    if (!confirm(`確定刪除付款方式「${name}」？`)) return;
-
+  async function confirmDelete() {
+    if (!WORKSPACE_ID || !pendingDelete) return;
+    const target = pendingDelete;
+    setDeleting(true);
     try {
-      await apiDeletePaymentMethod({ workspace_id: WORKSPACE_ID, id });
+      await apiDeletePaymentMethod({ workspace_id: WORKSPACE_ID, id: target.id });
+      setPendingDelete(null);
       await load();
-    } catch (e: any) {
-      alert(e?.message || "刪除失敗");
+      toast({ title: "已刪除付款方式", description: target.name });
+    } catch (error: unknown) {
+      toast({ variant: "destructive", title: "付款方式刪除失敗", description: getErrorMessage(error, "可能仍有帳務資料使用此付款方式") });
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -362,7 +387,7 @@ export default function PaymentMethodsPage() {
               </div>
             </CardHeader>
 
-            <CardContent className="min-h-[220px] rounded-b-3xl bg-slate-50/50 p-3 sm:bg-white sm:p-4">
+            <CardContent className="min-h-[160px] rounded-b-3xl bg-slate-50/50 p-3 sm:bg-white sm:p-4">
               {/* 新增區塊 */}
               <div className="mb-4 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-2 sm:p-3">
                 <div className="flex gap-2">
@@ -386,8 +411,8 @@ export default function PaymentMethodsPage() {
               </div>
 
               {ordered.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 text-slate-400 opacity-50">
-                  <p>目前尚無付款方式</p>
+                <div className="flex flex-col items-center justify-center py-10 text-slate-400">
+                  <p>目前尚無付款方式，請在上方輸入名稱新增。</p>
                 </div>
               ) : (
                 <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -405,7 +430,7 @@ export default function PaymentMethodsPage() {
                             await patch(r.id, { is_active: r.is_active === false });
                             await load();
                           }}
-                          onDelete={() => del(r.id, r.name)}
+                          onDelete={() => setPendingDelete({ id: r.id, name: r.name })}
                         />
                       ))}
                     </div>
@@ -414,12 +439,22 @@ export default function PaymentMethodsPage() {
               )}
 
               <div className="mt-4 text-center text-xs text-slate-400">
-                按住左側圖示可調整順序
+                可拖曳左側圖示，或使用鍵盤方向鍵調整順序
               </div>
             </CardContent>
           </Card>
         </div>
       </div>
+      <ConfirmActionDialog
+        open={pendingDelete !== null}
+        title="刪除付款方式？"
+        description={pendingDelete ? `「${pendingDelete.name}」刪除後無法復原。若已有帳務資料使用，系統會阻止刪除。` : undefined}
+        confirmLabel="刪除"
+        destructive
+        busy={deleting}
+        onConfirm={confirmDelete}
+        onOpenChange={(open) => !open && setPendingDelete(null)}
+      />
     </main>
   );
 }

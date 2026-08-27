@@ -20,6 +20,10 @@ import {
 import { StatCard } from "@/components/ui/StatCard";
 import { useLedgerMonth } from "@/hooks/useLedgerMonth";
 import { useMasterData } from "@/hooks/useMasterData";
+import { ConfirmActionDialog } from "@/components/ui/confirm-action-dialog";
+import { toast } from "@/hooks/use-toast";
+import { getErrorMessage } from "@/lib/client/feedback";
+import { validateSplits } from "@/lib/ledger/splits";
 
 // ===== Types =====
 type SplitRow = { payer_id: string; amount: number };
@@ -28,6 +32,7 @@ type Cat = {
   id: string;
   name: string;
   group_name?: string | null;
+  group_sort_order?: number | null;
   sort_order?: number | null;
 };
 
@@ -58,7 +63,7 @@ function todayStr() {
   const day = String(d.getDate()).padStart(2, "0");
   return `${d.getFullYear()}-${m}-${day}`;
 }
-function n(v: any) {
+function n(v: unknown) {
   const x = Number(v);
   return Number.isFinite(x) ? x : 0;
 }
@@ -141,22 +146,26 @@ function SwipeableRow({ children, onEdit, onDelete }: { children: React.ReactNod
   return (
     <div className="relative overflow-hidden group touch-pan-y border-b border-slate-100 last:border-b-0 bg-slate-50">
       {/* 左側背景 (向右滑出現) - 編輯 */}
-      <div 
+      <button
+        type="button"
+        aria-label="編輯這筆記帳"
         className="absolute inset-y-0 left-0 w-20 bg-sky-500 flex flex-col items-center justify-center text-white md:hidden cursor-pointer" 
         onClick={() => { currentX.current = 0; if(rowRef.current) rowRef.current.style.transform = 'translateX(0px)'; onEdit(); }}
       >
         <Edit3 className="w-5 h-5 mb-1" />
         <span className="text-[10px] font-bold tracking-widest">編輯</span>
-      </div>
+      </button>
       
       {/* 右側背景 (向左滑出現) - 刪除 */}
-      <div 
+      <button
+        type="button"
+        aria-label="刪除這筆記帳"
         className="absolute inset-y-0 right-0 w-20 bg-rose-500 flex flex-col items-center justify-center text-white md:hidden cursor-pointer" 
         onClick={() => { currentX.current = 0; if(rowRef.current) rowRef.current.style.transform = 'translateX(0px)'; onDelete(); }}
       >
         <Trash2 className="w-5 h-5 mb-1" />
         <span className="text-[10px] font-bold tracking-widest">刪除</span>
-      </div>
+      </button>
       
       {/* 主體內容 */}
       <div 
@@ -178,18 +187,17 @@ export default function LedgerPage() {
 
   const workspaceId: string = WORKSPACE_ID ?? "";
 
-  const { from, to, rows, loading: rowsLoading, refresh } = useLedgerMonth(
+  const { from, to, rows, loading: rowsLoading, refresh } = useLedgerMonth<LedgerRow>(
     workspaceId,
     ym
   );
 
-  const master = useMasterData() as any;
-  const catsExpense: Cat[] = Array.isArray(master?.catsExpense) ? master.catsExpense : [];
-  const catsIncome: Cat[] = Array.isArray(master?.catsIncome) ? master.catsIncome : [];
-  const payMethods: PayMethod[] = Array.isArray(master?.payMethods) ? master.payMethods : [];
-  const payers: Payer[] = Array.isArray(master?.payers) ? master.payers : [];
-
-  const safeRows: LedgerRow[] = Array.isArray(rows) ? (rows as any) : [];
+  const master = useMasterData();
+  const catsExpense: Cat[] = master.catsExpense;
+  const catsIncome: Cat[] = master.catsIncome;
+  const payMethods: PayMethod[] = master.payMethods;
+  const payers: Payer[] = master.payers;
+  const safeRows = rows;
 
   const [type, setType] = useState<"expense" | "income">("expense");
   const [entryDate, setEntryDate] = useState(todayStr());
@@ -206,6 +214,8 @@ export default function LedgerPage() {
   const [showEntryForm, setShowEntryForm] = useState(false);
 
   const [editing, setEditing] = useState<LedgerRow | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<LedgerRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [editForm, setEditForm] = useState({
     entry_date: todayStr(),
     type: "expense" as "expense" | "income",
@@ -228,8 +238,8 @@ export default function LedgerPage() {
       const g = (c.group_name || "").trim();
       if (!g) return;
       if (!map.has(g)) {
-        const order = ('group_sort_order' in c && c.group_sort_order != null) 
-          ? n((c as any).group_sort_order) 
+        const order = c.group_sort_order != null
+          ? n(c.group_sort_order)
           : idx;
         map.set(g, order);
       }
@@ -255,8 +265,14 @@ export default function LedgerPage() {
     [safeRows]
   );
 
+  const payerNames = useMemo(
+    () => new Map(payers.map((payer) => [payer.id, payer.name])),
+    [payers]
+  );
+
   function payerName(id?: string | null) {
-    return payers.find((p) => p.id === id)?.name ?? (id || "");
+    if (!id) return "";
+    return payerNames.get(id) ?? "未知付款人";
   }
 
   function catName(id?: string | null) {
@@ -288,38 +304,27 @@ export default function LedgerPage() {
     });
   }, [payerId, useSplit, payers]);
 
-  function validateSplitLocal(params: {
-    type: string;
-    amount: number;
-    payer_id?: string | null;
-    splits: SplitRow[];
-  }) {
-    const { type, amount, payer_id, splits } = params;
-    if (!splits || splits.length === 0) return { ok: true as const };
-    if (type !== "expense") return { ok: false as const, error: "拆帳目前只支援『支出』" };
-    if (!payer_id) return { ok: false as const, error: "拆帳：請先選擇付款人" };
-
-    let sum = 0;
-    for (const s of splits) {
-      if (!s.payer_id) return { ok: false as const, error: "拆帳：請選擇應付者" };
-      if (s.payer_id === payer_id) return { ok: false as const, error: "拆帳：應付者不可等於付款人" };
-      const a = Number(s.amount);
-      if (!a || a <= 0) return { ok: false as const, error: "拆帳：金額需大於 0" };
-      sum += a;
-    }
-    if (sum > Number(amount)) return { ok: false as const, error: "拆帳：應付總和不可大於支出金額" };
-    return { ok: true as const };
-  }
-
   async function submitNew() {
-    if (!WORKSPACE_ID) return alert("未設定 WORKSPACE_ID");
-    if (!entryDate) return alert("請選擇日期");
+    if (!WORKSPACE_ID) {
+      toast({ variant: "destructive", title: "無法新增", description: "尚未設定工作區" });
+      return;
+    }
+    if (!entryDate) {
+      toast({ variant: "destructive", title: "請選擇日期" });
+      return;
+    }
     const numAmount = Number(amount);
-    if (!numAmount || numAmount <= 0) return alert("請輸入大於 0 的金額");
+    if (!numAmount || numAmount <= 0) {
+      toast({ variant: "destructive", title: "請輸入大於 0 的金額" });
+      return;
+    }
 
     if (useSplit) {
-      const check = validateSplitLocal({ type, amount: numAmount, payer_id: payerId || null, splits });
-      if (!check.ok) return alert(check.error);
+      const check = validateSplits({ type, amount: numAmount, payer_id: payerId || null, splits });
+      if (!check.ok) {
+        toast({ variant: "destructive", title: "拆帳資料不完整", description: check.error });
+        return;
+      }
     }
 
     try {
@@ -340,53 +345,60 @@ export default function LedgerPage() {
           request_key: crypto.randomUUID(),
         }),
       });
-      if (res.ok) {
-        setAmount(""); 
-        setNote("");
-        setMerchant("");
-        setUseSplit(false);
-        setSplits([]);
-        refresh();
-      } else {
-        alert("新增失敗");
-      }
-    } catch {
-      alert("新增錯誤");
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(getErrorMessage(json, "新增失敗"));
+      setAmount("");
+      setNote("");
+      setMerchant("");
+      setUseSplit(false);
+      setSplits([]);
+      await refresh();
+      toast({ title: "記帳已新增", description: `${type === "expense" ? "支出" : "收入"} $${numAmount.toLocaleString()}` });
+    } catch (error: unknown) {
+      toast({ variant: "destructive", title: "記帳新增失敗", description: getErrorMessage(error, "請稍後再試") });
     }
   }
 
-  async function deleteRow(r: LedgerRow) {
-    if (
-      !confirm(
-        `確定刪除這筆記帳？\n${r.entry_date} ${r.type === "expense" ? "支出" : "收入"} $${r.amount}`
-      )
-    )
-      return;
-    await fetch("/api/ledger", {
-      method: "DELETE",
-      body: JSON.stringify({ workspace_id: WORKSPACE_ID, id: r.id }),
-    });
-    refresh();
+  async function confirmDelete() {
+    if (!pendingDelete) return;
+    const target = pendingDelete;
+    setDeleting(true);
+    try {
+      const res = await fetch("/api/ledger", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ workspace_id: WORKSPACE_ID, id: target.id }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(getErrorMessage(json, "刪除失敗"));
+      setPendingDelete(null);
+      await refresh();
+      toast({ title: "記帳已刪除" });
+    } catch (error: unknown) {
+      toast({ variant: "destructive", title: "記帳刪除失敗", description: getErrorMessage(error, "請稍後再試") });
+    } finally {
+      setDeleting(false);
+    }
   }
 
   function openEdit(r: LedgerRow) {
     setEditing(r);
     const all = [...catsExpense, ...catsIncome];
     const c = all.find((x) => x.id === (r.category_id || ""));
-    const sp = Array.isArray((r as any).ledger_splits) ? (r as any).ledger_splits : [];
+    const sp = Array.isArray(r.ledger_splits) ? r.ledger_splits : [];
 
     setEditForm({
       entry_date: r.entry_date,
       type: r.type,
       amount: Number(r.amount),
       group_name: c?.group_name || "",
-      category_id: (r.category_id as any) || "",
-      pay_method: (r.pay_method as any) || "",
+      category_id: r.category_id || "",
+      pay_method: r.pay_method || "",
       merchant: r.merchant || "",
       note: r.note || "",
-      payer_id: (r.payer_id as any) || "",
+      payer_id: r.payer_id || "",
       useSplit: sp.length > 0,
-      splits: sp.map((s: any) => ({ payer_id: s.payer_id, amount: Number(s.amount) })),
+      splits: sp.map((s) => ({ payer_id: s.payer_id, amount: Number(s.amount) })),
     });
   }
 
@@ -394,13 +406,16 @@ export default function LedgerPage() {
     if (!editing) return;
 
     if (editForm.useSplit) {
-      const check = validateSplitLocal({
+      const check = validateSplits({
         type: editForm.type,
         amount: editForm.amount,
         payer_id: editForm.payer_id || null,
         splits: editForm.splits,
       });
-      if (!check.ok) return alert(check.error);
+      if (!check.ok) {
+        toast({ variant: "destructive", title: "拆帳資料不完整", description: check.error });
+        return;
+      }
     }
 
     const res = await fetch("/api/ledger", {
@@ -413,12 +428,14 @@ export default function LedgerPage() {
       }),
     });
 
-    if (res.ok) {
-      setEditing(null);
-      refresh();
-    } else {
-      alert("修改失敗");
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      toast({ variant: "destructive", title: "記帳修改失敗", description: getErrorMessage(json, "請稍後再試") });
+      return;
     }
+    setEditing(null);
+    await refresh();
+    toast({ title: "記帳已更新" });
   }
 
   const editCats: Cat[] = editForm.type === "expense" ? catsExpense : catsIncome;
@@ -429,8 +446,8 @@ export default function LedgerPage() {
       const g = (c.group_name || "").trim();
       if (!g) return;
       if (!map.has(g)) {
-        const order = ('group_sort_order' in c && c.group_sort_order != null) 
-          ? n((c as any).group_sort_order) 
+        const order = c.group_sort_order != null
+          ? n(c.group_sort_order)
           : idx;
         map.set(g, order);
       }
@@ -546,16 +563,17 @@ export default function LedgerPage() {
                     type === "expense" ? "text-rose-500" : "text-emerald-500"
                   }`}
                   value={type}
-                  onChange={(e: any) => {
-                    setType(e.target.value);
-                    if (e.target.value === "income") {
+                  onChange={(e) => {
+                    const nextType = e.target.value === "income" ? "income" : "expense";
+                    setType(nextType);
+                    if (nextType === "income") {
                       setGroupName("收入");
                       setCategoryId("");
                     } else {
                       setGroupName(lastExpenseGroup || groups[0] || "");
                       setCategoryId("");
                     }
-                    if (e.target.value !== "expense") {
+                    if (nextType !== "expense") {
                       setUseSplit(false);
                       setSplits([]);
                     }
@@ -707,7 +725,7 @@ export default function LedgerPage() {
                         checked={useSplit}
                         onChange={(e) => {
                           if (e.target.checked && type !== "expense") {
-                            alert("僅支出可拆帳");
+                            toast({ variant: "destructive", title: "僅支出可使用拆帳" });
                             return;
                           }
                           setUseSplit(e.target.checked);
@@ -824,7 +842,7 @@ export default function LedgerPage() {
 
                 return (
                   // 🚀 套用我們全新撰寫的 SwipeableRow
-                  <SwipeableRow key={r.id} onEdit={() => openEdit(r)} onDelete={() => deleteRow(r)}>
+                  <SwipeableRow key={r.id} onEdit={() => openEdit(r)} onDelete={() => setPendingDelete(r)}>
                     <div className="group relative px-4 py-3 md:px-8 md:py-5 hover:bg-slate-50 transition-colors">
                       
                       {/* 💻 電腦版：懸停時才出現的操作按鈕 (手機版透過 SwipeableRow 隱藏) */}
@@ -838,7 +856,7 @@ export default function LedgerPage() {
                         </button>
                         <button
                           className="btn btn-ghost btn-xs h-8 w-8 p-0 min-h-0 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50"
-                          onClick={() => deleteRow(r)}
+                          onClick={() => setPendingDelete(r)}
                           aria-label="刪除"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -1127,7 +1145,7 @@ export default function LedgerPage() {
                     checked={editForm.useSplit}
                     onChange={(e) => {
                       if (e.target.checked && editForm.type !== "expense") {
-                        alert("拆帳目前只支援『支出』");
+                        toast({ variant: "destructive", title: "僅支出可使用拆帳" });
                         return;
                       }
                       if (!e.target.checked) {
@@ -1241,6 +1259,20 @@ export default function LedgerPage() {
           缺少 NEXT_PUBLIC_WORKSPACE_ID（Vercel / .env.local 尚未設定）
         </div>
       ) : null}
+      <ConfirmActionDialog
+        open={pendingDelete !== null}
+        title="刪除這筆記帳？"
+        description={
+          pendingDelete
+            ? `${pendingDelete.entry_date}　${pendingDelete.type === "expense" ? "支出" : "收入"} $${Number(pendingDelete.amount).toLocaleString()}\n刪除後無法復原。`
+            : undefined
+        }
+        confirmLabel="刪除"
+        destructive
+        busy={deleting}
+        onConfirm={confirmDelete}
+        onOpenChange={(open) => !open && setPendingDelete(null)}
+      />
     </main>
   );
 }

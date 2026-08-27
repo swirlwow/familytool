@@ -1,7 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { TextInputDialog } from "@/components/ui/text-input-dialog";
+import { toast } from "@/hooks/use-toast";
 import { WORKSPACE_ID } from "@/lib/appConfig";
+import { getErrorMessage } from "@/lib/client/feedback";
 
 type PayerRow = {
   id: string;
@@ -15,28 +18,43 @@ export default function PayersPage() {
   const [loading, setLoading] = useState(false);
 
   const [newName, setNewName] = useState("");
+  const [renaming, setRenaming] = useState<PayerRow | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const [renamingBusy, setRenamingBusy] = useState(false);
 
   const activeCount = useMemo(() => rows.filter((r) => r.is_active).length, [rows]);
 
-  async function load() {
+  const load = useCallback(async () => {
     if (!WORKSPACE_ID) return;
     setLoading(true);
-    const res = await fetch(`/api/payers?workspace_id=${WORKSPACE_ID}&include_inactive=1`, {
-      cache: "no-store",
-    });
-    const json = await res.json().catch(() => ({}));
-    setRows(json?.data || []);
-    setLoading(false);
-  }
-
-  useEffect(() => {
-    load();
+    try {
+      const res = await fetch(`/api/payers?workspace_id=${WORKSPACE_ID}&include_inactive=1`, {
+        cache: "no-store",
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(getErrorMessage(json, "讀取付款人失敗"));
+      setRows(Array.isArray(json?.data) ? json.data : []);
+    } catch (error: unknown) {
+      toast({ variant: "destructive", title: "付款人讀取失敗", description: getErrorMessage(error, "請稍後再試") });
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
+  useEffect(() => {
+    void load();
+  }, [load]);
+
   async function addOne() {
-    if (!WORKSPACE_ID) return alert("未設定 WORKSPACE_ID（請檢查 .env.local）");
+    if (!WORKSPACE_ID) {
+      toast({ variant: "destructive", title: "無法新增", description: "尚未設定工作區" });
+      return;
+    }
     const name = newName.trim();
-    if (!name) return alert("請輸入名稱");
+    if (!name) {
+      toast({ variant: "destructive", title: "請輸入付款人名稱" });
+      return;
+    }
 
     const res = await fetch("/api/payers", {
       method: "POST",
@@ -44,23 +62,52 @@ export default function PayersPage() {
       body: JSON.stringify({ workspace_id: WORKSPACE_ID, name }),
     });
     const json = await res.json().catch(() => ({}));
-    if (!res.ok) return alert(json?.error || "新增失敗");
+    if (!res.ok) {
+      toast({ variant: "destructive", title: "新增失敗", description: getErrorMessage(json, "請稍後再試") });
+      return;
+    }
 
     setNewName("");
     await load();
+    toast({ title: "已新增付款人", description: name });
   }
 
-  async function patch(id: string, patchBody: Partial<PayerRow>) {
-    if (!WORKSPACE_ID) return alert("未設定 WORKSPACE_ID（請檢查 .env.local）");
+  async function patch(id: string, patchBody: Partial<Pick<PayerRow, "name" | "is_active">>) {
+    if (!WORKSPACE_ID) {
+      toast({ variant: "destructive", title: "無法更新", description: "尚未設定工作區" });
+      return false;
+    }
 
-    const res = await fetch("/api/payers", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ workspace_id: WORKSPACE_ID, id, ...patchBody }),
-    });
-    const json = await res.json().catch(() => ({}));
-    if (!res.ok) return alert(json?.error || "更新失敗");
-    await load();
+    try {
+      const res = await fetch("/api/payers", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ workspace_id: WORKSPACE_ID, id, ...patchBody }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(getErrorMessage(json, "更新失敗"));
+      await load();
+      return true;
+    } catch (error: unknown) {
+      toast({ variant: "destructive", title: "付款人更新失敗", description: getErrorMessage(error, "請稍後再試") });
+      return false;
+    }
+  }
+
+  async function confirmRename() {
+    if (!renaming) return false;
+    const name = renameValue.trim();
+    if (!name) {
+      toast({ variant: "destructive", title: "名稱不可為空" });
+      return false;
+    }
+
+    setRenamingBusy(true);
+    const updated = await patch(renaming.id, { name });
+    setRenamingBusy(false);
+    if (!updated) return false;
+    toast({ title: "付款人名稱已更新", description: `${renaming.name} → ${name}` });
+    return true;
   }
 
   return (
@@ -85,7 +132,7 @@ export default function PayersPage() {
               回記帳
             </a>
             <a
-              href="/settings/settlement"
+              href="/settlement"
               className="rounded-lg border bg-white px-4 py-2 text-sm hover:bg-gray-50"
             >
               拆帳結算
@@ -159,18 +206,14 @@ export default function PayersPage() {
                         </span>
                       )}
                     </div>
-                    <div className="text-xs text-gray-500 break-all">id：{r.id}</div>
                   </div>
 
                   <div className="mt-2 flex flex-wrap gap-2 sm:mt-0 sm:justify-end">
                     <button
                       className="rounded border bg-white px-3 py-2 text-sm hover:bg-gray-50"
                       onClick={() => {
-                        const nm = prompt("修改名稱", r.name);
-                        if (nm === null) return;
-                        const v = nm.trim();
-                        if (!v) return alert("名稱不可為空");
-                        patch(r.id, { name: v });
+                        setRenaming(r);
+                        setRenameValue(r.name);
                       }}
                     >
                       改名
@@ -180,7 +223,12 @@ export default function PayersPage() {
                       className={`rounded px-3 py-2 text-sm text-white ${
                         r.is_active ? "bg-red-600 hover:bg-red-700" : "bg-green-600 hover:bg-green-700"
                       }`}
-                      onClick={() => patch(r.id, { is_active: !r.is_active })}
+                      onClick={async () => {
+                        const updated = await patch(r.id, { is_active: !r.is_active });
+                        if (updated) {
+                          toast({ title: r.is_active ? "付款人已停用" : "付款人已啟用", description: r.name });
+                        }
+                      }}
                     >
                       {r.is_active ? "停用" : "啟用"}
                     </button>
@@ -195,6 +243,21 @@ export default function PayersPage() {
           註：停用付款人不會刪資料；歷史拆帳仍可追溯。
         </div>
       </div>
+
+      <TextInputDialog
+        open={renaming !== null}
+        title="修改付款人名稱"
+        description="只會更新顯示名稱，歷史拆帳與結清資料都會保留。"
+        label="付款人名稱"
+        value={renameValue}
+        busy={renamingBusy}
+        confirmLabel="儲存名稱"
+        onValueChange={setRenameValue}
+        onConfirm={confirmRename}
+        onOpenChange={(open) => {
+          if (!open) setRenaming(null);
+        }}
+      />
     </main>
   );
 }

@@ -1,10 +1,11 @@
 // src/app/ledger/dashboard/page.tsx
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { WORKSPACE_ID } from "@/lib/appConfig";
 import { useMasterData } from "@/hooks/useMasterData";
 import { ChevronDown, Download, Filter } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 import {
   settlementStatusLabel,
   type SettlementStatus,
@@ -132,7 +133,7 @@ export default function LedgerDashboardPage() {
   const [err, setErr] = useState<string>("");
   const [showFilters, setShowFilters] = useState(false);
 
-  async function fetchLedger() {
+  const fetchLedger = useCallback(async () => {
     setLoading(true);
     setErr("");
     try {
@@ -151,17 +152,11 @@ export default function LedgerDashboardPage() {
     } finally {
       setLoading(false);
     }
-  }
-
-  useEffect(() => {
-    fetchLedger();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    fetchLedger();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [from, to]);
+
+  useEffect(() => {
+    void fetchLedger();
+  }, [fetchLedger]);
 
   // maps：付款人 / 付款方式 / 分類
   const maps = useMemo(() => {
@@ -214,7 +209,7 @@ export default function LedgerDashboardPage() {
   }, [groupFilter]);
 
   // keyword 內容：把一筆資料可搜尋文字「展開」
-  function rowSearchText(x: LedgerEntry) {
+  const rowSearchText = useCallback((x: LedgerEntry) => {
     const c = x.category_id ? maps.catMap.get(x.category_id) : null;
     const group = c?.group_name || "未分類";
     const cat = c?.name || "未分類";
@@ -233,7 +228,7 @@ export default function LedgerDashboardPage() {
     ]
       .join(" ")
       .toLowerCase();
-  }
+  }, [maps]);
 
   // 套用篩選（含 keyword）
   const filteredRows = useMemo(() => {
@@ -259,7 +254,7 @@ export default function LedgerDashboardPage() {
     }
 
     return r;
-  }, [rows, typeFilter, groupFilter, categoryFilter, keyword, maps.catMap, maps.payerMap, maps.pmMap]);
+  }, [rows, typeFilter, groupFilter, categoryFilter, keyword, maps.catMap, rowSearchText]);
 
   // KPI
   const totalExpense = useMemo(() => {
@@ -436,7 +431,7 @@ export default function LedgerDashboardPage() {
     });
 
     if (lines.length === 0) {
-      alert("此搜尋條件下，沒有任何明細資料。");
+      toast({ title: "沒有可匯出的明細", description: "目前搜尋條件下沒有任何資料。" });
       return;
     }
 
@@ -809,7 +804,7 @@ export default function LedgerDashboardPage() {
         </div>
 
         <div className="rounded-2xl p-4 bg-slate-50 border border-slate-100">
-          <p className="text-sm text-slate-700 font-bold">淨額</p>
+          <p className="text-sm text-slate-700 font-bold">篩選結果淨額</p>
           <p
             className={cn(
               "mt-1 text-xl font-black",

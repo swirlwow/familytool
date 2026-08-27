@@ -1,7 +1,7 @@
 // src/app/settlement/history/page.tsx
 "use client";
 
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -13,10 +13,37 @@ import {
   ChevronDown,
   Download,
 } from "lucide-react";
+import { downloadInternalFile } from "@/lib/client/download";
+import { ConfirmActionDialog } from "@/components/ui/confirm-action-dialog";
+import { toast } from "@/hooks/use-toast";
+import { getErrorMessage } from "@/lib/client/feedback";
 
 const WORKSPACE_ID = process.env.NEXT_PUBLIC_WORKSPACE_ID || "";
 
 type Payer = { id: string; name: string };
+type SettlementHistoryRow = {
+  id: string;
+  debtor_id: string;
+  creditor_id: string;
+  amount: number;
+  from_date?: string | null;
+  to_date?: string | null;
+  created_at?: string | null;
+};
+type ReconciliationDetailRow = {
+  id?: string;
+  settlement_item_id?: string;
+  settlement_id: string;
+  entry_date?: string | null;
+  merchant?: string | null;
+  note?: string | null;
+  entry_note?: string | null;
+  amount?: number | null;
+  split_amount?: number | null;
+  allocated_amount?: number | null;
+  status?: string | null;
+  status_label?: string | null;
+};
 
 function pad2(n: number) { return String(n).padStart(2, "0"); }
 function fmtDate(d: Date) { return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`; }
@@ -45,20 +72,22 @@ export default function SettlementHistoryPage() {
     for (const p of payers) m.set(p.id, p.name);
     return m;
   }, [payers]);
-  const nameOf = (id: string) => payerMap.get(id) || id;
+  const nameOf = (id: string) => payerMap.get(id) || "未知成員";
 
-  const [rows, setRows] = useState<any[]>([]);
-  const [detailRows, setDetailRows] = useState<any[]>([]);
+  const [rows, setRows] = useState<SettlementHistoryRow[]>([]);
+  const [detailRows, setDetailRows] = useState<ReconciliationDetailRow[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [pendingUndo, setPendingUndo] = useState<SettlementHistoryRow | null>(null);
+  const [undoing, setUndoing] = useState(false);
 
-  async function loadPayers() {
+  const loadPayers = useCallback(async () => {
     if (!WORKSPACE_ID) return;
     const res = await fetch(`/api/payers?workspace_id=${WORKSPACE_ID}`, { cache: "no-store" });
     const j = await res.json().catch(() => ({}));
     setPayers(Array.isArray(j?.data) ? j.data : []);
-  }
+  }, []);
 
-  async function loadHistory() {
+  const loadHistory = useCallback(async () => {
     if (!WORKSPACE_ID) return;
     setLoading(true);
     setError(null);
@@ -87,17 +116,17 @@ export default function SettlementHistoryPage() {
       const detailJson = await detailRes.json().catch(() => ({}));
       if (!detailRes.ok) throw new Error(detailJson?.error || "讀取結算明細失敗");
       setDetailRows(Array.isArray(detailJson?.rows) ? detailJson.rows : []);
-    } catch (e: any) {
-      setError(e.message);
+    } catch (caught: unknown) {
+      setError(getErrorMessage(caught, "結清紀錄讀取失敗"));
       setRows([]);
       setDetailRows([]);
     } finally {
       setLoading(false);
     }
-  }
+  }, [from, limit, to]);
 
-  useEffect(() => { loadPayers(); }, []);
-  useEffect(() => { loadHistory(); }, [from, to, limit, payers.length]);
+  useEffect(() => { void loadPayers(); }, [loadPayers]);
+  useEffect(() => { void loadHistory(); }, [loadHistory, payers.length]);
 
   function exportReconciliation(settlementId?: string) {
     const qs = new URLSearchParams({
@@ -107,38 +136,36 @@ export default function SettlementHistoryPage() {
       format: "csv",
     });
     if (settlementId) qs.set("settlement_id", settlementId);
-    window.location.href = `/api/settlement/reconciliation?${qs.toString()}`;
+    downloadInternalFile(`/api/settlement/reconciliation?${qs.toString()}`);
   }
 
-  async function undoWholeSettlement(row: any) {
-    const id = String(row?.id || "");
+  async function undoWholeSettlement(row: SettlementHistoryRow) {
+    const id = String(row.id || "");
     if (!id) return;
-
-    const debtor = nameOf(row?.debtor_id);
-    const creditor = nameOf(row?.creditor_id);
-    const amt = row?.amount;
-    const period = `${row?.from_date || "?"} ~ ${row?.to_date || "?"}`;
-
-    const msg =
-      `確定要撤銷整筆結清？\n` +
-      `${debtor} → ${creditor}：${amt}\n` +
-      `期間：${period}\n\n` +
-      `⚠️ 會刪除該結算底下所有明細（回復待結清）`;
-
-    if (!confirm(msg)) return;
 
     const res = await fetch(`/api/settlement/${id}?workspace_id=${WORKSPACE_ID}`, { method: "DELETE" });
 
     const raw = await res.text();
-    let j: any = {};
-    try { j = JSON.parse(raw); } catch {}
-
-    if (!res.ok) {
-      alert(`撤銷失敗：${j?.error || raw || res.status}`);
-      return;
-    }
+    let payload: unknown = {};
+    try { payload = JSON.parse(raw); } catch { payload = raw; }
+    if (!res.ok) throw new Error(getErrorMessage(payload, raw || `HTTP ${res.status}`));
 
     await loadHistory();
+    toast({ title: "整筆結清已撤銷", description: `${nameOf(row.debtor_id)} → ${nameOf(row.creditor_id)}` });
+  }
+
+  async function confirmUndo() {
+    if (!pendingUndo) return;
+    const target = pendingUndo;
+    setUndoing(true);
+    try {
+      await undoWholeSettlement(target);
+      setPendingUndo(null);
+    } catch (caught: unknown) {
+      toast({ variant: "destructive", title: "撤銷結清失敗", description: getErrorMessage(caught, "請稍後再試") });
+    } finally {
+      setUndoing(false);
+    }
   }
 
   return (
@@ -274,7 +301,7 @@ export default function SettlementHistoryPage() {
                         <button className="btn btn-ghost btn-sm rounded-lg text-emerald-700" onClick={() => exportReconciliation(r.id)} title="匯出此筆結算">
                           <Download className="h-4 w-4" /><span className="sr-only">匯出</span>
                         </button>
-                        <button className="btn btn-ghost btn-sm rounded-lg text-rose-600" onClick={() => undoWholeSettlement(r)}>
+                        <button className="btn btn-ghost btn-sm rounded-lg text-rose-600" onClick={() => setPendingUndo(r)}>
                           <Trash2 className="h-4 w-4" />撤銷
                         </button>
                       </div>
@@ -350,7 +377,7 @@ export default function SettlementHistoryPage() {
                         </button>
                         <button
                           className="btn btn-xs bg-white border border-slate-200 text-slate-400 hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50 rounded-lg gap-1 transition-all"
-                          onClick={() => undoWholeSettlement(r)}
+                          onClick={() => setPendingUndo(r)}
                           title="撤銷整筆結算"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -436,6 +463,20 @@ export default function SettlementHistoryPage() {
             </div>
           </div>
         )}
+        <ConfirmActionDialog
+          open={pendingUndo !== null}
+          title="撤銷整筆結清？"
+          description={
+            pendingUndo
+              ? `${nameOf(pendingUndo.debtor_id)} → ${nameOf(pendingUndo.creditor_id)}：$${Number(pendingUndo.amount).toLocaleString()}\n期間：${pendingUndo.from_date || "?"} ~ ${pendingUndo.to_date || "?"}\n撤銷後，這筆結清的所有明細會回復為待結清。`
+              : undefined
+          }
+          confirmLabel="撤銷結清"
+          destructive
+          busy={undoing}
+          onConfirm={confirmUndo}
+          onOpenChange={(open) => !open && setPendingUndo(null)}
+        />
       </div>
     </main>
   );

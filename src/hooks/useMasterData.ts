@@ -25,15 +25,27 @@ type MasterData = {
 
 const cacheKey = (workspaceId: string) => `masterData:${workspaceId}`;
 
-function safeArray<T>(v: any): T[] {
+function safeArray<T>(v: unknown): T[] {
   return Array.isArray(v) ? (v as T[]) : [];
 }
 
+function asRecord(value: unknown): Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+function apiErrorMessage(value: unknown, fallback: string) {
+  const message = asRecord(value).error;
+  return typeof message === "string" && message ? message : fallback;
+}
+
 // 兼容回傳可能是 {data: []} 或直接 []
-function unwrapData<T>(json: any): T[] {
+function unwrapData<T>(json: unknown): T[] {
   if (!json) return [];
   if (Array.isArray(json)) return json as T[];
-  if (Array.isArray(json.data)) return json.data as T[];
+  const data = asRecord(json).data;
+  if (Array.isArray(data)) return data as T[];
   return [];
 }
 
@@ -75,10 +87,10 @@ async function fetchViaLookups(workspaceId: string): Promise<MasterData> {
   const r = await fetch(`/api/lookups?workspace_id=${encodeURIComponent(workspaceId)}`, {
     cache: "no-store",
   });
-  const j = await r.json();
-  if (!r.ok) throw new Error(j?.error || "lookups 讀取失敗");
+  const j: unknown = await r.json();
+  if (!r.ok) throw new Error(apiErrorMessage(j, "lookups 讀取失敗"));
 
-  const d = j?.data || {};
+  const d = asRecord(asRecord(j).data);
   return normalize({
     catsExpense: safeArray<Cat>(d.categories_expense),
     catsIncome: safeArray<Cat>(d.categories_income),
@@ -106,10 +118,10 @@ async function fetchViaLegacyApis(workspaceId: string): Promise<MasterData> {
     rPayers.json(),
   ]);
 
-  if (!rCatsEx.ok) throw new Error(jCatsEx?.error || "categories(expense) 讀取失敗");
-  if (!rCatsIn.ok) throw new Error(jCatsIn?.error || "categories(income) 讀取失敗");
-  if (!rPayMethods.ok) throw new Error(jPayMethods?.error || "payment-methods 讀取失敗");
-  if (!rPayers.ok) throw new Error(jPayers?.error || "payers 讀取失敗");
+  if (!rCatsEx.ok) throw new Error(apiErrorMessage(jCatsEx, "categories(expense) 讀取失敗"));
+  if (!rCatsIn.ok) throw new Error(apiErrorMessage(jCatsIn, "categories(income) 讀取失敗"));
+  if (!rPayMethods.ok) throw new Error(apiErrorMessage(jPayMethods, "payment-methods 讀取失敗"));
+  if (!rPayers.ok) throw new Error(apiErrorMessage(jPayers, "payers 讀取失敗"));
 
   return normalize({
     catsExpense: unwrapData<Cat>(jCatsEx),
@@ -203,9 +215,9 @@ export function useMasterData() {
       try {
         const d = await fetchMasterData(workspaceId);
         applyData(d); // 更新為最新資料
-      } catch (e: any) {
+      } catch (e: unknown) {
         if (!aliveRef.current) return;
-        if (!hasCache) setError(e?.message || "讀取失敗");
+        if (!hasCache) setError(e instanceof Error ? e.message : "讀取失敗");
       } finally {
         if (!aliveRef.current) return;
         setLoading(false);
@@ -215,9 +227,8 @@ export function useMasterData() {
   );
 
   useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    void load();
+  }, [load]);
 
   const refresh = useCallback(async () => {
     await load();

@@ -5,6 +5,7 @@ next-env.d.ts
 .env
 dist
 .vercel
+.npm-cache/
 .env*
 
 # Sensitive local files

@@ -4,6 +4,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CalendarDays, ChevronLeft, ChevronRight, Plus, Trash2, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { ConfirmActionDialog } from "@/components/ui/confirm-action-dialog";
 
 const WORKSPACE_ID = process.env.NEXT_PUBLIC_WORKSPACE_ID || "";
 
@@ -262,6 +263,7 @@ export default function CalendarPage() {
   const [draft, setDraft] = useState<Draft | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   const swipeStartX = useRef<number | null>(null);
   const swipeStartY = useRef<number | null>(null);
@@ -422,9 +424,6 @@ export default function CalendarPage() {
     const id = String(draft.id || "").trim();
     if (!id) return;
 
-    const title = String(draft.title || "").trim() || "未命名行程";
-    if (!window.confirm(`確定要刪除「${title}」嗎？`)) return;
-
     setDeleting(true);
     try {
       const res = await fetch(`/api/notes/${encodeURIComponent(id)}?workspace_id=${WORKSPACE_ID}`, {
@@ -434,6 +433,7 @@ export default function CalendarPage() {
       if (!res.ok) throw new Error(j.error || "刪除失敗");
 
       closeDraft();
+      setDeleteConfirmOpen(false);
       await load();
       toast({ title: "已刪除行程" });
     } catch {
@@ -1009,7 +1009,7 @@ export default function CalendarPage() {
                   <button
                     type="button"
                     className="inline-flex h-10 items-center gap-2 rounded-lg px-3 text-sm font-bold text-rose-600 transition-colors hover:bg-rose-50 disabled:opacity-50"
-                    onClick={deleteDraft}
+                    onClick={() => setDeleteConfirmOpen(true)}
                     disabled={saving || deleting}
                   >
                     <Trash2 className="h-4 w-4" />
@@ -1023,6 +1023,17 @@ export default function CalendarPage() {
           </div>
         </div>
       )}
+
+      <ConfirmActionDialog
+        open={deleteConfirmOpen}
+        title="刪除行程？"
+        description={draft ? `「${String(draft.title || "").trim() || "未命名行程"}」刪除後無法復原。` : undefined}
+        confirmLabel="確認刪除"
+        busy={deleting}
+        destructive
+        onConfirm={deleteDraft}
+        onOpenChange={setDeleteConfirmOpen}
+      />
     </main>
   );
 }
