@@ -341,7 +341,7 @@ export default function CategoriesPage() {
   const [groupsLoading, setGroupsLoading] = useState(false);
 
   // 新增輸入框狀態
-  const [newGroup, setNewGroup] = useState(type === "income" ? "收入" : "");
+  const [newGroup, setNewGroup] = useState("");
   const [newName, setNewName] = useState("");
   const [newGroupName, setNewGroupName] = useState(type === "income" ? "收入" : "");
 
@@ -380,7 +380,7 @@ export default function CategoriesPage() {
   }
 
   useEffect(() => {
-    setNewGroup(type === "income" ? "收入" : "");
+    setNewGroup("");
     setNewGroupName(type === "income" ? "收入" : "");
     loadCats(true);
     loadGroups(true);
@@ -828,12 +828,28 @@ export default function CategoriesPage() {
                 {/* Create Category */}
                 <div className="mb-4 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-2 sm:p-3">
                   <div className="flex flex-col gap-3 sm:flex-row">
-                    <Input
-                      className="h-10 flex-1 border-slate-200 bg-white shadow-sm rounded-xl focus:border-violet-500"
-                      placeholder="大分類（例如：飲食）"
+                    <select
+                      className="h-10 min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 font-medium text-slate-800 shadow-sm outline-none transition-colors focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
                       value={newGroup}
                       onChange={(e) => setNewGroup(e.target.value)}
-                    />
+                      disabled={groupsLoading || groupsOrdered.every((group) => group.is_active === false)}
+                      aria-label="選擇大分類"
+                    >
+                      <option value="">
+                        {groupsLoading
+                          ? "正在載入大分類…"
+                          : groupsOrdered.some((group) => group.is_active !== false)
+                            ? "請選擇大分類"
+                            : "請先新增大分類"}
+                      </option>
+                      {groupsOrdered
+                        .filter((group) => group.is_active !== false)
+                        .map((group) => (
+                          <option key={group.id} value={group.name}>
+                            {group.name}
+                          </option>
+                        ))}
+                    </select>
                     <Input
                       className="h-10 flex-1 border-slate-200 bg-white shadow-sm rounded-xl focus:border-violet-500"
                       placeholder="小分類（例如：早餐）"
