@@ -362,6 +362,56 @@ body {
   outline-offset: 2px;
 }
 
+/* Shared action language: soft, compact controls that match the FAMILYTOOL palette. */
+.family-content .btn:not(.join-item) {
+  border-radius: 9999px;
+  box-shadow: none;
+}
+
+.family-content .btn.bg-amber-500 {
+  border: 1px solid #f1d59f !important;
+  background: #fff5df !important;
+  color: #9a5a00 !important;
+}
+
+.family-content .btn.bg-amber-500:hover {
+  border-color: #e9c77f !important;
+  background: #ffedc7 !important;
+}
+
+.family-content :is(.btn, button):is(.bg-violet-600, .bg-indigo-600, .bg-blue-600) {
+  border: 1px solid #cfc3e8 !important;
+  background: #eee8fa !important;
+  color: var(--ft-plum) !important;
+}
+
+.family-content :is(.btn, button):is(.bg-violet-600, .bg-indigo-600, .bg-blue-600):hover {
+  border-color: #bfb0df !important;
+  background: #e4dcf5 !important;
+}
+
+.family-content .btn.bg-emerald-600 {
+  border: 1px solid #b9dfd0 !important;
+  background: #edf9f4 !important;
+  color: #176b52 !important;
+}
+
+.family-content .btn.bg-emerald-600:hover {
+  border-color: #9fd2bf !important;
+  background: #ddf3e9 !important;
+}
+
+.family-content .btn.btn-primary:not(.join-item):not([class*="bg-"]) {
+  border: 1px solid #efb8c7 !important;
+  background: var(--ft-rose-pale) !important;
+  color: #a51f47 !important;
+}
+
+.family-content .btn.btn-primary:not(.join-item):not([class*="bg-"]):hover {
+  border-color: #e99db2 !important;
+  background: #f6cfd9 !important;
+}
+
 @media (max-width: 1023px) {
   .family-content {
     padding-bottom: 84px !important;
@@ -373,5 +423,10 @@ body {
   .bills-page-header,
   .family-bottom-nav {
     display: none !important;
+  }
+
+  .family-content table.table tbody > tr > td {
+    padding-top: 0.625rem;
+    padding-bottom: 0.625rem;
   }
 }
