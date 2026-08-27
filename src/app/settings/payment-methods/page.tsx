@@ -56,13 +56,20 @@ function SortablePayMethodCard({
   onDelete: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id: row.id });
+    useSortable({
+      id: row.id,
+      transition: {
+        duration: 140,
+        easing: "cubic-bezier(0.2, 0, 0, 1)",
+      },
+    });
 
   const style: React.CSSProperties = {
     transform: CSS.Translate.toString(transform),
-    transition,
+    transition: isDragging ? undefined : transition,
     zIndex: isDragging ? 50 : undefined,
     position: "relative",
+    willChange: isDragging ? "transform" : undefined,
   };
 
   const inactive = row.is_active === false;
@@ -72,10 +79,10 @@ function SortablePayMethodCard({
       ref={setNodeRef}
       style={style}
       className={[
-        "group relative flex items-center gap-2 rounded-xl border bg-white p-3 shadow-sm transition-all select-none",
+        "group relative flex items-center gap-2 rounded-xl border bg-white p-2.5 shadow-sm transition-colors duration-150 select-none",
         isDragging
-          ? "border-sky-400 ring-2 ring-sky-400/20 shadow-xl scale-[1.02] z-50"
-          : "border-slate-200 hover:border-sky-300 hover:shadow-md",
+          ? "border-sky-400 bg-sky-50/70 shadow-md opacity-95 z-50"
+          : "border-slate-200 hover:border-sky-300",
         inactive ? "bg-slate-50/80" : "",
       ].join(" ")}
     >
@@ -83,7 +90,7 @@ function SortablePayMethodCard({
       <div
         {...attributes}
         {...listeners}
-        className="flex h-8 w-6 cursor-grab items-center justify-center rounded hover:bg-slate-100 active:cursor-grabbing text-slate-400 hover:text-slate-600 touch-none"
+        className="flex h-9 w-8 shrink-0 cursor-grab items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-sky-50 hover:text-sky-600 active:cursor-grabbing touch-none"
         title="按住拖曳排序"
       >
         <GripVertical className="h-5 w-5" />
@@ -176,7 +183,7 @@ export default function PaymentMethodsPage() {
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
-      activationConstraint: { distance: 6 },
+      activationConstraint: { distance: 3 },
     })
   );
 
@@ -272,10 +279,14 @@ export default function PaymentMethodsPage() {
     const nextRows = next.map((r, i) => ({ ...r, sort_order: (i + 1) * 10 }));
     setRows(nextRows);
 
+    const changedRows = nextRows.filter(
+      (row) => n(rows.find((current) => current.id === row.id)?.sort_order) !== n(row.sort_order)
+    );
+
     try {
-      for (let i = 0; i < nextRows.length; i++) {
-        await patch(nextRows[i].id, { sort_order: (i + 1) * 10 });
-      }
+      await Promise.all(
+        changedRows.map((row) => patch(row.id, { sort_order: row.sort_order }))
+      );
     } finally {
       await load();
     }
@@ -320,9 +331,9 @@ export default function PaymentMethodsPage() {
           )}
         </div>
 
-        <div className="space-y-8">
+        <div className="space-y-5">
           <Card className="overflow-hidden border-none shadow-none sm:border sm:bg-white sm:shadow-sm sm:rounded-3xl">
-            <CardHeader className="border-b border-slate-100 bg-white/50 px-6 py-4 backdrop-blur-sm rounded-t-3xl">
+            <CardHeader className="rounded-t-3xl border-b border-slate-100 bg-white/50 px-4 py-3 backdrop-blur-sm sm:px-5">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base font-bold text-slate-800">所有項目</CardTitle>
 
@@ -351,9 +362,9 @@ export default function PaymentMethodsPage() {
               </div>
             </CardHeader>
 
-            <CardContent className="min-h-[300px] p-4 sm:p-6 bg-slate-50/50 sm:bg-white rounded-b-3xl">
+            <CardContent className="min-h-[220px] rounded-b-3xl bg-slate-50/50 p-3 sm:bg-white sm:p-4">
               {/* 新增區塊 */}
-              <div className="mb-6 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-3 sm:p-4">
+              <div className="mb-4 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-2 sm:p-3">
                 <div className="flex gap-2">
                   <Input
                     className="h-10 flex-1 border-slate-200 bg-white shadow-sm rounded-xl focus:border-sky-500 font-medium"
@@ -381,7 +392,7 @@ export default function PaymentMethodsPage() {
               ) : (
                 <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                   <SortableContext items={ordered.map((r) => r.id)} strategy={verticalListSortingStrategy}>
-                    <div className="space-y-2">
+                    <div className="space-y-1.5">
                       {ordered.map((r) => (
                         <SortablePayMethodCard
                           key={r.id}
@@ -402,7 +413,7 @@ export default function PaymentMethodsPage() {
                 </DndContext>
               )}
 
-              <div className="mt-8 text-center text-xs text-slate-400">
+              <div className="mt-4 text-center text-xs text-slate-400">
                 按住左側圖示可調整順序
               </div>
             </CardContent>

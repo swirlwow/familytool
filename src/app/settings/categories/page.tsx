@@ -72,13 +72,20 @@ function SortableGroupCard({
   onDelete: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id: group.id });
+    useSortable({
+      id: group.id,
+      transition: {
+        duration: 140,
+        easing: "cubic-bezier(0.2, 0, 0, 1)",
+      },
+    });
 
   const style: React.CSSProperties = {
     transform: CSS.Translate.toString(transform),
-    transition,
+    transition: isDragging ? undefined : transition,
     zIndex: isDragging ? 50 : undefined,
     position: "relative",
+    willChange: isDragging ? "transform" : undefined,
   };
 
   const inactive = group.is_active === false;
@@ -88,10 +95,10 @@ function SortableGroupCard({
       ref={setNodeRef}
       style={style}
       className={[
-        "group relative flex items-center gap-2 rounded-xl border bg-white p-3 shadow-sm transition-all select-none",
+        "group relative flex items-center gap-2 rounded-xl border bg-white p-2.5 shadow-sm transition-colors duration-150 select-none",
         isDragging
-          ? "border-violet-400 ring-2 ring-violet-400/20 shadow-xl scale-[1.02] z-50"
-          : "border-slate-200 hover:border-violet-300 hover:shadow-md",
+          ? "border-violet-400 bg-violet-50/70 shadow-md opacity-95 z-50"
+          : "border-slate-200 hover:border-violet-300",
         inactive ? "bg-slate-50/80" : "",
       ].join(" ")}
     >
@@ -99,7 +106,7 @@ function SortableGroupCard({
       <div
         {...attributes}
         {...listeners}
-        className="flex h-8 w-6 cursor-grab items-center justify-center rounded hover:bg-slate-100 active:cursor-grabbing text-slate-400 hover:text-slate-600 touch-none"
+        className="flex h-9 w-8 shrink-0 cursor-grab items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-violet-50 hover:text-violet-600 active:cursor-grabbing touch-none"
         title="按住拖曳排序"
       >
         <GripVertical className="h-5 w-5" />
@@ -196,13 +203,20 @@ function SortableCategoryCard({
   onDelete: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id: row.id });
+    useSortable({
+      id: row.id,
+      transition: {
+        duration: 140,
+        easing: "cubic-bezier(0.2, 0, 0, 1)",
+      },
+    });
 
   const style: React.CSSProperties = {
     transform: CSS.Translate.toString(transform),
-    transition,
+    transition: isDragging ? undefined : transition,
     zIndex: isDragging ? 50 : undefined,
     position: "relative",
+    willChange: isDragging ? "transform" : undefined,
   };
 
   const inactive = row.is_active === false;
@@ -212,10 +226,10 @@ function SortableCategoryCard({
       ref={setNodeRef}
       style={style}
       className={[
-        "group relative flex items-center gap-2 rounded-xl border bg-white p-3 shadow-sm transition-all select-none",
+        "group relative flex items-center gap-2 rounded-xl border bg-white p-2.5 shadow-sm transition-colors duration-150 select-none",
         isDragging
-          ? "border-violet-400 ring-2 ring-violet-400/20 shadow-xl scale-[1.02] z-50"
-          : "border-slate-200 hover:border-violet-300 hover:shadow-md",
+          ? "border-violet-400 bg-violet-50/70 shadow-md opacity-95 z-50"
+          : "border-slate-200 hover:border-violet-300",
         inactive ? "bg-slate-50/80" : "",
       ].join(" ")}
     >
@@ -223,7 +237,7 @@ function SortableCategoryCard({
       <div
         {...attributes}
         {...listeners}
-        className="flex h-8 w-6 cursor-grab items-center justify-center rounded hover:bg-slate-100 active:cursor-grabbing text-slate-400 hover:text-slate-600 touch-none"
+        className="flex h-9 w-8 shrink-0 cursor-grab items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-violet-50 hover:text-violet-600 active:cursor-grabbing touch-none"
         title="按住拖曳排序"
       >
         <GripVertical className="h-5 w-5" />
@@ -332,7 +346,7 @@ export default function CategoriesPage() {
   const [newGroupName, setNewGroupName] = useState(type === "income" ? "收入" : "");
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 4 } })
+    useSensor(PointerSensor, { activationConstraint: { distance: 3 } })
   );
 
   async function loadCats(includeInactive = true) {
@@ -470,9 +484,13 @@ export default function CategoriesPage() {
 
     setGroups((prev) => prev.map((x) => next.find((k) => k.id === x.id) || x));
 
-    for (const g of next) {
-      await patchGroup(g.id, { sort_order: g.sort_order });
-    }
+    const changedGroups = next.filter(
+      (group) => n(groups.find((current) => current.id === group.id)?.sort_order) !== n(group.sort_order)
+    );
+
+    await Promise.all(
+      changedGroups.map((group) => patchGroup(group.id, { sort_order: group.sort_order }))
+    );
 
     await loadGroups(true);
     await loadCats(true);
@@ -603,9 +621,13 @@ export default function CategoriesPage() {
 
     setRows((prev) => prev.map((x) => next.find((k) => k.id === x.id) || x));
 
-    for (const r of next) {
-      await patchCategory(r.id, { sort_order: r.sort_order });
-    }
+    const changedRows = next.filter(
+      (row) => n(rows.find((current) => current.id === row.id)?.sort_order) !== n(row.sort_order)
+    );
+
+    await Promise.all(
+      changedRows.map((row) => patchCategory(row.id, { sort_order: row.sort_order }))
+    );
 
     await loadCats(true);
   }
@@ -677,7 +699,7 @@ export default function CategoriesPage() {
 
         {/* Tabs */}
         <Tabs value={type} onValueChange={(v) => setType(v as any)}>
-          <div className="flex items-center justify-between mb-6 gap-4">
+          <div className="mb-4 flex items-center justify-between gap-4">
             <TabsList className="rounded-full bg-white border border-slate-200 p-1 shadow-sm h-11">
               <TabsTrigger
                 value="expense"
@@ -721,17 +743,17 @@ export default function CategoriesPage() {
             </div>
           </div>
 
-          <TabsContent value={type} className="mt-0 space-y-8">
+          <TabsContent value={type} className="mt-0 space-y-5">
             {/* Block 1: 大分類管理 */}
             <Card className="overflow-hidden border-none shadow-none sm:border sm:bg-white sm:shadow-sm sm:rounded-3xl">
-              <CardHeader className="border-b border-slate-100 bg-white/50 px-6 py-4 backdrop-blur-sm rounded-t-3xl">
+              <CardHeader className="rounded-t-3xl border-b border-slate-100 bg-white/50 px-4 py-3 backdrop-blur-sm sm:px-5">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-base font-bold text-slate-800">大分類管理</CardTitle>
                 </div>
               </CardHeader>
 
-              <CardContent className="min-h-[100px] p-4 sm:p-6 bg-slate-50/50 sm:bg-white rounded-b-3xl">
-                <div className="mb-4 flex flex-col sm:flex-row gap-2 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-2 sm:p-3">
+              <CardContent className="min-h-[100px] rounded-b-3xl bg-slate-50/50 p-3 sm:bg-white sm:p-4">
+                <div className="mb-3 flex flex-col gap-2 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-2 sm:flex-row sm:p-3">
                   <Input
                     className="h-10 flex-1 border-0 bg-transparent shadow-none focus-visible:ring-0 placeholder:text-slate-400 font-medium"
                     placeholder={type === "income" ? "例如：收入" : "例如：飲食 / 交通 / 固定支出"}
@@ -766,7 +788,7 @@ export default function CategoriesPage() {
                     items={groupsOrdered.map((g) => g.id)}
                     strategy={verticalListSortingStrategy}
                   >
-                    <div className="space-y-2">
+                    <div className="space-y-1.5">
                       {groupsOrdered.map((g) => (
                         <SortableGroupCard
                           key={g.id}
@@ -793,7 +815,7 @@ export default function CategoriesPage() {
 
             {/* Block 2: 小分類清單 */}
             <Card className="overflow-hidden border-none shadow-none sm:border sm:bg-white sm:shadow-sm sm:rounded-3xl">
-              <CardHeader className="border-b border-slate-100 bg-white/50 px-6 py-4 backdrop-blur-sm rounded-t-3xl">
+              <CardHeader className="rounded-t-3xl border-b border-slate-100 bg-white/50 px-4 py-3 backdrop-blur-sm sm:px-5">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-base font-bold text-slate-800">小分類清單</CardTitle>
                   <Badge variant="secondary" className="rounded-full bg-slate-100 text-slate-500 font-mono">
@@ -802,9 +824,9 @@ export default function CategoriesPage() {
                 </div>
               </CardHeader>
 
-              <CardContent className="min-h-[300px] p-4 sm:p-6 bg-slate-50/50 sm:bg-white rounded-b-3xl">
+              <CardContent className="min-h-[260px] rounded-b-3xl bg-slate-50/50 p-3 sm:bg-white sm:p-4">
                 {/* Create Category */}
-                <div className="mb-6 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-3 sm:p-4">
+                <div className="mb-4 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-2 sm:p-3">
                   <div className="flex flex-col gap-3 sm:flex-row">
                     <Input
                       className="h-10 flex-1 border-slate-200 bg-white shadow-sm rounded-xl focus:border-violet-500"
@@ -829,7 +851,7 @@ export default function CategoriesPage() {
                 </div>
 
                 {/* Lists */}
-                <div className="space-y-6">
+                <div className="space-y-4">
                   {rows.length === 0 ? (
                     <div className="py-14 text-center text-slate-400 font-semibold opacity-50">
                       目前沒有小分類資料。
@@ -862,7 +884,7 @@ export default function CategoriesPage() {
                               items={orderedList.map((x) => x.id)}
                               strategy={verticalListSortingStrategy}
                             >
-                              <div className="space-y-2">
+                              <div className="space-y-1.5">
                                 {orderedList.map((r) => {
                                   const currentGroup = normGroupName(r.group_name || gname);
 
@@ -900,7 +922,7 @@ export default function CategoriesPage() {
                   )}
                 </div>
 
-                <div className="mt-8 text-center text-xs text-slate-400">
+                <div className="mt-4 text-center text-xs text-slate-400">
                   💡 提示：按住卡片左側圖示即可上下拖曳排序
                 </div>
               </CardContent>
