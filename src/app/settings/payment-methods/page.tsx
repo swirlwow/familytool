@@ -22,7 +22,7 @@ import {
   SortableContext,
   useSortable,
   arrayMove,
-  verticalListSortingStrategy,
+  rectSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
@@ -391,8 +391,8 @@ export default function PaymentMethodsPage() {
                 </div>
               ) : (
                 <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                  <SortableContext items={ordered.map((r) => r.id)} strategy={verticalListSortingStrategy}>
-                    <div className="space-y-1.5">
+                  <SortableContext items={ordered.map((r) => r.id)} strategy={rectSortingStrategy}>
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
                       {ordered.map((r) => (
                         <SortablePayMethodCard
                           key={r.id}

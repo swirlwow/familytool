@@ -185,20 +185,14 @@ function SortableGroupCard({
 // --- Component: 小分類卡片 (Sortable) ---
 function SortableCategoryCard({
   row,
-  currentGroup,
   onNameChange,
   onNameBlur,
-  onGroupChange,
-  onGroupBlur,
   onToggleActive,
   onDelete,
 }: {
   row: Category;
-  currentGroup: string;
   onNameChange: (v: string) => void;
   onNameBlur: () => void;
-  onGroupChange: (v: string) => void;
-  onGroupBlur: () => void;
   onToggleActive: () => void;
   onDelete: () => void;
 }) {
@@ -245,7 +239,7 @@ function SortableCategoryCard({
 
       <div className="flex min-w-0 flex-1 flex-col gap-3 lg:flex-row lg:items-center">
         <div className="flex min-w-0 flex-1 items-center gap-3">
-          <div className="grid flex-1 grid-cols-1 gap-2 lg:grid-cols-2">
+          <div className="grid flex-1 grid-cols-1 gap-2">
             <Input
               className={[
                 "h-10 border-transparent bg-transparent px-2 text-base font-medium shadow-none transition-all p-0 sm:p-2",
@@ -256,19 +250,6 @@ function SortableCategoryCard({
               onChange={(e) => onNameChange(e.target.value)}
               onBlur={onNameBlur}
               placeholder="小分類名稱"
-              onPointerDown={(e) => e.stopPropagation()}
-              onKeyDown={(e) => e.stopPropagation()}
-            />
-
-            <Input
-              className={[
-                "h-10 border-transparent bg-transparent px-2 text-sm text-slate-600 shadow-none transition-all p-0 sm:p-2",
-                "focus-visible:border-slate-300 focus-visible:bg-white focus-visible:ring-2 focus-visible:ring-violet-500/20 rounded-lg",
-              ].join(" ")}
-              value={currentGroup}
-              onChange={(e) => onGroupChange(e.target.value)}
-              onBlur={onGroupBlur}
-              placeholder="所屬大分類"
               onPointerDown={(e) => e.stopPropagation()}
               onKeyDown={(e) => e.stopPropagation()}
             />
@@ -900,27 +881,18 @@ export default function CategoriesPage() {
                               items={orderedList.map((x) => x.id)}
                               strategy={rectSortingStrategy}
                             >
-                              <div className="grid grid-cols-1 gap-2 lg:grid-cols-2">
+                              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
                                 {orderedList.map((r) => {
-                                  const currentGroup = normGroupName(r.group_name || gname);
-
                                   return (
                                     <SortableCategoryCard
                                       key={r.id}
                                       row={r}
-                                      currentGroup={currentGroup}
                                       onNameChange={(v) => {
                                         setRows((prev) =>
                                           prev.map((x) => (x.id === r.id ? { ...x, name: v } : x))
                                         );
                                       }}
                                       onNameBlur={() => patchCategory(r.id, { name: r.name })}
-                                      onGroupChange={(v) => {
-                                        setRows((prev) =>
-                                          prev.map((x) => (x.id === r.id ? { ...x, group_name: v } : x))
-                                        );
-                                      }}
-                                      onGroupBlur={() => patchCategory(r.id, { group_name: currentGroup })}
                                       onToggleActive={async () => {
                                         await patchCategory(r.id, { is_active: r.is_active === false });
                                         await loadCats(true);
