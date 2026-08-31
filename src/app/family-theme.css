@@ -430,3 +430,50 @@ body {
     padding-bottom: 0.625rem;
   }
 }
+/* Ledger choices: scoped controls, no changes to financial forms or global buttons. */
+.choice-field { min-width: 0; border: 1px solid var(--ft-line); border-radius: 16px; padding: 10px; background: var(--ft-paper); }
+.choice-search { display: flex; align-items: center; gap: 8px; min-width: 0; border-bottom: 1px solid var(--ft-line); margin-bottom: 10px; color: var(--ft-plum-soft); }
+.choice-search input { min-width: 0; width: 100%; height: 40px; border: 0; outline: 0; background: transparent; font-size: 14px; color: var(--ft-plum); }
+.choice-search:focus-within { border-color: var(--ft-rose); }
+.choice-viewport { overflow-x: hidden; overflow-y: auto; scrollbar-width: thin; padding: 2px; }
+.choice-list { position: relative; display: flex; flex-wrap: wrap; align-items: flex-start; gap: 6px; }
+.choice-pill { display: inline-flex; align-items: center; gap: 4px; flex: 0 1 auto; max-width: 100%; min-height: 40px; padding: 7px 11px; border: 1px solid var(--ft-line); border-radius: 14px; background: var(--ft-ivory); color: var(--ft-plum); font-size: 14px; line-height: 1.45; text-align: left; cursor: pointer; }
+.choice-pill span { min-width: 0; overflow-wrap: anywhere; }
+.choice-check { flex-shrink: 0; opacity: 0; }
+.choice-pill[aria-checked="true"] { background: #f7e6ef; border-color: #a65c82; color: #582547; font-weight: 700; }
+.choice-pill[aria-checked="true"] .choice-check { opacity: 1; }
+.choice-pill:hover:not(:disabled) { border-color: #a65c82; }
+.choice-pill:focus-visible, .choice-more:focus-visible, .ledger-settings-nav a:focus-visible, .merchant-actions button:focus-visible { outline: 2px solid var(--ft-rose); outline-offset: 2px; }
+.choice-more { display: inline-flex; align-items: center; gap: 4px; min-height: 36px; margin-top: 4px; padding: 4px 6px; border: 0; background: transparent; color: #74486d; font-size: 12px; cursor: pointer; }
+.choice-current, .choice-hint { margin: 6px 0 0; font-size: 12px; line-height: 1.6; color: var(--ft-plum-soft); overflow-wrap: anywhere; }
+.choice-current strong { color: #582547; }
+.choice-field[data-disabled], .choice-more:disabled { opacity: .6; }
+.choice-pill:disabled, .choice-more:disabled { cursor: not-allowed; }
+.merchant-quick-add { border-radius: 12px; background: #eee8fa; padding-inline: 10px; margin-top: 6px; }
+.ledger-settings-nav { display: flex; gap: 6px; width: fit-content; max-width: 100%; margin-bottom: 18px; padding: 5px; border: 1px solid var(--ft-line); border-radius: 16px; background: var(--ft-paper); }
+.ledger-settings-nav a { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 42px; padding: 8px 18px; border-radius: 12px; color: var(--ft-plum-soft); font-size: 14px; font-weight: 700; white-space: nowrap; text-decoration: none; }
+.ledger-settings-nav a[aria-current="page"] { color: var(--ft-plum); background: var(--ft-lavender); }
+.ledger-settings-nav a:hover { background: #eee8fa; }
+.merchant-management { border: 1px solid var(--ft-line); border-radius: 20px; padding: 20px; background: var(--ft-paper); }
+.merchant-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 16px; }
+.merchant-heading h2 { font-size: 18px; font-weight: 800; }
+.merchant-heading h2 span { font-size: 12px; color: var(--ft-plum-soft); margin-left: 6px; }
+.merchant-heading p { margin-top: 4px; font-size: 12px; color: var(--ft-plum-soft); }
+.merchant-search { max-width: 420px; margin-bottom: 16px; }
+.merchant-card { min-width: 0; padding: 12px; border: 1px solid var(--ft-line); border-radius: 14px; background: var(--ft-ivory); }
+.merchant-card > div:first-child { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.merchant-card strong { min-width: 0; overflow-wrap: anywhere; font-size: 14px; }
+.merchant-status { flex-shrink: 0; padding: 2px 7px; border-radius: 9px; font-size: 11px; background: #eee8e3; color: #6a5a52; }
+.merchant-status[data-active="true"] { background: #e6f4ee; color: #24644f; }
+.merchant-actions { display: flex; justify-content: flex-end; gap: 6px; margin-top: 8px; }
+.merchant-actions button { display: inline-flex; align-items: center; gap: 5px; min-height: 36px; padding: 4px 10px; border: 1px solid var(--ft-line); border-radius: 11px; background: var(--ft-paper); color: var(--ft-plum-soft); font-size: 12px; cursor: pointer; }
+.merchant-actions button:disabled { opacity: .5; cursor: not-allowed; }
+@media (max-width: 639px) {
+  .ledger-settings-nav { width: 100%; gap: 3px; }
+  .ledger-settings-nav a { flex: 1; gap: 4px; padding: 7px 5px; font-size: 13px; }
+  .ledger-settings-nav a svg { width: 16px; }
+  .choice-pill { min-height: 44px; padding: 8px; }
+  .choice-more, .merchant-actions button { min-height: 44px; }
+  .merchant-management { padding: 14px; }
+  .merchant-heading { align-items: flex-start; }
+}

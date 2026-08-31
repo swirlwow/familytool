@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { WORKSPACE_ID } from "@/lib/appConfig";
+import { LedgerSettingsNav } from "@/components/settings/LedgerSettingsNav";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -329,7 +330,7 @@ export default function PaymentMethodsPage() {
                 <CreditCard className="w-5 h-5" />
               </div>
 
-              <h1 className="text-lg font-black text-slate-800">付款方式</h1>
+              <h1 className="text-lg font-black text-slate-800">記帳設定</h1>
             </div>
 
             <div className="flex gap-2">
@@ -356,6 +357,7 @@ export default function PaymentMethodsPage() {
           )}
         </div>
 
+        <LedgerSettingsNav active="payment-methods" />
         <div className="space-y-5">
           <Card className="overflow-hidden border-none shadow-none sm:border sm:bg-white sm:shadow-sm sm:rounded-3xl">
             <CardHeader className="rounded-t-3xl border-b border-slate-100 bg-white/50 px-4 py-3 backdrop-blur-sm sm:px-5">

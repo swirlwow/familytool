@@ -25,6 +25,7 @@ import { toast } from "@/hooks/use-toast";
 import { getErrorMessage } from "@/lib/client/feedback";
 import { validateSplits } from "@/lib/ledger/splits";
 import { MerchantPicker } from "@/components/ledger/MerchantPicker";
+import { ChoiceChips } from "@/components/ledger/ChoiceChips";
 import { useLedgerMerchants } from "@/hooks/useLedgerMerchants";
 
 // ===== Types =====
@@ -616,62 +617,28 @@ export default function LedgerPage() {
                 </div>
               </div>
 
-              <div className="col-span-1 sm:col-span-1 md:col-span-2">
+              <div className="col-span-2">
                 <label className="label py-0.5 sm:py-1 mb-0.5 sm:mb-0">
                   <span className="label-text font-bold text-slate-400 text-[11px] sm:text-xs uppercase">大分類</span>
                 </label>
-                <select
-                  className="select select-sm sm:select-md select-bordered w-full rounded-xl text-sm sm:text-base focus:border-sky-500"
-                  value={groupName}
-                  onChange={(e) => {
-                    setGroupName(e.target.value);
-                    setCategoryId("");
-                  }}
-                >
-                  <option value="">（不選）</option>
-                  {groups.map((g) => (
-                    <option key={g} value={g}>
-                      {g}
-                    </option>
-                  ))}
-                </select>
+                <ChoiceChips label="大分類" value={groupName} options={groups.map(g => ({ value: g, label: g }))}
+                  onChange={value => { setGroupName(value); setCategoryId(""); }} />
               </div>
 
-              <div className="col-span-1 sm:col-span-1 md:col-span-2">
+              <div className="col-span-2">
                 <label className="label py-0.5 sm:py-1 mb-0.5 sm:mb-0">
                   <span className="label-text font-bold text-slate-400 text-[11px] sm:text-xs uppercase">小分類</span>
                 </label>
-                <select
-                  className="select select-sm sm:select-md select-bordered w-full rounded-xl text-sm sm:text-base focus:border-sky-500"
-                  value={categoryId}
-                  onChange={(e) => setCategoryId(e.target.value)}
-                  disabled={!groupName}
-                >
-                  <option value="">（不選）</option>
-                  {subcats.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
+                <ChoiceChips label="小分類" value={categoryId} options={subcats.map(c => ({ value: c.id, label: c.name }))}
+                  onChange={setCategoryId} disabled={!groupName} />
               </div>
 
-              <div className="col-span-1 sm:col-span-1 md:col-span-2">
+              <div className="col-span-2">
                 <label className="label py-0.5 sm:py-1 mb-0.5 sm:mb-0">
                   <span className="label-text font-bold text-slate-400 text-[11px] sm:text-xs uppercase">付款方式</span>
                 </label>
-                <select
-                  className="select select-sm sm:select-md select-bordered w-full rounded-xl text-sm sm:text-base focus:border-sky-500"
-                  value={payMethod}
-                  onChange={(e) => setPayMethod(e.target.value)}
-                >
-                  <option value="">（不選）</option>
-                  {payMethods.map((m) => (
-                    <option key={m.id} value={m.name}>
-                      {m.name}
-                    </option>
-                  ))}
-                </select>
+                <ChoiceChips label="付款方式" value={payMethod} options={payMethods.map(m => ({ value: m.name, label: m.name }))}
+                  onChange={setPayMethod} searchable />
               </div>
 
               <div className="col-span-1 sm:col-span-1 md:col-span-2">
@@ -1047,59 +1014,28 @@ export default function LedgerPage() {
                   />
                 </div>
 
-                <div className="col-span-1 sm:col-span-2">
+                <div className="col-span-2">
                   <label className="label py-0 mb-1">
                     <span className="label-text font-bold text-[10px] text-slate-400 uppercase">大分類</span>
                   </label>
-                  <select
-                    className="select select-sm sm:select-md select-bordered w-full rounded-xl font-medium focus:border-sky-500"
-                    value={editForm.group_name}
-                    onChange={(e) => setEditForm({ ...editForm, group_name: e.target.value, category_id: "" })}
-                  >
-                    <option value="">（不選）</option>
-                    {editGroups.map((g) => (
-                      <option key={g} value={g}>
-                        {g}
-                      </option>
-                    ))}
-                  </select>
+                  <ChoiceChips label="大分類" value={editForm.group_name} options={editGroups.map(g => ({ value: g, label: g }))}
+                    onChange={value => setEditForm({ ...editForm, group_name: value, category_id: "" })} />
                 </div>
 
-                <div className="col-span-1 sm:col-span-2">
+                <div className="col-span-2">
                   <label className="label py-0 mb-1">
                     <span className="label-text font-bold text-[10px] text-slate-400 uppercase">小分類</span>
                   </label>
-                  <select
-                    className="select select-sm sm:select-md select-bordered w-full rounded-xl font-medium focus:border-sky-500"
-                    value={editForm.category_id}
-                    onChange={(e) => setEditForm({ ...editForm, category_id: e.target.value })}
-                    disabled={!editForm.group_name}
-                  >
-                    <option value="">（不選）</option>
-                    {editSubcats.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
+                  <ChoiceChips label="小分類" value={editForm.category_id} options={editSubcats.map(c => ({ value: c.id, label: c.name }))}
+                    onChange={value => setEditForm({ ...editForm, category_id: value })} disabled={!editForm.group_name} />
                 </div>
 
-                <div className="col-span-1 sm:col-span-2">
+                <div className="col-span-2">
                   <label className="label py-0 mb-1">
                     <span className="label-text font-bold text-[10px] text-slate-400 uppercase">付款方式</span>
                   </label>
-                  <select
-                    className="select select-sm sm:select-md select-bordered w-full rounded-xl font-medium focus:border-sky-500"
-                    value={editForm.pay_method}
-                    onChange={(e) => setEditForm({ ...editForm, pay_method: e.target.value })}
-                  >
-                    <option value="">（不選）</option>
-                    {payMethods.map((m) => (
-                      <option key={m.id} value={m.name}>
-                        {m.name}
-                      </option>
-                    ))}
-                  </select>
+                  <ChoiceChips label="付款方式" value={editForm.pay_method} options={payMethods.map(m => ({ value: m.name, label: m.name }))}
+                    onChange={value => setEditForm({ ...editForm, pay_method: value })} searchable />
                 </div>
 
                 <div className="col-span-1 sm:col-span-2">

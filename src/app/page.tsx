@@ -50,7 +50,7 @@ const lifeTools = [
 // 設定與備份清單
 const settingTools = [
   { name: "資料備份", desc: "下載完整家庭資料", href: "/settings/backup", icon: DatabaseBackup, theme: "indigo" },
-  { name: "系統設定", desc: "分類與付款方式管理", href: "/settings/categories", icon: Settings, theme: "slate" },
+  { name: "記帳設定", desc: "分類、付款方式與店家管理", href: "/settings/categories", icon: Settings, theme: "slate" },
 ];
 
 export default function HomePage() {

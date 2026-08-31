@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { WORKSPACE_ID } from "@/lib/appConfig";
+import { LedgerSettingsNav } from "@/components/settings/LedgerSettingsNav";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -721,7 +722,7 @@ export default function CategoriesPage() {
                 <Tags className="w-5 h-5" />
               </div>
 
-              <h1 className="text-lg font-black text-slate-800">分類管理</h1>
+              <h1 className="text-lg font-black text-slate-800">記帳設定</h1>
             </div>
 
             <div className="flex gap-2">
@@ -748,6 +749,7 @@ export default function CategoriesPage() {
           )}
         </div>
 
+        <LedgerSettingsNav active="categories" />
         {/* Tabs */}
         <Tabs
           value={type}
