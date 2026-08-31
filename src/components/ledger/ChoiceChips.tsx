@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Check, ChevronDown, ChevronUp, Search } from "lucide-react";
+import { ChevronDown, ChevronUp, Search } from "lucide-react";
 import { choiceOptions, collapsedChoices, type ChoiceOption } from "./choice-layout";
 
 type Props = {
@@ -20,6 +20,7 @@ export function ChoiceChips({ label, options, value, onChange, disabled = false,
   const [expanded, setExpanded] = useState(false);
   const [layout, setLayout] = useState({ count: 0, height: 96 });
   const all = useMemo(() => choiceOptions(options, value), [options, value]);
+  const hues = useMemo(() => new Map(all.map((item, index) => [item.value, (330 + index * 137.508) % 360])), [all]);
   const query = search.trim().toLocaleLowerCase();
   const matches = all.filter(item => !item.value || item.label.toLocaleLowerCase().includes(query));
   const signature = JSON.stringify(matches);
@@ -68,9 +69,16 @@ export function ChoiceChips({ label, options, value, onChange, disabled = false,
           const hidden = !showAll && index >= layout.count;
           return <button key={item.value} type="button" role="radio" aria-checked={value === item.value}
             aria-hidden={hidden || undefined} disabled={disabled} tabIndex={!hidden && index === tabIndex ? 0 : -1}
-            className="choice-pill" style={hidden ? { visibility: "hidden" } : undefined}
+            className="choice-pill" style={{
+              visibility: hidden ? "hidden" : undefined,
+              ...(value === item.value ? {
+                backgroundColor: `hsl(${hues.get(item.value)} 58% 92%)`,
+                borderColor: `hsl(${hues.get(item.value)} 35% 48%)`,
+                color: `hsl(${hues.get(item.value)} 42% 27%)`,
+              } : {}),
+            }}
             onClick={() => onChange(item.value)} onKeyDown={event => navigate(event, index)}>
-            <Check size={14} aria-hidden="true" className="choice-check" /><span>{item.label}</span>
+            <span>{item.label}</span>
           </button>;
         })}
       </div>
