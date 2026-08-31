@@ -24,6 +24,8 @@ import { ConfirmActionDialog } from "@/components/ui/confirm-action-dialog";
 import { toast } from "@/hooks/use-toast";
 import { getErrorMessage } from "@/lib/client/feedback";
 import { validateSplits } from "@/lib/ledger/splits";
+import { MerchantPicker } from "@/components/ledger/MerchantPicker";
+import { useLedgerMerchants } from "@/hooks/useLedgerMerchants";
 
 // ===== Types =====
 type SplitRow = { payer_id: string; amount: number };
@@ -48,6 +50,7 @@ type LedgerRow = {
   pay_method?: string | null;
   payer_id?: string | null;
   merchant?: string | null;
+  consumption_content?: string | null;
   note?: string | null;
   ledger_splits?: Array<{ payer_id: string; amount: number }>;
   bill_instance_id?: string | null;
@@ -186,6 +189,7 @@ export default function LedgerPage() {
   const [ym, setYm] = useState(ymNow());
 
   const workspaceId: string = WORKSPACE_ID ?? "";
+  const merchants = useLedgerMerchants(workspaceId);
 
   const { rows, loading: rowsLoading, refresh } = useLedgerMonth<LedgerRow>(
     workspaceId,
@@ -207,6 +211,7 @@ export default function LedgerPage() {
   const [categoryId, setCategoryId] = useState<string>("");
   const [payMethod, setPayMethod] = useState<string>("");
   const [merchant, setMerchant] = useState<string>("");
+  const [consumptionContent, setConsumptionContent] = useState("");
   const [note, setNote] = useState<string>("");
   const [payerId, setPayerId] = useState<string>("");
   const [useSplit, setUseSplit] = useState(false);
@@ -224,6 +229,7 @@ export default function LedgerPage() {
     category_id: "",
     pay_method: "",
     merchant: "",
+    consumption_content: "",
     note: "",
     payer_id: "",
     useSplit: false,
@@ -339,6 +345,7 @@ export default function LedgerPage() {
           category_id: categoryId || null,
           pay_method: payMethod || null,
           merchant: merchant || null,
+          consumption_content: consumptionContent || null,
           note: note || null,
           payer_id: payerId || null,
           splits: useSplit ? splits : [],
@@ -350,6 +357,7 @@ export default function LedgerPage() {
       setAmount("");
       setNote("");
       setMerchant("");
+      setConsumptionContent("");
       setUseSplit(false);
       setSplits([]);
       await refresh();
@@ -395,6 +403,7 @@ export default function LedgerPage() {
       category_id: r.category_id || "",
       pay_method: r.pay_method || "",
       merchant: r.merchant || "",
+      consumption_content: r.consumption_content || "",
       note: r.note || "",
       payer_id: r.payer_id || "",
       useSplit: sp.length > 0,
@@ -687,12 +696,17 @@ export default function LedgerPage() {
                 <label className="label py-0.5 sm:py-1 mb-0.5 sm:mb-0">
                   <span className="label-text font-bold text-slate-400 text-[11px] sm:text-xs uppercase">店家 / 對象</span>
                 </label>
-                <input
-                  className="input input-sm sm:input-md input-bordered w-full rounded-xl text-sm sm:text-base focus:border-sky-500"
-                  value={merchant}
-                  onChange={(e) => setMerchant(e.target.value)}
-                  placeholder="例如：7-11"
-                />
+                <MerchantPicker value={merchant} onChange={setMerchant} source={merchants} />
+              </div>
+
+              <div className="col-span-2 sm:col-span-1 md:col-span-2">
+                <label htmlFor="consumption-content" className="label py-0.5 sm:py-1 mb-0.5 sm:mb-0">
+                  <span className="label-text font-bold text-slate-400 text-[11px] sm:text-xs">消費內容（選填）</span>
+                </label>
+                <input id="consumption-content" maxLength={1000}
+                  className="input input-sm sm:input-md input-bordered w-full rounded-xl text-sm sm:text-base"
+                  value={consumptionContent} onChange={event => setConsumptionContent(event.target.value)}
+                  placeholder="例如：2500ml 保冷壺" />
               </div>
 
               <div className="col-span-2 sm:col-span-1 md:col-span-2">
@@ -928,6 +942,9 @@ export default function LedgerPage() {
                               </>
                             )}
 
+                            {r.consumption_content && (
+                              <span className="max-w-[180px] truncate text-slate-600 md:max-w-[320px]" title={r.consumption_content}>{r.consumption_content}</span>
+                            )}
                             {r.note && (
                               <span
                                 className="text-violet-600 font-normal max-w-[160px] sm:max-w-[220px] md:max-w-[320px] truncate cursor-help ml-0.5 md:ml-1"
@@ -1115,11 +1132,17 @@ export default function LedgerPage() {
                   <label className="label py-0 mb-1">
                     <span className="label-text font-bold text-[10px] text-slate-400 uppercase">店家 / 對象</span>
                   </label>
-                  <input
-                    className="input input-sm sm:input-md input-bordered w-full rounded-xl focus:border-sky-500"
-                    value={editForm.merchant}
-                    onChange={(e) => setEditForm({ ...editForm, merchant: e.target.value })}
-                  />
+                  <MerchantPicker value={editForm.merchant} onChange={merchant => setEditForm({ ...editForm, merchant })} source={merchants} />
+                </div>
+
+                <div className="col-span-2">
+                  <label htmlFor="edit-consumption-content" className="label py-0 mb-1">
+                    <span className="label-text font-bold text-[10px] text-slate-400">消費內容（選填）</span>
+                  </label>
+                  <input id="edit-consumption-content" maxLength={1000}
+                    className="input input-sm sm:input-md input-bordered w-full rounded-xl"
+                    value={editForm.consumption_content}
+                    onChange={event => setEditForm({ ...editForm, consumption_content: event.target.value })} />
                 </div>
 
                 <div className="col-span-2">

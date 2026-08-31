@@ -13,3 +13,8 @@ dist
 *.pem
 *.key
 service-account.json
+
+# Private database snapshots (never commit)
+.local-backups/
+.local-verification/
+supabase/.temp/

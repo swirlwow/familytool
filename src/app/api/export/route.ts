@@ -14,6 +14,7 @@ const WORKSPACE_TABLES = [
   "category_groups",
   "ledger_categories",
   "ledger_entries",
+  "ledger_merchants",
   "ledger_splits",
   "notes",
   "payers",

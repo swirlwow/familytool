@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { apiError, apiInternalError, apiOperationError } from "@/lib/api/http";
 import { validateSplits } from "@/lib/ledger/splits";
+import { validConsumptionContent } from "@/lib/ledger/details";
 import { supabase } from "@/lib/supabaseClient";
 import { settlementStatus } from "@/lib/settlementStatus";
 
@@ -25,6 +26,7 @@ export async function GET(req: Request) {
   category_id,
   pay_method,
   merchant,
+  consumption_content,
   note,
   bill_instance_id,
   payer_id,
@@ -137,6 +139,8 @@ export async function POST(req: Request) {
       request_key,
     } = body || {};
 
+    if (!validConsumptionContent(body?.consumption_content)) return apiError("消費內容最多 1000 個字");
+
     if (!workspace_id) return apiError("缺少 workspace_id");
     if (!entry_date) return apiError("缺少 entry_date");
     if (!type || (type !== "expense" && type !== "income")) return apiError("type 必須為 expense/income");
@@ -168,7 +172,7 @@ export async function POST(req: Request) {
     }
 
     const { data: entryId, error: rpcError } = await supabase.rpc(
-      "create_ledger_entry_atomic",
+      "create_ledger_entry_with_details",
       {
         p_workspace_id: workspace_id,
         p_entry_date: entry_date,
@@ -182,6 +186,7 @@ export async function POST(req: Request) {
         p_payer_id: payer_id || null,
         p_splits: Array.isArray(splits) ? splits : [],
         p_request_key: request_key ? String(request_key) : null,
+        p_consumption_content: body.consumption_content || null,
       }
     );
 
@@ -240,7 +245,10 @@ export async function PATCH(req: Request) {
       safeCategoryId = null;
     }
 
-    const { error: rpcError } = await supabase.rpc("update_ledger_entry_atomic", {
+    if (!validConsumptionContent(body.consumption_content)) return apiError("消費內容最多 1000 個字");
+    // An older client omitting this field must not erase existing content.
+    const hasContent = Object.prototype.hasOwnProperty.call(body, "consumption_content");
+    const { error: rpcError } = await supabase.rpc(hasContent ? "update_ledger_entry_with_details" : "update_ledger_entry_atomic", {
       p_workspace_id: workspace_id,
       p_entry_id: id,
       p_entry_date: entry_date,
@@ -252,6 +260,7 @@ export async function PATCH(req: Request) {
       p_note: note || null,
       p_payer_id: payer_id || null,
       p_splits: Array.isArray(splits) ? splits : [],
+      ...(hasContent ? { p_consumption_content: body.consumption_content || null } : {}),
     });
 
     if (rpcError) return apiOperationError(rpcError, { context: "Update ledger entry" });

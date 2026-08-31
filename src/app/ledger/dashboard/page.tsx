@@ -19,6 +19,7 @@ type LedgerEntry = {
   category_id: string | null;
   pay_method: string | null; // payment_methods.id
   merchant: string | null;
+  consumption_content?: string | null;
   note: string | null;
   payer_id: string | null;
   created_at: string;
@@ -224,6 +225,7 @@ export default function LedgerDashboardPage() {
       payer,
       pm,
       x.merchant || "",
+      x.consumption_content || "",
       x.note || "",
     ]
       .join(" ")
@@ -355,6 +357,7 @@ export default function LedgerDashboardPage() {
       "大分類",
       "小分類",
       "店家",
+      "消費內容",
       "總金額",
       "付款方式",
       "代墊/付款人",
@@ -394,6 +397,7 @@ export default function LedgerDashboardPage() {
             toCsvCell(group),
             toCsvCell(cat),
             toCsvCell(x.merchant || ""),
+            toCsvCell(x.consumption_content || ""),
             toCsvCell(x.amount),
             toCsvCell(pm),
             toCsvCell(payer),
@@ -417,6 +421,7 @@ export default function LedgerDashboardPage() {
           toCsvCell(group),
           toCsvCell(cat),
           toCsvCell(x.merchant || ""),
+          toCsvCell(x.consumption_content || ""),
           toCsvCell(x.amount),
           toCsvCell(pm),
           toCsvCell(payer),
@@ -503,6 +508,7 @@ export default function LedgerDashboardPage() {
       group,
       cat,
       x.merchant || "—",
+      x.consumption_content || "",
       payer,
       pm,
       x.note || "",
@@ -736,7 +742,7 @@ export default function LedgerDashboardPage() {
             <input
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
-              placeholder="店家/備註/分類/付款人…"
+              placeholder="店家/消費內容/備註/分類/付款人…"
               className="w-full border rounded-lg px-3 py-2"
             />
           </div>
@@ -1019,6 +1025,7 @@ export default function LedgerDashboardPage() {
                             <div className="text-[11px] font-black text-slate-400">店家</div>
                             <div className="mt-1 font-bold text-slate-800 break-words">
                               {r.merchant || "—"}
+                              {r.consumption_content && <div className="mt-1 text-xs font-normal text-slate-500">{r.consumption_content}</div>}
                             </div>
                           </div>
                         </div>
@@ -1140,6 +1147,7 @@ export default function LedgerDashboardPage() {
 
                             <td className="px-4 py-3 font-medium text-slate-700">
                               {x.merchant || "—"}
+                              {x.consumption_content && <div className="mt-1 break-words text-xs text-slate-500">{x.consumption_content}</div>}
                             </td>
 
                             <td className="px-4 py-3">
