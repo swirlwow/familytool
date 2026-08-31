@@ -547,7 +547,7 @@ export default function LedgerPage() {
           </button>
 
           <div className={`${showEntryForm ? "block" : "hidden"} space-y-4 border-t border-slate-200 p-4 sm:p-5 md:block`}>
-            <div className="grid grid-cols-2 sm:grid-cols-1 md:grid-cols-4 gap-x-3 gap-y-4 sm:gap-5 items-end">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-x-3 gap-y-4 sm:gap-5 items-start [&>div]:min-w-0 max-md:[&>div]:col-span-full">
               
               <div className="col-span-1 sm:col-span-1 md:col-span-1">
                 <label className="label py-0.5 sm:py-1 mb-0.5 sm:mb-0">
@@ -638,28 +638,18 @@ export default function LedgerPage() {
                   <span className="label-text font-bold text-slate-400 text-[11px] sm:text-xs uppercase">付款方式</span>
                 </label>
                 <ChoiceChips label="付款方式" value={payMethod} options={payMethods.map(m => ({ value: m.name, label: m.name }))}
-                  onChange={setPayMethod} searchable />
+                  onChange={setPayMethod} />
               </div>
 
               <div className="col-span-1 sm:col-span-1 md:col-span-2">
                 <label className="label py-0.5 sm:py-1 mb-0.5 sm:mb-0">
-                  <span className="label-text font-bold text-slate-400 text-[11px] sm:text-xs uppercase">誰先付錢</span>
+                  <span className="label-text font-bold text-slate-400 text-[11px] sm:text-xs uppercase">付款人</span>
                 </label>
-                <select
-                  className="select select-sm sm:select-md select-bordered w-full rounded-xl text-sm sm:text-base font-bold focus:border-sky-500 text-sky-700"
-                  value={payerId}
-                  onChange={(e) => setPayerId(e.target.value)}
-                >
-                  <option value="">（不選）</option>
-                  {payers.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}
-                    </option>
-                  ))}
-                </select>
+                <ChoiceChips label="付款人" value={payerId} onChange={setPayerId}
+                  options={payers.map(p => ({ value: p.id, label: p.name }))} />
               </div>
 
-              <div className="col-span-2 sm:col-span-1 md:col-span-2">
+              <div className="col-span-2 sm:col-span-1 md:col-span-4">
                 <label className="label py-0.5 sm:py-1 mb-0.5 sm:mb-0">
                   <span className="label-text font-bold text-slate-400 text-[11px] sm:text-xs uppercase">店家 / 對象</span>
                 </label>
@@ -1035,18 +1025,16 @@ export default function LedgerPage() {
                     <span className="label-text font-bold text-[10px] text-slate-400 uppercase">付款方式</span>
                   </label>
                   <ChoiceChips label="付款方式" value={editForm.pay_method} options={payMethods.map(m => ({ value: m.name, label: m.name }))}
-                    onChange={value => setEditForm({ ...editForm, pay_method: value })} searchable />
+                    onChange={value => setEditForm({ ...editForm, pay_method: value })} />
                 </div>
 
-                <div className="col-span-1 sm:col-span-2">
+                <div className="col-span-2">
                   <label className="label py-0 mb-1">
                     <span className="label-text font-bold text-[10px] text-slate-400 uppercase">付款人</span>
                   </label>
-                  <select
-                    className="select select-sm sm:select-md select-bordered w-full rounded-xl font-bold text-sky-700 focus:border-sky-500"
-                    value={editForm.payer_id}
-                    onChange={(e) => {
-                      const nextPayer = e.target.value;
+                  <ChoiceChips label="付款人" value={editForm.payer_id}
+                    options={payers.map(p => ({ value: p.id, label: p.name }))}
+                    onChange={(nextPayer) => {
                       const other = nextPayer ? payers.find((p) => p.id !== nextPayer)?.id || "" : "";
                       const nextSplits = (editForm.splits || []).map((s) => ({
                         ...s,
@@ -1054,14 +1042,7 @@ export default function LedgerPage() {
                       }));
                       setEditForm({ ...editForm, payer_id: nextPayer, splits: nextSplits });
                     }}
-                  >
-                    <option value="">（不選）</option>
-                    {payers.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name}
-                      </option>
-                    ))}
-                  </select>
+                  />
                 </div>
 
                 <div className="col-span-2">

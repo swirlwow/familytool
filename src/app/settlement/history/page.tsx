@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { downloadInternalFile } from "@/lib/client/download";
 import { ConfirmActionDialog } from "@/components/ui/confirm-action-dialog";
+import { SettlementNav } from "@/components/settlement/SettlementNav";
 import { toast } from "@/hooks/use-toast";
 import { getErrorMessage } from "@/lib/client/feedback";
 
@@ -208,6 +209,7 @@ export default function SettlementHistoryPage() {
         </div>
 
         {/* Filters Panel */}
+        <SettlementNav active="history" />
         <section className="app-panel p-4 sm:p-5">
             <div className="flex items-center gap-2 mb-3">
               <CalendarDays className="w-4 h-4 text-violet-500" />

@@ -18,6 +18,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { downloadInternalFile } from "@/lib/client/download";
 import { TextInputDialog } from "@/components/ui/text-input-dialog";
+import { SettlementNav } from "@/components/settlement/SettlementNav";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -473,13 +474,6 @@ export default function SettlementPage() {
 
             <div className="flex gap-2">
               <button
-                className="btn btn-outline btn-sm h-9 min-h-0 rounded-lg border-emerald-200 font-bold text-emerald-700 hover:bg-emerald-50"
-                onClick={() => exportReconciliation()}
-                title="匯出完整結算對帳明細"
-              >
-                <Download className="w-4 h-4" /> 匯出對帳
-              </button>
-              <button
                 className="btn btn-ghost btn-sm hidden h-9 min-h-0 rounded-lg font-bold text-slate-500 hover:bg-slate-100 sm:inline-flex"
                 onClick={() => router.push("/")}
               >
@@ -504,6 +498,13 @@ export default function SettlementPage() {
         </div>
 
         {/* Dashboard Stats */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <SettlementNav active="settlement" />
+          <button type="button" className="btn btn-outline btn-sm rounded-lg border-emerald-200 font-bold text-emerald-700"
+            onClick={() => exportReconciliation()} title="匯出完整結算對帳明細">
+            <Download className="h-4 w-4" aria-hidden="true" />匯出對帳
+          </button>
+        </div>
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-[280px_minmax(0,1fr)]">
           {/* Control Panel */}
           <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">

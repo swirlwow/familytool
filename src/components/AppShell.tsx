@@ -10,7 +10,6 @@ import {
   Calculator,
   CalendarDays,
   DatabaseBackup,
-  History,
   HouseHeart,
   LayoutDashboard,
   LogOut,
@@ -27,8 +26,7 @@ const NAV_GROUPS = [
     title: "帳務工具",
     items: [
       { name: "記帳", href: "/ledger", icon: LayoutDashboard },
-      { name: "拆帳結算", href: "/settlement", icon: Calculator },
-      { name: "結清紀錄", href: "/settlement/history", icon: History },
+      { name: "拆帳管理", href: "/settlement", icon: Calculator },
       { name: "帳單管理", href: "/bills", icon: Receipt },
       { name: "記帳設定", href: "/settings/categories", icon: Tags },
       { name: "資料備份", href: "/settings/backup", icon: DatabaseBackup },
@@ -73,7 +71,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const isActive = (href: string) => {
     if (href === "/settings/categories") return ["/settings/categories", "/settings/payment-methods", "/settings/merchants"].includes(pathname);
     if (href === "/") return pathname === "/";
-    if (href === "/settlement" && pathname.startsWith("/settlement/")) return false;
     return pathname === href || pathname.startsWith(`${href}/`);
   };
 
