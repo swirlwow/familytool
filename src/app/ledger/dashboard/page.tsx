@@ -558,8 +558,9 @@ export default function LedgerDashboardPage() {
           </h1>
           <p className="mt-0.5 hidden text-xs text-slate-500 sm:block">查看收支與匯出明細</p>
         </div>
+      </header>
 
-        <div className="flex flex-wrap items-center justify-end gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2" aria-label="明細匯出工具">
           {copied ? (
             <span className="text-xs font-black bg-slate-900 text-white px-3 py-1.5 rounded-lg">
               {copied}
@@ -567,6 +568,8 @@ export default function LedgerDashboardPage() {
           ) : null}
 
           <button
+            type="button"
+            title="下載 CSV，可用 Excel 開啟"
             onClick={exportSummaryCsv}
             className={cn(
               "btn btn-sm h-9 min-h-0 rounded-lg border-none px-3 font-bold",
@@ -576,9 +579,11 @@ export default function LedgerDashboardPage() {
             disabled={loading || masterLoading}
           >
             <Download className="h-4 w-4" />
-            分類彙總
+            匯出分類彙總
           </button>
           <button
+            type="button"
+            title="下載 CSV，可用 Excel 開啟"
             onClick={exportAllDetailCsv}
             className={cn(
               "btn btn-sm h-9 min-h-0 rounded-lg border-none px-3 font-bold",
@@ -588,10 +593,9 @@ export default function LedgerDashboardPage() {
             disabled={loading || masterLoading}
           >
             <Download className="h-4 w-4" />
-            完整明細
+            匯出完整明細
           </button>
         </div>
-      </header>
 
       <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
         <button

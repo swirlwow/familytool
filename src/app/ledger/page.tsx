@@ -187,7 +187,7 @@ export default function LedgerPage() {
 
   const workspaceId: string = WORKSPACE_ID ?? "";
 
-  const { from, to, rows, loading: rowsLoading, refresh } = useLedgerMonth<LedgerRow>(
+  const { rows, loading: rowsLoading, refresh } = useLedgerMonth<LedgerRow>(
     workspaceId,
     ym
   );
@@ -504,9 +504,6 @@ export default function LedgerPage() {
                 value={ym}
                 onChange={(e) => setYm(e.target.value)}
               />
-              <div className="mt-2 text-[11px] text-slate-400">
-                {from} ~ {to}
-              </div>
           </div>
 
           <StatCard
