@@ -3,6 +3,7 @@
 
 import { useEffect, useMemo, useState, useRef } from "react";
 import Link from "next/link";
+import { AppModal } from "@/components/ui/app-modal";
 import { WORKSPACE_ID } from "@/lib/appConfig";
 import {
   Calendar,
@@ -937,7 +938,7 @@ export default function LedgerPage() {
 
       {/* ===== Edit Modal ===== */}
       {editing && (
-        <div className="modal modal-open bg-slate-900/40 backdrop-blur-sm p-2 sm:p-0">
+        <AppModal title="修改記帳" onClose={() => setEditing(null)}>
           <div className="modal-box w-full max-w-2xl rounded-2xl sm:rounded-3xl p-0 shadow-2xl border border-white/20">
             <div className="bg-slate-50 px-5 sm:px-8 py-4 sm:py-6 flex items-center justify-between border-b border-slate-200">
               <div>
@@ -1186,8 +1187,7 @@ export default function LedgerPage() {
               </button>
             </div>
           </div>
-          <div className="modal-backdrop" onClick={() => setEditing(null)}></div>
-        </div>
+        </AppModal>
       )}
 
       {/* ✅ 若 workspaceId 空值，給提示 */}

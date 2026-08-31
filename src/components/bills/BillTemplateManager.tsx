@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { CalendarRange, Check, Pencil, Plus, RefreshCw, X } from "lucide-react";
+import { AppModal } from "@/components/ui/app-modal";
 
 type BillTemplate = {
   id: string;
@@ -246,7 +247,7 @@ export function BillTemplateManager({ workspaceId }: { workspaceId: string | nul
       )}
 
       {showForm ? (
-        <div className="modal modal-open bg-slate-900/40">
+        <AppModal title={editing ? "編輯固定帳單" : "新增固定帳單"} onClose={() => setShowForm(false)}>
           <div className="modal-box max-w-2xl rounded-lg p-0">
             <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
               <h3 className="font-black text-slate-800">{editing ? "編輯固定帳單" : "新增固定帳單"}</h3>
@@ -350,8 +351,7 @@ export function BillTemplateManager({ workspaceId }: { workspaceId: string | nul
               </button>
             </div>
           </div>
-          <button type="button" className="modal-backdrop" onClick={() => setShowForm(false)} aria-label="關閉模板視窗" />
-        </div>
+        </AppModal>
       ) : null}
     </section>
   );

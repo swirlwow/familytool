@@ -4,15 +4,37 @@
 import { DatabaseBackup, Download, ShieldCheck } from "lucide-react";
 import { WORKSPACE_ID } from "@/lib/appConfig";
 import { toast } from "@/hooks/use-toast";
+import { useRef, useState } from "react";
+import { fetchBackupFile } from "@/lib/client/backup-download";
 
 export default function BackupPage() {
-  function handleDownload() {
+  const [downloading, setDownloading] = useState(false);
+  const inFlight = useRef(false);
+  async function handleDownload() {
+    if (inFlight.current) return;
     if (!WORKSPACE_ID) {
       toast({ variant: "destructive", title: "無法下載備份", description: "尚未設定工作區" });
       return;
     }
-    // 直接開啟 API 網址，瀏覽器會自動下載 JSON 檔案
-    window.open(`/api/export?workspace_id=${WORKSPACE_ID}`, "_blank");
+    inFlight.current = true;
+    setDownloading(true);
+    try {
+      const blob = await fetchBackupFile(`/api/export?workspace_id=${encodeURIComponent(WORKSPACE_ID)}`);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `familytool_backup_${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      toast({ title: "備份已準備完成", description: "已交由瀏覽器下載，請確認下載清單。" });
+    } catch (error) {
+      toast({ variant: "destructive", title: "備份下載失敗", description: error instanceof Error ? error.message : "請稍後重試。" });
+    } finally {
+      inFlight.current = false;
+      setDownloading(false);
+    }
   }
 
   return (
@@ -50,10 +72,12 @@ export default function BackupPage() {
               
               <button
                 onClick={handleDownload}
+                disabled={downloading}
+                aria-busy={downloading}
                 className="btn bg-indigo-600 hover:bg-indigo-700 text-white border-none rounded-2xl px-8 font-black shadow-md shadow-indigo-600/30 w-full sm:w-auto"
               >
                 <Download className="w-4 h-4 mr-1" />
-                下載備份
+                {downloading ? "準備備份中…" : "下載備份"}
               </button>
             </div>
           </div>

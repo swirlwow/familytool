@@ -324,23 +324,22 @@ export default function StickyDetailPage() {
   return (
     <main className="app-page">
       <div className="app-page-inner max-w-4xl">
-        <div className="app-header">
+        <div className="app-actions" role="group" aria-label="便條紙操作">
             <div className="flex items-center gap-2">
               <button className="btn btn-ghost btn-sm" onClick={() => router.push("/stickies")}>
                 <ArrowLeft className="w-4 h-4" /> 返回
               </button>
-              <div className="font-black text-slate-800">便條紙清單</div>
             </div>
 
             <div className="flex gap-2">
               <button
                 className="btn btn-outline btn-sm rounded-xl"
                 onClick={() => setPendingDelete({ kind: "sticky" })}
-                disabled={saving || loading || deleting}
+                disabled={saving || loading || deleting || !sticky}
               >
                 <Trash2 className="w-4 h-4 text-rose-500" /> 刪除
               </button>
-              <button className="btn btn-primary btn-sm rounded-xl" onClick={saveSticky} disabled={saving || loading}>
+              <button className="btn btn-primary btn-sm rounded-xl" onClick={saveSticky} disabled={saving || loading || deleting || !sticky}>
                 <Save className="w-4 h-4" /> {saving ? "儲存中…" : "儲存"}
               </button>
             </div>

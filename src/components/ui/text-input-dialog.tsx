@@ -59,7 +59,7 @@ export function TextInputDialog({
             value={value}
             onChange={(event) => onValueChange(event.target.value)}
             onKeyDown={(event) => {
-              if (event.key === "Enter" && !busy) {
+              if (event.key === "Enter" && !event.nativeEvent.isComposing && !busy) {
                 event.preventDefault();
                 void runConfirm();
               }

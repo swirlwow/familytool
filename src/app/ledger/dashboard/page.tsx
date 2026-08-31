@@ -798,7 +798,7 @@ export default function LedgerDashboardPage() {
       ) : null}
 
       {/* KPI */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="summary-grid grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div className="rounded-2xl p-4 bg-red-50 border border-red-100">
           <p className="text-sm text-slate-700 font-bold">總支出</p>
           <p className="mt-1 text-xl font-black text-red-600">
@@ -920,9 +920,9 @@ export default function LedgerDashboardPage() {
                 return list.map(([name, amt]) => (
                   <div
                     key={name}
-                    className="flex justify-between items-center bg-slate-50 hover:bg-slate-100 transition-colors border border-slate-100 rounded-xl px-4 py-3"
+                    className="flex min-w-0 flex-wrap justify-between items-center gap-2 bg-slate-50 hover:bg-slate-100 transition-colors border border-slate-100 rounded-xl px-4 py-3 [overflow-wrap:anywhere]"
                   >
-                    <span className="text-slate-800 font-bold text-sm">{name}</span>
+                    <span className="min-w-0 text-slate-800 font-bold text-sm">{name}</span>
                     <span className={cn("font-black tabular-nums", colorClass)}>
                       ${amt.toLocaleString()}
                     </span>
@@ -972,14 +972,14 @@ export default function LedgerDashboardPage() {
                         type="button"
                         onClick={() => copyRow(r)}
                         className={cn(
-                          "w-full text-left",
+                          "dashboard-entry w-full min-w-0 text-left [overflow-wrap:anywhere]",
                           "border border-slate-200 bg-white rounded-2xl p-4 shadow-sm",
                           "active:scale-[0.99] transition",
                           "hover:bg-slate-50"
                         )}
                         title="點一下複製這筆摘要"
                       >
-                        <div className="flex items-start justify-between gap-3">
+                        <div className="flex flex-wrap items-start justify-between gap-3">
                           <div>
                             <div className="text-xs font-bold text-slate-500 font-mono">
                               {r.entry_date}

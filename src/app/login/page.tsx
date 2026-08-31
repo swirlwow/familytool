@@ -185,7 +185,7 @@ export default function LoginPage() {
         {isRecovery ? (
           <form onSubmit={handleRecovery} className="space-y-4">
             <div className="space-y-1">
-              <label className="block pl-1 text-[10px] font-bold text-slate-500 sm:text-xs">
+              <label htmlFor="new-password" className="block pl-1 text-[10px] font-bold text-slate-500 sm:text-xs">
                 新密碼
               </label>
               <div className="relative">
@@ -199,13 +199,14 @@ export default function LoginPage() {
                   className="input input-bordered w-full rounded-lg border-slate-200 bg-white pl-10 text-sm text-slate-800 focus:border-sky-500 sm:text-base"
                   placeholder="至少 8 個字元"
                   value={newPassword}
+                  id="new-password" autoComplete="new-password"
                   onChange={(e) => setNewPassword(e.target.value)}
                 />
               </div>
             </div>
 
             <div className="space-y-1">
-              <label className="block pl-1 text-[10px] font-bold text-slate-500 sm:text-xs">
+              <label htmlFor="confirm-password" className="block pl-1 text-[10px] font-bold text-slate-500 sm:text-xs">
                 再次確認
               </label>
               <div className="relative">
@@ -219,6 +220,7 @@ export default function LoginPage() {
                   className="input input-bordered w-full rounded-lg border-slate-200 bg-white pl-10 text-sm text-slate-800 focus:border-sky-500 sm:text-base"
                   placeholder="再次輸入新密碼"
                   value={confirmPassword}
+                  id="confirm-password" autoComplete="new-password"
                   onChange={(e) => setConfirmPassword(e.target.value)}
                 />
               </div>
@@ -237,7 +239,7 @@ export default function LoginPage() {
         {/* Form */}
         <form onSubmit={handleAuth} className="space-y-4">
           <div className="space-y-1">
-            <label className="block pl-1 text-[10px] font-bold text-slate-500 sm:text-xs">
+            <label htmlFor="login-email" className="block pl-1 text-[10px] font-bold text-slate-500 sm:text-xs">
               電子郵件
             </label>
             <div className="relative">
@@ -250,13 +252,14 @@ export default function LoginPage() {
                 className="input input-bordered w-full rounded-lg border-slate-200 bg-white pl-10 text-sm text-slate-800 focus:border-sky-500 sm:text-base"
                 placeholder="you@example.com"
                 value={email}
+                id="login-email" autoComplete="username"
                 onChange={(e) => setEmail(e.target.value)}
               />
             </div>
           </div>
 
           <div className="space-y-1">
-            <label className="block pl-1 text-[10px] font-bold text-slate-500 sm:text-xs">
+            <label htmlFor="login-password" className="block pl-1 text-[10px] font-bold text-slate-500 sm:text-xs">
               密碼
             </label>
             <div className="relative">
@@ -269,6 +272,7 @@ export default function LoginPage() {
                 className="input input-bordered w-full rounded-lg border-slate-200 bg-white pl-10 text-sm text-slate-800 focus:border-sky-500 sm:text-base"
                 placeholder="請輸入密碼"
                 value={password}
+                id="login-password" autoComplete="current-password"
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>

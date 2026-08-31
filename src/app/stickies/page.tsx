@@ -234,12 +234,6 @@ export default function StickiesPage() {
                 回首頁
               </button>
 
-              <button
-                className="btn hidden h-9 min-h-0 rounded-lg border-none bg-amber-500 px-4 font-black text-white hover:bg-amber-600 md:inline-flex"
-                onClick={createNew}
-              >
-                <Plus className="w-4 h-4" /> 新增
-              </button>
             </div>
           </div>
 
@@ -256,6 +250,11 @@ export default function StickiesPage() {
         <section className="app-panel">
           <div className="p-4 md:p-5">
             <div className="flex flex-col gap-4">
+              <div className="hidden justify-end md:flex">
+                <button type="button" className="btn bg-amber-500 px-4 font-bold" onClick={createNew}>
+                  <Plus className="h-4 w-4" aria-hidden="true" /> 新增便條
+                </button>
+              </div>
               {/* Search Bar */}
               <div className="flex items-center gap-2">
                 <div className="relative flex-1">
@@ -323,13 +322,13 @@ export default function StickiesPage() {
           <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {list.map((s) => {
               const isEditing = editingId === s.id;
-              const rotationClass = isEditing ? "rotate-0 scale-105 z-20" : getRotation(s.id);
+              const rotationClass = isEditing ? "rotate-0 md:scale-105 z-20" : getRotation(s.id);
 
               return (
                 <div
                   key={s.id}
                   className={`
-                    relative transition-all duration-300 group flex flex-col min-h-[200px] md:min-h-[220px]
+                    sticky-card relative min-w-0 [overflow-wrap:anywhere] transition-all duration-300 group flex flex-col min-h-[200px] md:min-h-[220px]
                     ${rotationClass}
                     ${isEditing
                       ? "bg-white border-2 border-amber-400 shadow-xl"
@@ -368,10 +367,10 @@ export default function StickiesPage() {
                         </div>
                       )}
 
-                      <div className="flex gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                      <div className="flex shrink-0 gap-1">
                         {!isEditing ? (
                           <>
-                            <button className="btn btn-ghost btn-xs btn-square rounded-md hover:bg-black/10" onClick={() => beginEdit(s)}>
+                            <button className="btn btn-ghost btn-xs btn-square rounded-md hover:bg-black/10" onClick={() => beginEdit(s)} aria-label={`編輯便條紙「${s.title || "未命名"}」`}>
                               <Pencil className="w-3.5 h-3.5 text-slate-600" />
                             </button>
                             <button
@@ -387,11 +386,12 @@ export default function StickiesPage() {
                             <button
                               className="btn btn-primary btn-xs btn-square rounded-md bg-amber-500 hover:bg-amber-600 border-none text-white shadow-sm"
                               onClick={() => saveEdit(s)}
+                              aria-label="儲存便條紙"
                               disabled={saving}
                             >
                               <Save className="w-3.5 h-3.5" />
                             </button>
-                            <button className="btn btn-ghost btn-xs btn-square rounded-md text-slate-400 hover:bg-black/5" onClick={cancelEdit}>
+                            <button className="btn btn-ghost btn-xs btn-square rounded-md text-slate-400 hover:bg-black/5" onClick={cancelEdit} aria-label="取消編輯">
                               <X className="w-3.5 h-3.5" />
                             </button>
                           </>

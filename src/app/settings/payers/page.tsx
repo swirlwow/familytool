@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { TextInputDialog } from "@/components/ui/text-input-dialog";
+import { LedgerSettingsNav } from "@/components/settings/LedgerSettingsNav";
 import { toast } from "@/hooks/use-toast";
 import { WORKSPACE_ID } from "@/lib/appConfig";
 import { getErrorMessage } from "@/lib/client/feedback";
@@ -120,7 +121,7 @@ export default function PayersPage() {
           </div>
           <div className="hidden gap-2 sm:flex">
             <a
-              href="/"
+              href="/bills"
               className="rounded-lg border bg-white px-4 py-2 text-sm hover:bg-gray-50"
             >
               回帳單
@@ -140,6 +141,7 @@ export default function PayersPage() {
           </div>
         </div>
 
+        <LedgerSettingsNav active="payers" />
         {!WORKSPACE_ID && (
           <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-900">
             未設定 WORKSPACE_ID（請檢查 .env.local 的 NEXT_PUBLIC_WORKSPACE_ID）
@@ -198,7 +200,7 @@ export default function PayersPage() {
                   }`}
                 >
                   <div className="min-w-0">
-                    <div className="font-medium flex items-center gap-2">
+                    <div className="font-medium flex flex-wrap items-center gap-2 [overflow-wrap:anywhere]">
                       {r.name}
                       {!r.is_active && (
                         <span className="rounded bg-gray-200 px-2 py-0.5 text-xs text-gray-700">
@@ -210,7 +212,7 @@ export default function PayersPage() {
 
                   <div className="mt-2 flex flex-wrap gap-2 sm:mt-0 sm:justify-end">
                     <button
-                      className="rounded border bg-white px-3 py-2 text-sm hover:bg-gray-50"
+                      className="btn btn-outline btn-sm rounded border bg-white px-3 py-2 text-sm hover:bg-gray-50"
                       onClick={() => {
                         setRenaming(r);
                         setRenameValue(r.name);
@@ -220,8 +222,8 @@ export default function PayersPage() {
                     </button>
 
                     <button
-                      className={`rounded px-3 py-2 text-sm text-white ${
-                        r.is_active ? "bg-red-600 hover:bg-red-700" : "bg-green-600 hover:bg-green-700"
+                      className={`btn btn-sm rounded px-3 py-2 text-sm ${
+                        r.is_active ? "border-rose-200 bg-rose-50 text-rose-700" : "border-emerald-200 bg-emerald-50 text-emerald-700"
                       }`}
                       onClick={async () => {
                         const updated = await patch(r.id, { is_active: !r.is_active });

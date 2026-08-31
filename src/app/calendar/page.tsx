@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { CalendarDays, ChevronLeft, ChevronRight, Plus, Trash2, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ConfirmActionDialog } from "@/components/ui/confirm-action-dialog";
+import { AppModal } from "@/components/ui/app-modal";
 
 const WORKSPACE_ID = process.env.NEXT_PUBLIC_WORKSPACE_ID || "";
 
@@ -517,7 +518,7 @@ export default function CalendarPage() {
 
   return (
     // ✅ 修正高度：確保能完美避開 AppShell 的底部導覽列 (pb-24 即 96px) 並完整顯示於螢幕中
-    <main className="flex h-[calc(100dvh-96px)] flex-col overflow-hidden border-t border-slate-200 bg-white md:h-screen md:border-none">
+    <main className="family-calendar flex min-h-0 flex-col overflow-hidden border-t border-slate-200 bg-white lg:border-none">
       
       {/* ===== Header ===== */}
       <header className="shrink-0 border-b border-slate-200 bg-white">
@@ -893,15 +894,8 @@ export default function CalendarPage() {
 
       {/* ===== Draft Drawer ===== */}
       {draft && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center sm:justify-center sm:p-6">
-          <button
-            className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px]"
-            onClick={closeDraft}
-            aria-label="關閉"
-            type="button"
-          />
-
-          <div className="relative w-full sm:max-w-xl bg-white rounded-t-[32px] sm:rounded-3xl shadow-2xl max-h-[86dvh] sm:max-h-[85vh] overflow-y-auto">
+        <AppModal title={draft.mode === "new" ? "新增行程" : "編輯行程"} onClose={closeDraft}>
+          <div className="relative w-full bg-white">
             <div className="w-full flex justify-center pt-3 pb-1 sm:hidden">
               <div className="w-12 h-1.5 bg-slate-200 rounded-full"></div>
             </div>
@@ -1021,7 +1015,7 @@ export default function CalendarPage() {
               <div className="h-[env(safe-area-inset-bottom)] sm:h-0" />
             </div>
           </div>
-        </div>
+        </AppModal>
       )}
 
       <ConfirmActionDialog

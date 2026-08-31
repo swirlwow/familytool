@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { WORKSPACE_ID } from "@/lib/appConfig";
 import { BillTemplateManager } from "@/components/bills/BillTemplateManager";
+import { AppModal } from "@/components/ui/app-modal";
 import { ConfirmActionDialog } from "@/components/ui/confirm-action-dialog";
 import { toast } from "@/hooks/use-toast";
 import { getErrorMessage } from "@/lib/client/feedback";
@@ -472,10 +473,10 @@ export default function BillsPage() {
           )}
         </div>
 
-        <div className="grid w-full grid-cols-2 rounded-lg border border-slate-200 bg-white p-1 shadow-sm sm:w-fit sm:min-w-64">
+        <div className="app-view-switch" role="group" aria-label="帳單瀏覽方式">
           <button
             type="button"
-            className={`btn btn-sm flex-1 rounded-lg border-none sm:flex-none ${view === "bills" ? "bg-slate-800 text-white hover:bg-slate-800" : "btn-ghost text-slate-500"}`}
+            aria-pressed={view === "bills"}
             onClick={() => setView("bills")}
           >
             <LayoutList className="h-4 w-4" />
@@ -483,7 +484,7 @@ export default function BillsPage() {
           </button>
           <button
             type="button"
-            className={`btn btn-sm flex-1 rounded-lg border-none sm:flex-none ${view === "templates" ? "bg-slate-800 text-white hover:bg-slate-800" : "btn-ghost text-slate-500"}`}
+            aria-pressed={view === "templates"}
             onClick={() => setView("templates")}
           >
             <Settings2 className="h-4 w-4" />
@@ -509,7 +510,7 @@ export default function BillsPage() {
           </section>
 
           <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
-              <div className="grid h-full grid-cols-2 sm:grid-cols-4">
+              <div className="summary-grid grid h-full grid-cols-2 sm:grid-cols-4">
                 <div className="flex min-h-20 flex-col justify-center px-4 py-3">
                   <div className="mb-1 text-xs font-bold text-slate-400">應繳</div>
                   <div className="text-xl font-black tabular-nums text-slate-800">${summary.due.toLocaleString()}</div>
@@ -679,7 +680,7 @@ export default function BillsPage() {
 
         {/* Pay Modal */}
         {paying && (
-          <div className="modal modal-open bg-slate-900/40 backdrop-blur-sm">
+          <AppModal title="付款並記帳" onClose={() => setPaying(null)}>
             <div className="modal-box max-w-2xl rounded-lg border border-white/20 p-0 shadow-2xl">
               <div className="border-b border-slate-200 bg-slate-50 px-5 py-4 sm:px-6">
                 <div className="flex items-center gap-3">
@@ -728,12 +729,11 @@ export default function BillsPage() {
                 <button className="btn rounded-lg border-none bg-rose-500 px-6 font-black text-white hover:bg-rose-600" onClick={payToLedger}>確認付款</button>
               </div>
             </div>
-            <div className="modal-backdrop" onClick={() => setPaying(null)} />
-          </div>
+          </AppModal>
         )}
 
         {detailing ? (
-          <div className="modal modal-open bg-slate-900/40">
+          <AppModal title="帳單資料" onClose={() => setDetailing(null)} wide={false}>
             <div className="modal-box max-w-md rounded-lg p-0">
               <div className="border-b border-slate-200 px-5 py-4">
                 <h3 className="font-black text-slate-800">
@@ -769,8 +769,7 @@ export default function BillsPage() {
                 </button>
               </div>
             </div>
-            <button type="button" className="modal-backdrop" onClick={() => setDetailing(null)} aria-label="關閉帳單資料視窗" />
-          </div>
+          </AppModal>
         ) : null}
 
         <ConfirmActionDialog

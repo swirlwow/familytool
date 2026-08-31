@@ -2,6 +2,7 @@ import "./globals.css";
 import "./family-theme.css";
 import AppShell from "@/components/AppShell";
 import { Toaster } from "@/components/ui/toaster";
+import { ViewportObserver } from "@/components/ViewportObserver";
 
 /* Chiron GoRound is self-hosted from /public and intentionally loaded as a document stylesheet. */
 
@@ -16,6 +17,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       {/* eslint-disable-next-line @next/next/no-css-tags */}
       <link rel="stylesheet" href="/fonts/chiron-go-round/css/vf.css" />
       <body>
+        <ViewportObserver />
         <AppShell>
           {children}
         </AppShell>

@@ -536,7 +536,7 @@ export default function SettlementPage() {
           </div>
 
           <div className="rounded-lg border border-slate-200 bg-white shadow-sm">
-              <div className="grid h-full grid-cols-2 lg:grid-cols-4">
+              <div className="summary-grid grid h-full grid-cols-2 lg:grid-cols-4">
                 <div className="flex min-h-24 flex-col justify-center px-4 py-3">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-bold text-slate-400">
@@ -789,7 +789,7 @@ export default function SettlementPage() {
             {splits.length === 0 ? (
               <div className="p-16 text-center text-slate-400 opacity-60">本期無拆帳明細</div>
             ) : (
-              <table className="table w-full">
+              <table className="table w-full settlement-responsive-table">
                 <thead>
                   <tr className="text-slate-400 text-xs font-bold uppercase tracking-wide bg-white border-b border-slate-100">
                     <th className="pl-8 py-4">日期</th>
@@ -813,10 +813,10 @@ export default function SettlementPage() {
                         key={s.split_id}
                         className="group hover:bg-amber-50/20 border-b border-slate-50 last:border-0 transition-colors"
                       >
-                        <td className="pl-8 font-medium text-slate-600 whitespace-nowrap text-sm font-mono">
+                        <td data-label="日期" className="pl-8 font-medium text-slate-600 whitespace-nowrap text-sm font-mono">
                           {s.entry_date}
                         </td>
-                        <td>
+                        <td data-label="應收者">
                           <div className="flex items-center gap-2">
                             <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-bold">
                               {nameOf(s.creditor_id).charAt(0)}
@@ -824,7 +824,7 @@ export default function SettlementPage() {
                             <span className="font-bold text-slate-700">{nameOf(s.creditor_id)}</span>
                           </div>
                         </td>
-                        <td>
+                        <td data-label="應付者">
                           <div className="flex items-center gap-2">
                             <div className="w-6 h-6 rounded-full bg-rose-100 text-rose-700 flex items-center justify-center text-xs font-bold">
                               {nameOf(s.debtor_id).charAt(0)}
@@ -832,13 +832,13 @@ export default function SettlementPage() {
                             <span className="font-bold text-slate-700">{nameOf(s.debtor_id)}</span>
                           </div>
                         </td>
-                        <td className="text-right font-black font-mono text-slate-800">
+                        <td data-label="總額" className="text-right font-black font-mono text-slate-800">
                           ${s.split_amount}
                         </td>
-                        <td className="text-right font-mono text-slate-400 font-medium">
+                        <td data-label="已結" className="text-right font-mono text-slate-400 font-medium">
                           ${s.settled_amount}
                         </td>
-                        <td className="text-right">
+                        <td data-label="剩餘" className="text-right">
                           <div
                             className={`font-mono font-black ${
                               s.remaining_amount > 0 ? "text-rose-500" : "text-slate-400"
@@ -856,9 +856,10 @@ export default function SettlementPage() {
                             {s.remaining_amount > 0 ? "未結清" : "已結清"}
                           </span>
                         </td>
-                        <td className="text-right">
+                        <td data-label="本次結清" className="text-right">
                           <input
                             type="number"
+                            aria-label={`${s.entry_date} ${nameOf(s.debtor_id)}付給${nameOf(s.creditor_id)}的本次結清金額`}
                             className="input input-bordered input-sm w-24 text-right font-bold rounded-lg focus:border-amber-500 disabled:bg-slate-50 disabled:text-slate-300"
                             value={settleInput[s.split_id] ?? 0}
                             disabled={disabled || isBusy}

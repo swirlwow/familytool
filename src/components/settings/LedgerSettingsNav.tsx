@@ -7,11 +7,14 @@ const sections = [
   { key: "merchants", label: "店家管理", icon: Store },
 ] as const;
 
-export function LedgerSettingsNav({ active }: { active: typeof sections[number]["key"] }) {
-  return <nav className="ledger-settings-nav" aria-label="記帳設定">
+export function LedgerSettingsNav({ active }: { active: typeof sections[number]["key"] | "payers" }) {
+  return <div className="settings-navigation">
+  <nav className="ledger-settings-nav" aria-label="記帳設定">
     {sections.map(({ key, label, icon: Icon }) => <Link key={key} href={`/settings/${key}`}
       aria-current={active === key ? "page" : undefined}>
       <Icon size={18} aria-hidden="true" /><span>{label}</span>
     </Link>)}
-  </nav>;
+  </nav>
+  <Link className="settings-secondary-link" href="/settings/payers" aria-current={active === "payers" ? "page" : undefined}>付款人管理</Link>
+  </div>;
 }

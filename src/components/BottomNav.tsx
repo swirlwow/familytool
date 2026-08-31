@@ -11,18 +11,18 @@ const NAV_ITEMS = [
   { name: "拆帳", href: "/settlement", icon: Shuffle },
 ];
 
-export default function BottomNav() {
+export default function BottomNav({ onMore, expanded }: { onMore: () => void; expanded: boolean }) {
   const pathname = usePathname();
   const isActive = (href: string) => href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
 
   return (
     <nav className="family-bottom-nav lg:hidden" aria-label="手機導覽">
       {NAV_ITEMS.map(({ name, href, icon: Icon }) => (
-        <Link key={href} href={href} className={isActive(href) ? "active" : ""}>
+        <Link key={href} href={href} aria-current={isActive(href) ? "page" : undefined} className={isActive(href) ? "active" : ""}>
           <Icon aria-hidden="true" /><span>{name}</span>
         </Link>
       ))}
-      <label htmlFor="app-drawer"><Menu aria-hidden="true" /><span>更多</span></label>
+      <button type="button" onClick={onMore} aria-expanded={expanded} aria-controls="family-navigation"><Menu aria-hidden="true" /><span>更多</span></button>
     </nav>
   );
 }

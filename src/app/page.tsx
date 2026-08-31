@@ -36,7 +36,7 @@ function getThemeClasses(theme: string) {
 const financeTools = [
   { name: "記帳本", desc: "日常收支與拆帳", href: "/ledger", icon: Wallet, theme: "sky" },
   { name: "財務儀表板", desc: "收支統計與明細匯出", href: "/ledger/dashboard", icon: LayoutDashboard, theme: "blue" },
-  { name: "拆帳結算", desc: "代墊款計算與批次結清", href: "/settlement", icon: Calculator, theme: "amber" },
+  { name: "拆帳管理", desc: "代墊款計算與批次結清", href: "/settlement", icon: Calculator, theme: "amber" },
   { name: "帳單管理", desc: "水電信貸等固定支出", href: "/bills", icon: Receipt, theme: "rose" },
 ];
 
