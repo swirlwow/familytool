@@ -468,7 +468,24 @@ body {
 .merchant-actions { display: flex; flex-shrink: 0; justify-content: flex-end; gap: 6px; }
 .merchant-actions button { display: inline-flex; align-items: center; gap: 5px; min-height: 36px; padding: 4px 10px; border: 1px solid var(--ft-line); border-radius: 11px; background: var(--ft-paper); color: var(--ft-plum-soft); font-size: 12px; cursor: pointer; }
 .merchant-actions button:disabled { opacity: .5; cursor: not-allowed; }
+/* Keep mobile lookup names and their actions together; desktop layouts stay unchanged. */
 @media (max-width: 639px) {
+  .settings-compact-row { min-width: 0; gap: 4px; padding: 6px; }
+  .settings-compact-row > button { width: 24px; height: 44px; }
+  .settings-compact-row .settings-row-content { flex-direction: row; align-items: center; gap: 4px; }
+  .settings-row-content > div:first-child,
+  .settings-row-content > div:first-child > div { min-width: 0; }
+  .settings-compact-row input { min-width: 0; height: 44px; padding-inline: 6px; }
+  .settings-compact-row .settings-row-actions {
+    flex-shrink: 0; flex-wrap: nowrap; justify-content: flex-end;
+    gap: 4px; border-top: 0; padding-top: 0; margin-top: 0; white-space: nowrap;
+  }
+  .settings-row-actions > div { gap: 3px; }
+  .settings-row-actions button { height: 44px; padding-inline: 6px; }
+  .settings-row-actions button[aria-label] { width: 32px; padding-inline: 0; }
+  .settings-inline-add { flex-direction: row; align-items: center; }
+  .settings-inline-add > input { min-width: 0; flex: 1; }
+  .settings-inline-add > button { width: auto; flex-shrink: 0; padding-inline: 16px; }
   .ledger-settings-nav { width: 100%; gap: 3px; }
   .ledger-settings-nav a { flex: 1; gap: 4px; padding: 7px 5px; font-size: 13px; }
   .ledger-settings-nav a svg { width: 16px; }

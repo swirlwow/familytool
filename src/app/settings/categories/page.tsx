@@ -101,7 +101,7 @@ function SortableGroupCard({
       ref={setNodeRef}
       style={style}
       className={[
-        "group relative flex items-center gap-2 rounded-xl border bg-white p-2.5 shadow-sm transition-colors duration-150 select-none",
+        "settings-compact-row group relative flex items-center gap-2 rounded-xl border bg-white p-2.5 shadow-sm transition-colors duration-150 select-none",
         isDragging
           ? "border-violet-400 bg-violet-50/70 shadow-md opacity-95 z-50"
           : "border-slate-200 hover:border-violet-300",
@@ -120,7 +120,7 @@ function SortableGroupCard({
         <GripVertical className="h-5 w-5" aria-hidden="true" />
       </button>
 
-      <div className="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-center">
+      <div className="settings-row-content flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-center">
         <div className="min-w-0 flex-1 flex items-center gap-3">
           <Input
             className={[
@@ -137,7 +137,7 @@ function SortableGroupCard({
           />
         </div>
 
-        <div className="flex items-center justify-between gap-3 sm:justify-end border-t border-slate-100 sm:border-0 pt-2 sm:pt-0 mt-1 sm:mt-0">
+        <div className="settings-row-actions flex items-center justify-between gap-3 sm:justify-end border-t border-slate-100 sm:border-0 pt-2 sm:pt-0 mt-1 sm:mt-0">
           <div className="flex items-center gap-2">
             <span className="font-mono text-[10px] text-slate-300">
               #{n(group.sort_order)}
@@ -229,7 +229,7 @@ function SortableCategoryCard({
       ref={setNodeRef}
       style={style}
       className={[
-        "group relative flex items-center gap-2 rounded-xl border bg-white p-2.5 shadow-sm transition-colors duration-150 select-none",
+        "settings-compact-row group relative flex items-center gap-2 rounded-xl border bg-white p-2.5 shadow-sm transition-colors duration-150 select-none",
         isDragging
           ? "border-violet-400 bg-violet-50/70 shadow-md opacity-95 z-50"
           : "border-slate-200 hover:border-violet-300",
@@ -248,7 +248,7 @@ function SortableCategoryCard({
         <GripVertical className="h-5 w-5" aria-hidden="true" />
       </button>
 
-      <div className="flex min-w-0 flex-1 flex-col gap-3 lg:flex-row lg:items-center">
+      <div className="settings-row-content flex min-w-0 flex-1 flex-col gap-3 lg:flex-row lg:items-center">
         <div className="flex min-w-0 flex-1 items-center gap-3">
           <div className="grid flex-1 grid-cols-1 gap-2">
             <Input
@@ -267,7 +267,7 @@ function SortableCategoryCard({
           </div>
         </div>
 
-        <div className="flex items-center justify-between gap-3 lg:justify-end border-t border-slate-100 lg:border-0 pt-2 lg:pt-0 mt-1 lg:mt-0">
+        <div className="settings-row-actions flex items-center justify-between gap-3 lg:justify-end border-t border-slate-100 lg:border-0 pt-2 lg:pt-0 mt-1 lg:mt-0">
           <div className="flex items-center gap-2">
             <span className="font-mono text-[10px] text-slate-300">
               #{n(row.sort_order)}
@@ -811,7 +811,7 @@ export default function CategoriesPage() {
               </CardHeader>
 
               <CardContent className="min-h-[100px] rounded-b-3xl bg-slate-50/50 p-3 sm:bg-white sm:p-4">
-                <div className="mb-3 flex flex-col gap-2 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-2 sm:flex-row sm:p-3">
+                <div className="settings-inline-add mb-3 flex flex-col gap-2 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-2 sm:flex-row sm:p-3">
                   <Input
                     className="h-10 flex-1 border-0 bg-transparent shadow-none focus-visible:ring-0 placeholder:text-slate-400 font-medium"
                     placeholder={type === "income" ? "例如：收入" : "例如：飲食 / 交通 / 固定支出"}

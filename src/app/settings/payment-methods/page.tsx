@@ -85,7 +85,7 @@ function SortablePayMethodCard({
       ref={setNodeRef}
       style={style}
       className={[
-        "group relative flex items-center gap-2 rounded-xl border bg-white p-2.5 shadow-sm transition-colors duration-150 select-none",
+        "settings-compact-row group relative flex items-center gap-2 rounded-xl border bg-white p-2.5 shadow-sm transition-colors duration-150 select-none",
         isDragging
           ? "border-sky-400 bg-sky-50/70 shadow-md opacity-95 z-50"
           : "border-slate-200 hover:border-sky-300",
@@ -104,7 +104,7 @@ function SortablePayMethodCard({
         <GripVertical className="h-5 w-5" aria-hidden="true" />
       </button>
 
-      <div className="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-center">
+      <div className="settings-row-content flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-center">
         {/* 輸入框 */}
         <div className="min-w-0 flex-1 flex items-center gap-3">
           <Input
@@ -123,7 +123,7 @@ function SortablePayMethodCard({
         </div>
 
         {/* 狀態與按鈕 */}
-        <div className="flex items-center justify-between gap-3 sm:justify-end border-t border-slate-100 sm:border-0 pt-2 sm:pt-0 mt-1 sm:mt-0">
+        <div className="settings-row-actions flex items-center justify-between gap-3 sm:justify-end border-t border-slate-100 sm:border-0 pt-2 sm:pt-0 mt-1 sm:mt-0">
           <div className="flex items-center gap-2">
             <span className="font-mono text-[10px] text-slate-300">
               #{n(row.sort_order)}
