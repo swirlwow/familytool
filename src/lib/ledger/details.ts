@@ -10,4 +10,5 @@ export type LedgerMerchant = {
   id: string;
   name: string;
   is_active: boolean;
+  sort_order: number;
 };

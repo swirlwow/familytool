@@ -2,7 +2,24 @@
 
 import { useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Plus, Store } from "lucide-react";
+import { ArrowLeft, GripVertical, Plus, Store } from "lucide-react";
+import {
+  DndContext,
+  type DragEndEvent,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  rectSortingStrategy,
+  sortableKeyboardCoordinates,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { LedgerSettingsNav } from "@/components/settings/LedgerSettingsNav";
 import { MerchantNameField } from "@/components/settings/MerchantNameField";
 import { Input } from "@/components/ui/input";
@@ -13,11 +30,41 @@ import { WORKSPACE_ID } from "@/lib/appConfig";
 import { getErrorMessage } from "@/lib/client/feedback";
 import type { LedgerMerchant } from "@/lib/ledger/details";
 
+function SortableMerchantCard({ item, busy, onRename, onToggle }: {
+  item: LedgerMerchant;
+  busy: boolean;
+  onRename: (id: string, name: string) => Promise<LedgerMerchant>;
+  onToggle: (item: LedgerMerchant) => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: item.id,
+    transition: { duration: 140, easing: "cubic-bezier(0.2, 0, 0, 1)" },
+  });
+  return <article ref={setNodeRef} className={`merchant-card ${isDragging ? "border-sky-400 bg-sky-50/80 shadow-md" : ""}`}
+    style={{ transform: CSS.Translate.toString(transform), transition, zIndex: isDragging ? 30 : undefined, position: "relative" }}>
+    <button type="button" {...attributes} {...listeners} disabled={busy}
+      className="flex h-9 w-7 shrink-0 touch-none cursor-grab items-center justify-center rounded-lg text-slate-400 hover:bg-sky-50 hover:text-sky-600 active:cursor-grabbing"
+      aria-label={`調整店家「${item.name}」順序`} title="按住拖曳排序">
+      <GripVertical size={18} aria-hidden="true" />
+    </button>
+    <MerchantNameField item={item} busy={busy} onSave={onRename} />
+    <span className="merchant-status" data-active={item.is_active}>{item.is_active ? "啟用" : "停用"}</span>
+    <div className="merchant-actions">
+      <button type="button" disabled={busy} aria-label={`${item.is_active ? "停用" : "啟用"} ${item.name}`}
+        onClick={() => onToggle(item)}>{item.is_active ? "停用" : "啟用"}</button>
+    </div>
+  </article>;
+}
+
 export default function MerchantsPage() {
   const source = useLedgerMerchants(WORKSPACE_ID ?? "");
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   const saving = useRef(false);
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 3 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
 
   async function saveName() {
     if (saving.current || !name.trim()) return false;
@@ -54,6 +101,22 @@ export default function MerchantsPage() {
       toast({ variant: "destructive", title: "更新失敗", description: getErrorMessage(error, "請稍後再試") });
     } finally { saving.current = false; setBusy(false); }
   }
+  async function handleDragEnd(event: DragEndEvent) {
+    const activeId = String(event.active.id);
+    const overId = event.over ? String(event.over.id) : null;
+    if (!overId || activeId === overId || saving.current) return;
+    const oldIndex = source.items.findIndex(item => item.id === activeId);
+    const newIndex = source.items.findIndex(item => item.id === overId);
+    if (oldIndex < 0 || newIndex < 0) return;
+    saving.current = true;
+    setBusy(true);
+    try {
+      await source.reorder(arrayMove(source.items, oldIndex, newIndex));
+      toast({ title: "店家順序已更新", description: "新增記帳會依這個順序顯示。" });
+    } catch (error) {
+      toast({ variant: "destructive", title: "店家排序失敗", description: getErrorMessage(error, "請稍後再試") });
+    } finally { saving.current = false; setBusy(false); }
+  }
   return <main className="app-page">
     <div className="app-page-inner max-w-6xl">
       <div className="app-header">
@@ -66,7 +129,7 @@ export default function MerchantsPage() {
       <section className="merchant-management" aria-labelledby="merchants-title">
         <header className="merchant-heading">
           <div><h2 id="merchants-title">店家清單 <span>{source.items.length}</span></h2>
-            <p>直接修改名稱，離開欄位或按 Enter 儲存。不改寫舊記帳。</p></div>
+            <p>拖曳左側把手調整順序；新增記帳會優先顯示前面的店家。</p></div>
         </header>
         <form className="mb-4 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-2 sm:p-3"
           onSubmit={event => { event.preventDefault(); void saveName(); }}>
@@ -83,17 +146,15 @@ export default function MerchantsPage() {
         </form>
         {source.loading ? <p role="status" className="choice-hint">載入店家中…</p> : source.error ? (
           <div role="alert">{source.error}<button type="button" className="choice-more" onClick={source.retry}>重試</button></div>
-        ) : <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
-          {source.items.map(item => <article key={item.id} className="merchant-card">
-            <MerchantNameField item={item} busy={busy} onSave={rename} />
-            <span className="merchant-status" data-active={item.is_active}>{item.is_active ? "啟用" : "停用"}</span>
-            <div className="merchant-actions">
-              <button type="button" disabled={busy} aria-label={`${item.is_active ? "停用" : "啟用"} ${item.name}`}
-                onClick={() => void toggle(item)}>{item.is_active ? "停用" : "啟用"}</button>
-            </div>
-          </article>)}
+        ) : <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={source.items.map(item => item.id)} strategy={rectSortingStrategy}>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
+          {source.items.map(item => <SortableMerchantCard key={item.id} item={item} busy={busy}
+            onRename={rename} onToggle={item => void toggle(item)} />)}
           {source.items.length === 0 && <p className="choice-hint">目前尚無店家，請在上方輸入名稱新增。</p>}
-        </div>}
+            </div>
+          </SortableContext>
+        </DndContext>}
       </section>
     </div>
   </main>;

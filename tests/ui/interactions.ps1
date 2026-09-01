@@ -27,6 +27,9 @@ Assert-UI 'bill payment offers company merchant choices' "Array.from(document.qu
 Assert-UI 'payment dialog within viewport' "(()=>{const r=document.querySelector('[role=dialog]').getBoundingClientRect();return r.left>=0 && r.right<=innerWidth && r.top>=0 && r.bottom<=innerHeight})()"
 & $AgentBrowser --session family-inspect press Shift+Tab | Out-Null
 Assert-UI 'reverse Tab stays inside modal' "!!document.activeElement.closest('[role=dialog]')"
+
+Open-Page '/settings/merchants'
+Assert-UI 'merchant management exposes ordering handle' "!!document.querySelector('button[aria-label^=調整店家]')"
 & $AgentBrowser --session family-inspect press Tab | Out-Null
 Assert-UI 'Tab wraps inside modal' "!!document.activeElement.closest('[role=dialog]')"
 & $AgentBrowser --session family-inspect press Escape | Out-Null

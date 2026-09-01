@@ -15,8 +15,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.access.mockResolvedValue("workspace");
   for (const fn of [mocks.from, mocks.select, mocks.eq, mocks.insert, mocks.update]) fn.mockReturnValue(mocks);
-  mocks.order.mockResolvedValue({ data: [{ id, name: "蝦皮", is_active: true }], error: null });
-  mocks.maybeSingle.mockResolvedValue({ data: { id, name: "蝦皮", is_active: true }, error: null });
+  mocks.order.mockResolvedValue({ data: [{ id, name: "蝦皮", is_active: true, sort_order: 10 }], error: null });
+  mocks.maybeSingle.mockResolvedValue({ data: { id, name: "蝦皮", is_active: true, sort_order: 10 }, error: null });
 });
 describe("merchant API", () => {
   it("loads only the authorized workspace", async () => {
@@ -24,6 +24,7 @@ describe("merchant API", () => {
     expect(response.status).toBe(200);
     expect(mocks.access).toHaveBeenCalledWith("workspace");
     expect(mocks.eq).toHaveBeenCalledWith("workspace_id", "workspace");
+    expect(mocks.order).toHaveBeenCalledWith("sort_order", { ascending: true });
   });
   it("adds a normalized name without accepting foreign fields", async () => {
     const response = await POST(request({ workspace_id: "workspace", name: "  全聯   福利中心 ", extra: "ignored" }));
@@ -45,6 +46,10 @@ describe("merchant API", () => {
     expect(mocks.update).toHaveBeenCalledWith({ name: "新名稱", is_active: false });
     expect(mocks.from).toHaveBeenCalledWith("ledger_merchants");
     expect(mocks.eq).toHaveBeenCalledWith("id", id);
+  });
+  it("supports changing the display order", async () => {
+    expect((await PATCH(request({ workspace_id: "workspace", id, sort_order: 20 }))).status).toBe(200);
+    expect(mocks.update).toHaveBeenCalledWith({ sort_order: 20 });
   });
   it("does not accept invalid enable-state or empty patches", async () => {
     expect((await PATCH(request({ workspace_id: "workspace", id, is_active: "false" }))).status).toBe(400);

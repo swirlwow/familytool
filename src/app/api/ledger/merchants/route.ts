@@ -13,7 +13,8 @@ export async function GET(req: Request) {
   try {
     const workspaceId = await assertWorkspaceAccess(new URL(req.url).searchParams.get("workspace_id") || "");
     const { data, error } = await supabase.from("ledger_merchants")
-      .select("id,name,is_active").eq("workspace_id", workspaceId).order("name");
+      .select("id,name,is_active,sort_order").eq("workspace_id", workspaceId)
+      .order("sort_order", { ascending: true });
     if (error) return failure(error);
     return NextResponse.json({ data }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) { return failure(error); }
@@ -24,7 +25,7 @@ async function save(req: Request, editing: boolean) {
     const body = await req.json().catch(() => null);
     if (!body || typeof body.workspace_id !== "string") return apiError("缺少工作區");
     const workspaceId = await assertWorkspaceAccess(body.workspace_id);
-    const fields: { name?: string; is_active?: boolean } = {};
+    const fields: { name?: string; is_active?: boolean; sort_order?: number } = {};
     if (!editing || body.name !== undefined) {
       if (typeof body.name !== "string") return apiError("請輸入店家名稱");
       const name = normalizeMerchantName(body.name);
@@ -35,13 +36,18 @@ async function save(req: Request, editing: boolean) {
       if (typeof body.is_active !== "boolean") return apiError("啟用狀態不正確");
       fields.is_active = body.is_active;
     }
+    if (body.sort_order !== undefined) {
+      const sortOrder = Number(body.sort_order);
+      if (!Number.isFinite(sortOrder)) return apiError("排序值不正確");
+      fields.sort_order = Math.round(sortOrder);
+    }
     if (editing && (typeof body.id !== "string" || !/^[0-9a-f-]{36}$/i.test(body.id) || !Object.keys(fields).length)) {
       return apiError("缺少有效的店家或修改內容");
     }
     const query = editing
       ? supabase.from("ledger_merchants").update(fields).eq("workspace_id", workspaceId).eq("id", body.id)
       : supabase.from("ledger_merchants").insert({ workspace_id: workspaceId, ...fields });
-    const { data, error } = await query.select("id,name,is_active").maybeSingle();
+    const { data, error } = await query.select("id,name,is_active,sort_order").maybeSingle();
     if (error?.code === "23505") return apiError("這個店家已存在；若已停用，可從管理重新啟用。", { status: 409 });
     if (error) return failure(error);
     if (!data) return apiError("找不到這個店家", { status: 404 });
