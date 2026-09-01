@@ -1,13 +1,18 @@
 :root {
   --ft-ivory: #fffaf4;
   --ft-paper: #fffdf9;
+  --ft-paper-raised: #fffefa;
   --ft-plum: #2e1838;
   --ft-plum-soft: #68536f;
   --ft-rose: #dc315e;
   --ft-rose-pale: #f9dce2;
   --ft-lavender: #d9d0ee;
   --ft-line: #ecdcd2;
-  --ft-shadow: 0 8px 28px rgba(75, 44, 55, 0.07);
+  --ft-line-strong: #e3cec2;
+  --ft-shadow: 0 10px 30px rgba(75, 44, 55, 0.065);
+  --ft-shadow-hover: 0 14px 34px rgba(75, 44, 55, 0.1);
+  --ft-content-max: 92rem;
+  --ft-page-gutter: clamp(0.875rem, 1.8vw, 2rem);
   --background: 30 100% 98%;
   --foreground: 281 40% 16%;
   --card: 40 100% 99%;
@@ -31,6 +36,10 @@ body {
   background: var(--ft-ivory);
 }
 
+html {
+  scrollbar-gutter: stable;
+}
+
 body,
 button,
 input,
@@ -43,13 +52,41 @@ textarea {
 body {
   margin: 0;
   color: var(--ft-plum);
+  background-image:
+    radial-gradient(circle at 86% 7%, rgba(217, 208, 238, 0.22), transparent 23rem),
+    radial-gradient(circle at 18% 88%, rgba(249, 220, 226, 0.2), transparent 26rem);
+  background-attachment: fixed;
 }
 
 .family-shell,
 .family-content,
 .app-page {
   color: var(--ft-plum);
-  background: var(--ft-ivory) !important;
+  background-color: transparent !important;
+}
+
+.family-content {
+  width: 100%;
+  min-height: 100dvh;
+}
+
+/* One steady work area across every tool. Narrow forms may size their own
+   inner sections, but route changes no longer move the outer page edges. */
+.app-page {
+  width: 100%;
+  min-height: 100dvh;
+  padding: var(--ft-page-gutter);
+  padding-bottom: calc(var(--app-nav-space, 0px) + var(--ft-page-gutter));
+}
+
+.app-page-inner {
+  width: 100%;
+  max-width: var(--ft-content-max);
+  margin-inline: auto;
+}
+
+.app-page-inner > * {
+  min-width: 0;
 }
 
 .family-sidebar {
@@ -314,8 +351,59 @@ body {
 }
 
 .family-shell :is(.app-panel, .modal-box, .card) {
-  border-radius: 18px;
+  border-radius: 20px;
   box-shadow: var(--ft-shadow);
+}
+
+.family-shell :is(.app-panel, .card) {
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.6), transparent 44%),
+    var(--ft-paper) !important;
+  border-color: var(--ft-line) !important;
+}
+
+.family-shell .app-panel {
+  overflow: clip;
+}
+
+.family-shell .app-panel-header {
+  min-height: 3.25rem;
+  padding: 0.8rem 1.1rem;
+  border-color: var(--ft-line) !important;
+  background: rgba(255, 250, 244, 0.52);
+}
+
+.family-shell .app-panel-header :is(h1, h2, h3) {
+  letter-spacing: 0.01em;
+}
+
+.family-shell :is(input, select, textarea, .input, .select, .textarea) {
+  border-radius: 13px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  transition: border-color 0.16s ease, background-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.family-shell :is(input, select, textarea, .input, .select, .textarea):focus {
+  border-color: #c88ca6;
+  background-color: #fff;
+  box-shadow: 0 0 0 3px rgba(220, 49, 94, 0.09);
+}
+
+.family-content table.table {
+  font-variant-numeric: tabular-nums;
+}
+
+.family-content table.table thead {
+  color: var(--ft-plum-soft);
+  background: rgba(250, 244, 238, 0.72);
+}
+
+.family-content table.table tbody > tr {
+  transition: background-color 0.14s ease;
+}
+
+.family-content table.table tbody > tr:hover {
+  background-color: rgba(249, 220, 226, 0.16);
 }
 
 .family-shell :is(input, select, textarea, .input, .select, .textarea) {
@@ -414,7 +502,7 @@ body {
 
 @media (max-width: 1023px) {
   .family-content {
-    padding-bottom: calc(84px + env(safe-area-inset-bottom)) !important;
+    padding-bottom: 0 !important;
   }
 }
 
@@ -429,12 +517,23 @@ body {
     padding-top: 0.625rem;
     padding-bottom: 0.625rem;
   }
+
+  .family-content {
+    padding-bottom: 0 !important;
+  }
+
+  .family-calendar .max-w-6xl {
+    width: calc(100% - (var(--ft-page-gutter) * 2));
+  }
 }
 /* Shared surfaces: keep action toolbars separate from desktop-hidden title bars. */
 :root { --app-nav-space: calc(68px + env(safe-area-inset-bottom)); }
 .app-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border: 1px solid var(--ft-line); border-radius: 16px; background: var(--ft-paper); }
 .app-actions .btn { min-height: 40px; padding-inline: 12px; gap: 6px; }
 .family-calendar { height: calc(var(--app-viewport-height, 100dvh) - var(--app-nav-space)); }
+.family-calendar > :is(header, div) > .max-w-6xl,
+.family-calendar > .max-w-6xl,
+.family-calendar .max-w-6xl { max-width: var(--ft-content-max); }
 .settings-navigation { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
 .settings-navigation .ledger-settings-nav { margin-bottom: 0; }
 .settings-secondary-link { display: inline-flex; align-items: center; min-height: 44px; padding: 6px 10px; color: var(--ft-plum-soft); font-size: 13px; text-decoration: underline; text-underline-offset: 4px; }

@@ -452,8 +452,8 @@ export default function BillsPage() {
   }
 
   return (
-    <main data-theme="light" className="min-h-screen bg-slate-50 px-3 py-3 pb-24 sm:px-4 md:px-6 md:py-5 md:pb-8">
-      <div className="mx-auto max-w-7xl space-y-4">
+    <main data-theme="light" className="app-page">
+      <div className="app-page-inner">
 
         <div className="bills-page-header sticky top-0 z-40 rounded-lg border border-slate-200 bg-white/95 shadow-sm backdrop-blur-md">
           <div className="flex min-h-14 flex-row items-center justify-between gap-3 px-3 py-2 sm:px-4">

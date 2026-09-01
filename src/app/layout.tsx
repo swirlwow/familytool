@@ -14,8 +14,10 @@ export const metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="zh-Hant" data-theme="light" style={{ colorScheme: "light" }}>
-      {/* eslint-disable-next-line @next/next/no-css-tags */}
-      <link rel="stylesheet" href="/fonts/chiron-go-round/css/vf.css" />
+      <head>
+        {/* eslint-disable-next-line @next/next/no-css-tags */}
+        <link rel="stylesheet" href="/fonts/chiron-go-round/css/vf.css" />
+      </head>
       <body>
         <ViewportObserver />
         <AppShell>

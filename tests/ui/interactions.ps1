@@ -27,9 +27,6 @@ Assert-UI 'bill payment offers company merchant choices' "Array.from(document.qu
 Assert-UI 'payment dialog within viewport' "(()=>{const r=document.querySelector('[role=dialog]').getBoundingClientRect();return r.left>=0 && r.right<=innerWidth && r.top>=0 && r.bottom<=innerHeight})()"
 & $AgentBrowser --session family-inspect press Shift+Tab | Out-Null
 Assert-UI 'reverse Tab stays inside modal' "!!document.activeElement.closest('[role=dialog]')"
-
-Open-Page '/settings/merchants'
-Assert-UI 'merchant management exposes ordering handle' "!!document.querySelector('button[aria-label^=調整店家]')"
 & $AgentBrowser --session family-inspect press Tab | Out-Null
 Assert-UI 'Tab wraps inside modal' "!!document.activeElement.closest('[role=dialog]')"
 & $AgentBrowser --session family-inspect press Escape | Out-Null
@@ -38,6 +35,8 @@ Open-Button '修改金額'
 & $AgentBrowser --session family-inspect set viewport 390 420 | Out-Null
 Assert-UI 'short viewport keeps edit modal accessible' "(()=>{const r=document.querySelector('[role=dialog]').getBoundingClientRect();return r.top>=0 && r.bottom<=innerHeight})()"
 & $AgentBrowser --session family-inspect press Escape | Out-Null
+Open-Page '/settings/merchants'
+Assert-UI 'merchant management exposes ordering handle' "!!document.querySelector('button[aria-label^=調整店家]')"
 & $AgentBrowser --session family-inspect set viewport 768 1024 | Out-Null
 Open-Page '/calendar'
 Assert-UI 'tablet calendar clears bottom navigation' "document.querySelector('.family-calendar').getBoundingClientRect().bottom <= document.querySelector('.family-bottom-nav').getBoundingClientRect().top+1"

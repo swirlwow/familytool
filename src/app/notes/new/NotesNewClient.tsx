@@ -56,7 +56,7 @@ export default function NotesNewClient() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-slate-50 p-6 flex items-center justify-center">
+    <main className="app-page flex items-center justify-center">
       <div className="text-slate-400">建立記事中…</div>
     </main>
   );
