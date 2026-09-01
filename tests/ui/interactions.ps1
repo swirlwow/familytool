@@ -20,6 +20,7 @@ function Open-Button([string]$Text) {
 Open-Page '/bills'
 & $AgentBrowser --session family-inspect set viewport 390 844 | Out-Null
 Open-Page '/bills'
+Assert-UI 'bill month card omits duplicate date range' "!Array.from(document.querySelectorAll('span,div')).some(e=>/^\d{4}-\d{2}-\d{2}\s*~\s*\d{4}-\d{2}-\d{2}$/.test(e.textContent.trim()) && e.children.length===0)"
 Open-Button '付款'
 Assert-UI 'payment dialog open and focused' "document.activeElement?.getAttribute('role') === 'dialog'"
 Assert-UI 'payment dialog within viewport' "(()=>{const r=document.querySelector('[role=dialog]').getBoundingClientRect();return r.left>=0 && r.right<=innerWidth && r.top>=0 && r.bottom<=innerHeight})()"
@@ -36,6 +37,9 @@ Assert-UI 'short viewport keeps edit modal accessible' "(()=>{const r=document.q
 & $AgentBrowser --session family-inspect set viewport 768 1024 | Out-Null
 Open-Page '/calendar'
 Assert-UI 'tablet calendar clears bottom navigation' "document.querySelector('.family-calendar').getBoundingClientRect().bottom <= document.querySelector('.family-bottom-nav').getBoundingClientRect().top+1"
+Run-Eval "(()=>{const b=Array.from(document.querySelectorAll('button')).find(e=>e.textContent.trim()==='+1' && e.getBoundingClientRect().width>0);if(!b)throw Error('calendar overflow button missing');b.focus();b.click();return true})()" | Out-Null
+Assert-UI 'calendar +1 opens hidden event editor' "!!document.querySelector('[role=dialog]') && Array.from(document.querySelectorAll('[role=dialog] input')).some(e=>e.value==='可由加一開啟的行程')"
+& $AgentBrowser --session family-inspect press Escape | Out-Null
 Run-Eval "(()=>{const b=Array.from(document.querySelectorAll('button')).find(e=>e.getAttribute('aria-label')==='新增行程' && e.getBoundingClientRect().width>0);b.focus();b.click();return true})()" | Out-Null
 Assert-UI 'calendar modal opens' "!!document.querySelector('[role=dialog]')"
 & $AgentBrowser --session family-inspect press Escape | Out-Null

@@ -53,7 +53,6 @@ function n(v: unknown) { const x = Number(v); return Number.isFinite(x) ? x : 0;
 function round2(v: number) { return Math.round((v + Number.EPSILON) * 100) / 100; }
 function ymNow() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; }
 function todayStr() { const d = new Date(); const y = d.getFullYear(); const m = String(d.getMonth() + 1).padStart(2, "0"); const day = String(d.getDate()).padStart(2, "0"); return `${y}-${m}-${day}`; }
-function monthRange(ym: string) { const [y, m] = ym.split("-").map(Number); const from = `${y}-${String(m).padStart(2, "0")}-01`; const lastDay = new Date(y, m, 0).getDate(); const to = `${y}-${String(m).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`; return { from, to }; }
 function statusBadge(s: string) {
   const v = String(s || "");
   if (v === "paid") return "badge bg-emerald-100 text-emerald-600 border-none font-bold";
@@ -74,8 +73,6 @@ export default function BillsPage() {
   const [view, setView] = useState<"bills" | "templates">("bills");
 
   const [ym, setYm] = useState(ymNow());
-  const { from, to } = useMemo(() => monthRange(ym), [ym]);
-
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -501,8 +498,7 @@ export default function BillsPage() {
                 <span className="text-xs font-bold text-slate-500">查看月份</span>
               </div>
               <input type="month" className="input input-bordered h-10 min-h-0 w-full rounded-lg border-slate-200 bg-slate-50 font-bold focus:border-rose-500" value={ym} onChange={(e) => setYm(e.target.value)} />
-              <div className="mt-2 flex items-center justify-between gap-2 text-[11px] text-slate-400">
-                <span>{from} ~ {to}</span>
+              <div className="mt-2 flex justify-end">
                 <button className="btn btn-ghost btn-xs h-7 min-h-0 rounded-lg px-2 font-bold text-rose-500 hover:bg-rose-50 hover:text-rose-600" onClick={loadBills} disabled={loading} title="重新載入">
                   <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} /> <span className="sr-only">重新載入</span>
                 </button>

@@ -33,7 +33,12 @@ export function installFixtures() {
       case '/api/bills': data = rows([bill, { ...bill, id: 'bill-2', name_snapshot: '測試信用卡', payment_mode: 'status_only' }]); break;
       case '/api/stickies': data = rows([sticky]); break;
       case '/api/stickies/sticky-1': data = empty ? null : sticky; break;
-      case '/api/notes': data = rows([{ id: 'note-1', title: long, content: long, owner: '家庭', date_from: date, date_to: date, is_all_day: true }]); break;
+      case '/api/notes': data = rows([
+        { id: 'note-1', title: long, content: long, owner: '家庭', date_from: date, date_to: date, is_all_day: true },
+        { id: 'note-2', title: '測試行程二', content: '', owner: '爸媽', date_from: date, date_to: date, is_all_day: true },
+        { id: 'note-3', title: '測試行程三', content: '', owner: '雅惠', date_from: date, date_to: date, is_all_day: true },
+        { id: 'note-4', title: '可由加一開啟的行程', content: '', owner: '昱元', date_from: date, date_to: date, is_all_day: true },
+      ]); break;
       case '/api/settlement': return Response.json({ net: [], recent_settlements: [], splits: rows([split]), settled_items: [], suggestions: [], totals: { split_amount: empty ? 0 : split.split_amount, remaining_amount: empty ? 0 : split.remaining_amount } });
     }
     return Response.json({ data });

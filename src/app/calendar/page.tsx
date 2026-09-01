@@ -179,7 +179,7 @@ type Seg = {
 
 function buildWeekSegments(weekDates: Array<string | null>, notes: NoteRow[]) {
   const dates = weekDates.filter(Boolean) as string[];
-  if (dates.length === 0) return { lanes: [] as Seg[][], hiddenByDate: new Map<string, number>() };
+  if (dates.length === 0) return { lanes: [] as Seg[][], hiddenNotesByDate: new Map<string, NoteRow[]>() };
 
   const weekStart = dates[0];
   const weekEnd = dates[dates.length - 1];
@@ -210,7 +210,7 @@ function buildWeekSegments(weekDates: Array<string | null>, notes: NoteRow[]) {
   });
 
   const lanes: Seg[][] = [];
-  const hiddenByDate = new Map<string, number>();
+  const hiddenNotesByDate = new Map<string, NoteRow[]>();
 
   function overlaps(a: Seg, b: Seg) {
     return !(a.endIdx < b.startIdx || b.endIdx < a.startIdx);
@@ -227,13 +227,13 @@ function buildWeekSegments(weekDates: Array<string | null>, notes: NoteRow[]) {
     }
     if (!placed) {
       if (lanes.length < 3) lanes.push([s]);
-      else hiddenByDate.set(s.segFrom, (hiddenByDate.get(s.segFrom) || 0) + 1);
+      else hiddenNotesByDate.set(s.segFrom, [...(hiddenNotesByDate.get(s.segFrom) || []), s.note]);
     }
   }
 
   for (const lane of lanes) lane.sort((a, b) => a.startIdx - b.startIdx);
 
-  return { lanes, hiddenByDate };
+  return { lanes, hiddenNotesByDate };
 }
 
 type Draft = {
@@ -265,6 +265,7 @@ export default function CalendarPage() {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [overflowNotes, setOverflowNotes] = useState<{ date: string; notes: NoteRow[] } | null>(null);
 
   const swipeStartX = useRef<number | null>(null);
   const swipeStartY = useRef<number | null>(null);
@@ -338,6 +339,7 @@ export default function CalendarPage() {
   function openEdit(n: NoteRow) {
     const id = String(n?.id || "").trim();
     if (!id) return;
+    setOverflowNotes(null);
     setDraft({
       mode: "edit",
       id,
@@ -643,7 +645,7 @@ export default function CalendarPage() {
               <div className="grid grid-rows-6 h-full gap-px">
                 {monthWeeks.map((week, wi) => {
                   const weekDates = week.map((c) => c.date);
-                  const { lanes, hiddenByDate } = buildWeekSegments(weekDates, notes);
+                  const { lanes, hiddenNotesByDate } = buildWeekSegments(weekDates, notes);
 
                   return (
                     <div key={`wk-${wi}`} className="relative bg-white">
@@ -654,8 +656,6 @@ export default function CalendarPage() {
                           }
 
                           const isToday = c.date === ymd(new Date());
-                          const hidden = hiddenByDate.get(c.date) || 0;
-
                           return (
                             <div
                               key={c.date}
@@ -687,12 +687,31 @@ export default function CalendarPage() {
                                   {c.day}
                                 </div>
 
-                                {hidden > 0 && (
-                                  <div className="text-[10px] font-black text-slate-500 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-full">
-                                    +{hidden}
-                                  </div>
-                                )}
                               </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      <div className="pointer-events-none absolute inset-x-0 top-1.5 grid grid-cols-7">
+                        {week.map((c, di) => {
+                          const hiddenNotes = c.date ? hiddenNotesByDate.get(c.date) || [] : [];
+                          return (
+                            <div key={`overflow-${wi}-${di}`} className="flex justify-end px-1.5">
+                              {c.date && hiddenNotes.length > 0 && (
+                                <button
+                                  type="button"
+                                  className="pointer-events-auto rounded-full border border-orange-200 bg-white px-2 py-0.5 text-[10px] font-black text-orange-700 shadow-sm transition-colors hover:bg-orange-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+                                  aria-label={`${c.date} 尚有 ${hiddenNotes.length} 筆行程，點選編輯`}
+                                  title={`查看另外 ${hiddenNotes.length} 筆行程`}
+                                  onClick={() => {
+                                    if (hiddenNotes.length === 1) openEdit(hiddenNotes[0]);
+                                    else setOverflowNotes({ date: c.date!, notes: hiddenNotes });
+                                  }}
+                                >
+                                  +{hiddenNotes.length}
+                                </button>
+                              )}
                             </div>
                           );
                         })}
@@ -893,6 +912,51 @@ export default function CalendarPage() {
       </button>
 
       {/* ===== Draft Drawer ===== */}
+      {overflowNotes && !draft && (
+        <AppModal
+          title={`${overflowNotes.date} 的其他行程`}
+          onClose={() => setOverflowNotes(null)}
+          wide={false}
+        >
+          <div className="bg-white p-5 sm:p-6">
+            <div className="mb-4 flex items-center justify-between gap-3 border-b border-slate-100 pb-3">
+              <div>
+                <h2 className="text-base font-black text-slate-800">其他行程</h2>
+                <p className="mt-1 text-xs font-bold tabular-nums text-slate-500">{overflowNotes.date}</p>
+              </div>
+              <button
+                type="button"
+                className="grid h-9 w-9 place-items-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200"
+                onClick={() => setOverflowNotes(null)}
+                aria-label="關閉"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="space-y-2">
+              {overflowNotes.notes.map((note) => {
+                const owner = primaryOwner(note.owner);
+                const st = OWNER_STYLE[owner] || OWNER_STYLE["家庭"];
+                return (
+                  <button
+                    key={note.id}
+                    type="button"
+                    className={cn(
+                      "flex w-full items-center gap-3 rounded-xl border p-3 text-left transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400",
+                      st.itemBg
+                    )}
+                    onClick={() => openEdit(note)}
+                  >
+                    <span className={cn("shrink-0 rounded px-2 py-1 text-[10px] font-black", st.chip)}>{owner}</span>
+                    <span className="min-w-0 break-words text-sm font-black">{note.title}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </AppModal>
+      )}
+
       {draft && (
         <AppModal title={draft.mode === "new" ? "新增行程" : "編輯行程"} onClose={closeDraft}>
           <div className="relative w-full bg-white">
