@@ -64,6 +64,35 @@ begin
   where workspace_id = v_workspace and settlement_id = v_settlement;
   assert v_item is not null, 'settlement item was not created';
 
+  perform public.update_ledger_entry_with_details(
+    v_workspace, v_entry, '2099-01-01', 'expense', 100, v_category,
+    'test', 'Updated merchant', 'Updated note', v_creditor,
+    jsonb_build_array(jsonb_build_object('payer_id', v_debtor, 'amount', 40)),
+    'Updated content'
+  );
+  assert exists (
+    select 1 from public.ledger_entries
+    where id = v_entry
+      and merchant = 'Updated merchant'
+      and note = 'Updated note'
+      and consumption_content = 'Updated content'
+  ), 'settled ledger metadata was not editable';
+
+  begin
+    perform public.update_ledger_entry_with_details(
+      v_workspace, v_entry, '2099-01-01', 'expense', 101, v_category,
+      'test', 'Updated merchant', 'Updated note', v_creditor,
+      jsonb_build_array(jsonb_build_object('payer_id', v_debtor, 'amount', 40)),
+      'Updated content'
+    );
+    raise exception 'settled ledger financial fields were editable';
+  exception
+    when others then
+      if sqlerrm = 'settled ledger financial fields were editable' then
+        raise;
+      end if;
+  end;
+
   begin
     perform public.update_ledger_entry_atomic(
       v_workspace, v_entry, '2099-01-02', 'expense', 100, v_category,
