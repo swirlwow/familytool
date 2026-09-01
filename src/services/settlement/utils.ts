@@ -12,7 +12,7 @@ export function clampInt(v: any, def = 20, min = 1, max = 200) {
   return Math.max(min, Math.min(max, Math.floor(n)));
 }
 
-export function pad2(x: number) {
+function pad2(x: number) {
   return String(x).padStart(2, "0");
 }
 

@@ -1,7 +1,7 @@
 // src/lib/calendarRepo.ts
 import { supabase } from "@/lib/supabaseClient";
 
-export type CalendarEventRow = {
+type CalendarEventRow = {
   id: string;
   workspace_id: string;
   title: string;

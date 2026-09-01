@@ -1,5 +1,5 @@
 {
-  "entry": ["src/app/**/*.{ts,tsx}"],
+  "entry": ["src/app/**/*.{ts,tsx}", "src/**/*.test.{ts,tsx}"],
   "project": ["**/*.{ts,tsx}"],
   "ignore": ["**/*.d.ts", ".next/**", "node_modules/**"]
 }

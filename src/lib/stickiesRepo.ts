@@ -1,28 +1,6 @@
 // src/lib/stickiesRepo.ts
 import { supabase } from "@/lib/supabaseClient";
 
-export type StickyRow = {
-  id: string;
-  workspace_id: string;
-  owner: string;
-  title: string;
-  content: string | null;
-  updated_at: string;
-  created_at: string;
-  deleted_at: string | null;
-};
-
-export type StickyItemRow = {
-  id: string;
-  sticky_id: string;
-  text: string;
-  is_done: boolean;
-  sort: number;
-  updated_at: string;
-  created_at: string;
-  deleted_at: string | null;
-};
-
 function mustId(x: any) {
   return String(x?.id || x?.data?.id || "").trim();
 }

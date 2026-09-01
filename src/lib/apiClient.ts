@@ -1,6 +1,4 @@
 // src/lib/apiClient.ts
-export type ApiResult<T> = { data: T } | { error: string };
-
 async function safeJson(res: Response) {
   try {
     return await res.json();

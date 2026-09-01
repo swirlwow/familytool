@@ -1,6 +1,6 @@
-export type LedgerType = "expense" | "income";
+type LedgerType = "expense" | "income";
 
-export type SplitItem = {
+type SplitItem = {
   payer_id?: string | null;
   amount?: number | string | null;
 };

@@ -2,7 +2,7 @@
 
 import { LucideIcon } from "lucide-react";
 
-export type StatTheme = 
+type StatTheme =
   | "slate" | "rose" | "emerald" | "amber" 
   | "sky" | "cyan" | "violet" | "pink" | "yellow";
 

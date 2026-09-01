@@ -26,7 +26,7 @@ function pairKey(debtor_id: string, creditor_id: string) {
   return JSON.stringify([debtor_id, creditor_id]);
 }
 
-export async function loadSplitLines(params: {
+async function loadSplitLines(params: {
   workspace_id: string;
   from: string;
   to: string;

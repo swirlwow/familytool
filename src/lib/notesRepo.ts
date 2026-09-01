@@ -1,7 +1,7 @@
 // src/lib/notesRepo.ts
 import { supabase } from "@/lib/supabaseClient";
 
-export type NoteRow = {
+type NoteRow = {
   id: string;
   workspace_id: string;
   owner: string; // ✅ DB仍是text；格式： "家庭" 或 "子逸,雅惠"
@@ -23,7 +23,7 @@ function mustId(row: any) {
 }
 
 /** ✅ 兼容你現在資料可能長這樣： "|子逸|"、"|子逸|雅惠|"、"子逸,雅惠"、"子逸 雅惠" */
-export function parseOwners(input: any): string[] {
+function parseOwners(input: any): string[] {
   if (Array.isArray(input)) {
     return input.map((x) => String(x || "").trim()).filter(Boolean);
   }
@@ -49,7 +49,7 @@ export function parseOwners(input: any): string[] {
   return arr;
 }
 
-export function formatOwners(owners: string[]): string {
+function formatOwners(owners: string[]): string {
   const cleaned = Array.from(
     new Set(
       owners
@@ -65,7 +65,7 @@ export function formatOwners(owners: string[]): string {
 }
 
 /** ✅ 讓 create/patch 可以吃 owner: string | string[] */
-export function normOwnerField(v: any): string {
+function normOwnerField(v: any): string {
   const arr = parseOwners(v);
   return formatOwners(arr);
 }

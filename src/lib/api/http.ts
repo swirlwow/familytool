@@ -26,10 +26,6 @@ export function apiError(message: string, options: ApiErrorOptions = {}) {
   return NextResponse.json(base, { status });
 }
 
-export function apiOk(payload: any, status = 200) {
-  return NextResponse.json(payload, { status });
-}
-
 type InternalErrorOptions = Pick<ApiErrorOptions, "data" | "successFalse" | "payload"> & {
   context?: string;
   message?: string;
@@ -88,8 +84,4 @@ export async function parseJson<T = any>(req: Request, fallback: T = {} as T): P
   } catch {
     return fallback;
   }
-}
-
-export function getSearchParams(req: Request) {
-  return new URL(req.url).searchParams;
 }
