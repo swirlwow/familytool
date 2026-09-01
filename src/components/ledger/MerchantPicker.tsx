@@ -12,9 +12,10 @@ type Props = {
   value: string;
   onChange: (value: string) => void;
   source: ReturnType<typeof useLedgerMerchants>;
+  label?: string;
 };
 
-export function MerchantPicker({ value, onChange, source }: Props) {
+export function MerchantPicker({ value, onChange, source, label = "店家／對象" }: Props) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
@@ -37,7 +38,7 @@ export function MerchantPicker({ value, onChange, source }: Props) {
         {value && <p>目前：{value}</p>}
         <button type="button" className="choice-more" onClick={source.retry}>重試</button>
       </div>
-    ) : <ChoiceChips label="店家／對象" value={value} onChange={onChange}
+    ) : <ChoiceChips label={label} value={value} onChange={onChange}
       options={source.items.filter(item => item.is_active).map(item => ({ value: item.name, label: item.name }))} />}
     <button type="button" disabled={busy || source.loading || !!source.error} className="choice-more merchant-quick-add"
       onClick={() => { setName(""); setOpen(true); }}><Plus size={15} aria-hidden="true" />新增店家</button>

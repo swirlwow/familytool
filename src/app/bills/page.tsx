@@ -7,6 +7,8 @@ import { WORKSPACE_ID } from "@/lib/appConfig";
 import { BillTemplateManager } from "@/components/bills/BillTemplateManager";
 import { AppModal } from "@/components/ui/app-modal";
 import { ConfirmActionDialog } from "@/components/ui/confirm-action-dialog";
+import { MerchantPicker } from "@/components/ledger/MerchantPicker";
+import { useLedgerMerchants } from "@/hooks/useLedgerMerchants";
 import { toast } from "@/hooks/use-toast";
 import { getErrorMessage } from "@/lib/client/feedback";
 import { validateSplits } from "@/lib/ledger/splits";
@@ -70,6 +72,7 @@ function statusLabel(status: string) {
 
 export default function BillsPage() {
   const router = useRouter();
+  const merchants = useLedgerMerchants(WORKSPACE_ID || "");
   const [view, setView] = useState<"bills" | "templates">("bills");
 
   const [ym, setYm] = useState(ymNow());
@@ -696,7 +699,14 @@ export default function BillsPage() {
                   <div><label className="label py-1"><span className="label-text font-bold text-slate-400 text-xs uppercase">付款方式</span></label><select className="select select-bordered w-full rounded-xl focus:border-rose-500" value={payForm.pay_method} onChange={(e) => setPayForm((p) => ({ ...p, pay_method: e.target.value }))}><option value="">（不選）</option>{payMethods.map((m) => (<option key={m.id} value={m.name}>{m.name}</option>))}</select></div>
                   <div><label className="label py-1"><span className="label-text font-bold text-slate-400 text-xs uppercase">分類大項</span></label><select className="select select-bordered w-full rounded-xl focus:border-rose-500" value={payForm.category_group} onChange={(e) => setPayForm((p) => ({ ...p, category_group: e.target.value, category_id: "" }))}><option value="">（不選）</option>{catGroups.map((g) => (<option key={g} value={g}>{g}</option>))}</select></div>
                   <div><label className="label py-1"><span className="label-text font-bold text-slate-400 text-xs uppercase">分類小項</span></label><select className="select select-bordered w-full rounded-xl focus:border-rose-500" value={payForm.category_id} onChange={(e) => setPayForm((p) => ({ ...p, category_id: e.target.value }))} disabled={!payForm.category_group}><option value="">（不選）</option>{paySubcats.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}</select></div>
-                  <div className="md:col-span-2"><label className="label py-1"><span className="label-text font-bold text-slate-400 text-xs uppercase">店家/對象</span></label><input className="input input-bordered w-full rounded-xl focus:border-rose-500" value={payForm.merchant} onChange={(e) => setPayForm((p) => ({ ...p, merchant: e.target.value }))} /></div>
+                  <div className="md:col-span-2">
+                    <MerchantPicker
+                      label="公司／店家"
+                      value={payForm.merchant}
+                      onChange={(merchant) => setPayForm((p) => ({ ...p, merchant }))}
+                      source={merchants}
+                    />
+                  </div>
                   <div className="md:col-span-2"><label className="label py-1"><span className="label-text font-bold text-slate-400 text-xs uppercase">備註</span></label><input className="input input-bordered w-full rounded-xl focus:border-rose-500" value={payForm.note} onChange={(e) => setPayForm((p) => ({ ...p, note: e.target.value }))} /></div>
                 </div>
 

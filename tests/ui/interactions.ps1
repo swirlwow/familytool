@@ -23,6 +23,7 @@ Open-Page '/bills'
 Assert-UI 'bill month card omits duplicate date range' "!Array.from(document.querySelectorAll('span,div')).some(e=>/^\d{4}-\d{2}-\d{2}\s*~\s*\d{4}-\d{2}-\d{2}$/.test(e.textContent.trim()) && e.children.length===0)"
 Open-Button '付款'
 Assert-UI 'payment dialog open and focused' "document.activeElement?.getAttribute('role') === 'dialog'"
+Assert-UI 'bill payment offers company merchant choices' "Array.from(document.querySelectorAll('[role=dialog] button')).some(e=>e.textContent.includes('測試用超長名稱'))"
 Assert-UI 'payment dialog within viewport' "(()=>{const r=document.querySelector('[role=dialog]').getBoundingClientRect();return r.left>=0 && r.right<=innerWidth && r.top>=0 && r.bottom<=innerHeight})()"
 & $AgentBrowser --session family-inspect press Shift+Tab | Out-Null
 Assert-UI 'reverse Tab stays inside modal' "!!document.activeElement.closest('[role=dialog]')"

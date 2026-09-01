@@ -109,6 +109,13 @@ begin
     'bill paid total was incremented twice';
   assert (select status from public.bill_instances where id = v_bill) = 'paid',
     'bill was not marked paid';
+  assert exists (
+    select 1 from public.ledger_entries
+    where id = (v_payment ->> 'ledger_entry_id')::uuid
+      and merchant = 'Atomic test bill'
+      and note is null
+      and consumption_content = 'Bill payment: Atomic test bill'
+  ), 'bill payment description was not written to consumption content';
 end;
 $$;
 
