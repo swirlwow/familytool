@@ -198,7 +198,7 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-slate-900 relative overflow-hidden px-4 py-8">
+    <main className="family-login min-h-screen flex items-center justify-center relative overflow-hidden px-4 py-8">
       {/* 背景微光漸層裝飾 (Ambient Glow) */}
       <div className="absolute -top-40 -left-40 w-96 h-96 bg-sky-500 rounded-full blur-[120px] opacity-20 pointer-events-none"></div>
       <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-amber-500 rounded-full blur-[120px] opacity-20 pointer-events-none"></div>

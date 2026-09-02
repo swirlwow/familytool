@@ -7,10 +7,10 @@ import {
   LayoutDashboard,
   Calculator,
   Receipt,
-  CreditCard,
   CalendarDays,
   StickyNote,
   NotebookPen,
+  Sun,
   ArrowRight,
   Sparkles,
   DatabaseBackup,
@@ -40,7 +40,6 @@ const financeTools = [
   { name: "財務儀表板", desc: "收支統計與明細匯出", href: "/ledger/dashboard", icon: LayoutDashboard, theme: "blue" },
   { name: "拆帳結算", desc: "代墊款計算與批次結清", href: "/settlement", icon: Calculator, theme: "amber" },
   { name: "帳單管理", desc: "水電信貸等固定支出", href: "/bills", icon: Receipt, theme: "rose" },
-  { name: "帳戶總覽", desc: "銀行與信用卡餘額追蹤", href: "/accounts", icon: CreditCard, theme: "emerald" },
 ];
 
 // 生活工具清單
@@ -48,6 +47,7 @@ const lifeTools = [
   { name: "行事曆", desc: "全家行程與排班規劃", href: "/calendar", icon: CalendarDays, theme: "orange" },
   { name: "便條紙", desc: "隨手紀錄與牆上便利貼", href: "/stickies", icon: StickyNote, theme: "yellow" },
   { name: "記事本", desc: "醫療、用藥與長篇紀錄", href: "/notes", icon: NotebookPen, theme: "pink" },
+  { name: "值班休假", desc: "值班、補休與特休管理", href: "https://shift-leave-manager.vercel.app/", icon: Sun, theme: "rose" },
 ];
 
 // 設定與備份清單
@@ -58,8 +58,8 @@ const settingTools = [
 
 export default function HomePage() {
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-6 md:p-8 lg:p-10 pb-28 md:pb-12">
-      <div className="mx-auto max-w-5xl space-y-8 md:space-y-12">
+    <main className="family-home">
+      <div className="family-home-inner">
         
         {/* ===== Header Hero Section ===== */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 bg-white p-6 md:p-8 rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden">
@@ -87,12 +87,18 @@ export default function HomePage() {
             <div className="h-px flex-1 bg-slate-200"></div>
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
             {financeTools.map((tool) => {
               const Icon = tool.icon;
               const colors = getThemeClasses(tool.theme);
               return (
-                <Link key={tool.name} href={tool.href} className="group block outline-none">
+                <Link
+                  key={tool.name}
+                  href={tool.href}
+                  target={tool.href.startsWith("http") ? "_blank" : undefined}
+                  rel={tool.href.startsWith("http") ? "noreferrer" : undefined}
+                  className="group block outline-none"
+                >
                   <div className="bg-white border border-slate-200 rounded-2xl p-4 md:p-5 transition-all duration-300 hover:shadow-lg hover:shadow-slate-200/50 hover:-translate-y-1 hover:border-slate-300 h-full flex flex-col">
                     <div className="flex items-start justify-between mb-4">
                       <div className={`p-2.5 md:p-3 rounded-xl transition-colors duration-300 ring-1 ring-inset ${colors}`}>
@@ -120,12 +126,18 @@ export default function HomePage() {
             <div className="h-px flex-1 bg-slate-200"></div>
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
             {lifeTools.map((tool) => {
               const Icon = tool.icon;
               const colors = getThemeClasses(tool.theme);
               return (
-                <Link key={tool.name} href={tool.href} className="group block outline-none">
+                <Link
+                  key={tool.name}
+                  href={tool.href}
+                  target={tool.href.startsWith("http") ? "_blank" : undefined}
+                  rel={tool.href.startsWith("http") ? "noreferrer" : undefined}
+                  className="group block outline-none"
+                >
                   <div className="bg-white border border-slate-200 rounded-2xl p-4 md:p-5 transition-all duration-300 hover:shadow-lg hover:shadow-slate-200/50 hover:-translate-y-1 hover:border-slate-300 h-full flex flex-col">
                     <div className="flex items-start justify-between mb-4">
                       <div className={`p-2.5 md:p-3 rounded-xl transition-colors duration-300 ring-1 ring-inset ${colors}`}>
