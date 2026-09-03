@@ -7,7 +7,7 @@ const tx = (values: Partial<InvestmentTransaction> & Pick<InvestmentTransaction,
   const { id, transaction_type, trade_date, ...overrides } = values;
   return { id, workspace_id: "w", account_id: "a", security_id: "s", transaction_type, trade_date, quantity: 0, price: 0, fee: 0, tax: 0, cash_amount: 0, settlement_amount: null, order_number: null, currency: "TWD", source: "manual", note: null, created_at: `${trade_date}T00:00:00Z`, updated_at: `${trade_date}T00:00:00Z`, ...overrides };
 };
-const dividend = (values: Partial<InvestmentDividend> = {}): InvestmentDividend => ({ id: "d", workspace_id: "w", account_id: "a", security_id: "s", ex_dividend_date: "2026-05-19", eligible_quantity: 1000, dividend_per_share: 0.66, payment_date: "2026-06-12", received_amount: 650, deduction_type: "transfer_fee", status: "received", source: "manual", note: null, created_at: "2026-05-19T00:00:00Z", updated_at: "2026-06-12T00:00:00Z", expected_amount: 660, deduction_amount: 10, ...values });
+const dividend = (values: Partial<InvestmentDividend> = {}): InvestmentDividend => ({ id: "d", workspace_id: "w", account_id: "a", security_id: "s", dividend_type: "cash", ex_dividend_date: "2026-05-19", eligible_quantity: 1000, dividend_per_share: 0.66, stock_dividend_rate: 0, payment_date: "2026-06-12", received_amount: 650, shares_received: null, deduction_type: "transfer_fee", status: "received", source: "manual", note: null, created_at: "2026-05-19T00:00:00Z", updated_at: "2026-06-12T00:00:00Z", expected_amount: 660, expected_shares: 0, deduction_amount: 10, ...values });
 const action = (values: Partial<InvestmentCorporateAction> = {}): InvestmentCorporateAction => ({ id: "c", workspace_id: "w", account_id: "a", security_id: "s", action_type: "capital_reduction", event_date: "2026-02-01", quantity_before: 1000, reduction_ratio: 0.2, quantity_after: 800, cash_return: 2000, cost_adjustment: 2000, source: "manual", note: null, created_at: "2026-02-01T00:00:00Z", updated_at: "2026-02-01T00:00:00Z", ...values });
 
 describe("calculateInvestmentSnapshot", () => {
@@ -29,6 +29,15 @@ describe("calculateInvestmentSnapshot", () => {
   it("uses the actual received dividend amount without transaction fees or tax", () => {
     const result = calculateInvestmentSnapshot([account], [security], [tx({ id: "1", transaction_type: "buy", trade_date: "2026-01-01", quantity: 1000, price: 10 })], [dividend()]);
     expect(result.summary).toMatchObject({ dividend_income: 650, realized_profit: 650 });
+  });
+  it("adds received stock dividends to shares without increasing cost", () => {
+    const stockDividends = [
+      dividend({ id: "s1", dividend_type: "stock", ex_dividend_date: "2022-08-12", eligible_quantity: 1000, dividend_per_share: 0, stock_dividend_rate: 0.3, payment_date: null, received_amount: null, shares_received: 30, deduction_type: null, expected_amount: 0, expected_shares: 30, deduction_amount: 0 }),
+      dividend({ id: "s2", dividend_type: "stock", ex_dividend_date: "2023-08-11", eligible_quantity: 1000, dividend_per_share: 0, stock_dividend_rate: 0.15, payment_date: null, received_amount: null, shares_received: 15, deduction_type: null, expected_amount: 0, expected_shares: 15, deduction_amount: 0 }),
+    ];
+    const result = calculateInvestmentSnapshot([account], [security], [tx({ id: "1", transaction_type: "buy", trade_date: "2022-01-01", quantity: 1000, price: 10 })], stockDividends);
+    expect(result.holdings[0]).toMatchObject({ quantity: 1045, cost_basis: 10000, average_cost: 9.57 });
+    expect(result.summary).toMatchObject({ dividend_income: 0 });
   });
   it("applies a cash capital reduction to shares and carrying cost", () => {
     const result = calculateInvestmentSnapshot([account], [security], [tx({ id: "1", transaction_type: "buy", trade_date: "2026-01-01", quantity: 1000, price: 10 })], [], [action()]);
