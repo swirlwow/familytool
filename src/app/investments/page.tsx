@@ -13,7 +13,7 @@ const TYPE_META: Record<InvestmentTransactionType, { label: string; className: s
   dividend: { label: "股利", className: "bg-emerald-50 text-emerald-700 border-emerald-200" },
 };
 type Tab = "holdings" | "transactions" | "settings";
-type Modal = { kind: "transaction"; row?: InvestmentTransaction; transactionType?: InvestmentTransactionType } | { kind: "account"; row?: InvestmentAccount } | { kind: "security"; row?: InvestmentSecurity; returnToTransactionType?: InvestmentTransactionType } | null;
+type Modal = { kind: "transaction"; row?: InvestmentTransaction; transactionType?: InvestmentTransactionType } | { kind: "account"; row?: InvestmentAccount } | { kind: "security"; row?: InvestmentSecurity } | null;
 const today = () => new Date().toISOString().slice(0, 10);
 const money = (value: number | null, empty = "尚未更新") => value === null ? empty : new Intl.NumberFormat("zh-TW", { style: "currency", currency: "TWD", maximumFractionDigits: 0 }).format(value);
 const signedMoney = (value: number | null) => value === null ? "—" : `${value >= 0 ? "+" : "−"}${money(Math.abs(value))}`;
@@ -81,11 +81,41 @@ export default function InvestmentsPage() {
     finally { setSaving(false); if (fileRef.current) fileRef.current.value = ""; }
   }
   function openTransaction(transactionType: InvestmentTransactionType) {
-    if (!snapshot.securities.length) {
-      setModal({ kind: "security", returnToTransactionType: transactionType });
-      return;
-    }
     setModal({ kind: "transaction", transactionType });
+  }
+  async function saveRecord(resource: string, body: Record<string, unknown>, id?: string) {
+    setSaving(true);
+    try {
+      let saveBody = body;
+      if (resource === "transaction") {
+        const transactionBody = { ...body };
+        for (const key of ["security_mode", "new_security_symbol", "new_security_name", "new_security_market", "new_security_current_price", "new_security_current_price_date"]) {
+          delete transactionBody[key];
+        }
+        if (body.security_mode === "new") {
+          const created = await request("POST", "security", {
+            symbol: body.new_security_symbol,
+            name: body.new_security_name,
+            market: body.new_security_market,
+            currency: "TWD",
+            current_price: body.new_security_current_price,
+            current_price_date: body.new_security_current_price_date,
+            is_active: true,
+            note: "",
+          }) as InvestmentSecurity;
+          transactionBody.security_id = created.id;
+        }
+        saveBody = transactionBody;
+      }
+      await request(id ? "PATCH" : "POST", resource, { ...saveBody, ...(id ? { id } : {}) });
+      await load();
+      setModal(null);
+      toast({ title: id ? "資料已更新" : "資料已新增" });
+    } catch (error) {
+      toast({ variant: "destructive", title: "儲存失敗", description: error instanceof Error ? error.message : "請稍後再試" });
+    } finally {
+      setSaving(false);
+    }
   }
 
   const stats = [
@@ -103,7 +133,7 @@ export default function InvestmentsPage() {
 
     <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">{stats.map(({ label, value, icon: Icon, color, bg }) => <div key={label} className="app-panel flex items-center gap-3 p-4"><span className={`rounded-lg p-2.5 ${bg} ${color}`}><Icon className="h-5 w-5" /></span><div className="min-w-0"><p className="text-xs font-bold text-slate-500">{label}</p><p className={`truncate text-lg font-black sm:text-xl ${color}`}>{loading ? "—" : value}</p></div></div>)}</section>
 
-    {!loading && (!snapshot.accounts.length || !snapshot.securities.length) && <section className="app-panel flex flex-col gap-3 border-indigo-100 bg-gradient-to-r from-indigo-50/80 to-sky-50/70 p-4 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="font-black text-slate-900">先建立基本資料，就能新增第一筆交易</h2><p className="mt-1 text-sm text-slate-500">依序新增券商帳戶與股票資料；完成後即可記錄買進、賣出或股利。</p></div><div className="flex shrink-0 gap-2">{!snapshot.accounts.length && <button className="btn btn-sm rounded-lg border-indigo-200 bg-white text-indigo-700" onClick={() => setModal({ kind: "account" })}><Landmark className="h-4 w-4" />建立帳戶</button>}{!snapshot.securities.length && <button className="btn btn-sm rounded-lg border-0 bg-indigo-600 text-white" onClick={() => setModal({ kind: "security" })}><Building2 className="h-4 w-4" />新增股票</button>}</div></section>}
+    {!loading && (!snapshot.accounts.length || !snapshot.securities.length) && <section className="app-panel flex flex-col gap-3 border-indigo-100 bg-gradient-to-r from-indigo-50/80 to-sky-50/70 p-4 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="font-black text-slate-900">新增第一筆交易</h2><p className="mt-1 text-sm text-slate-500">{!snapshot.accounts.length ? "先建立券商帳戶；股票資料可在新增交易時一併建立。" : "可直接新增買進，並在同一張表單建立股票資料。"}</p></div><div className="flex shrink-0 gap-2">{!snapshot.accounts.length && <button className="btn btn-sm rounded-lg border-indigo-200 bg-white text-indigo-700" onClick={() => setModal({ kind: "account" })}><Landmark className="h-4 w-4" />建立帳戶</button>}<button className="btn btn-sm rounded-lg border-0 bg-indigo-600 text-white" onClick={() => openTransaction("buy")}><TrendingUp className="h-4 w-4" />新增買進</button></div></section>}
 
     <section className="app-panel overflow-hidden">
       <div className="flex flex-col gap-3 border-b border-slate-200 p-3 lg:flex-row lg:items-center lg:justify-between">
@@ -128,7 +158,9 @@ export default function InvestmentsPage() {
 
       {loading ? <div className="app-empty"><span className="loading loading-spinner loading-md text-indigo-500" /></div> : tab === "holdings" ? <Holdings rows={filteredHoldings} onPrice={(securityId) => setModal({ kind: "security", row: snapshot.securities.find((row) => row.id === securityId) })} /> : tab === "transactions" ? <Transactions rows={filteredTransactions} accountMap={accountMap} securityMap={securityMap} onEdit={(row) => setModal({ kind: "transaction", row })} onDelete={(row) => void remove("transaction", row.id, `${securityMap.get(row.security_id)?.name ?? "交易"} ${row.trade_date}`)} /> : <Settings accounts={snapshot.accounts} securities={snapshot.securities} onAccount={(row) => setModal({ kind: "account", row })} onSecurity={(row) => setModal({ kind: "security", row })} onDelete={(resource, id, label) => void remove(resource, id, label)} />}
     </section>
-    {modal && <RecordModal modal={modal} accounts={snapshot.accounts} securities={snapshot.securities} saving={saving} onClose={() => setModal(null)} onSave={async (resource, body, id) => { const nextTransactionType = modal.kind === "security" ? modal.returnToTransactionType : undefined; setSaving(true); try { await request(id ? "PATCH" : "POST", resource, { ...body, ...(id ? { id } : {}) }); await load(); setModal(nextTransactionType ? { kind: "transaction", transactionType: nextTransactionType } : null); toast({ title: id ? "資料已更新" : "資料已新增" }); } catch (error) { toast({ variant: "destructive", title: "儲存失敗", description: error instanceof Error ? error.message : "請稍後再試" }); } finally { setSaving(false); } }} />}
+    {modal && (modal.kind === "transaction"
+      ? <TransactionRecordModal modal={modal} accounts={snapshot.accounts} securities={snapshot.securities} saving={saving} onClose={() => setModal(null)} onSave={saveRecord} />
+      : <RecordModal modal={modal} accounts={snapshot.accounts} securities={snapshot.securities} saving={saving} onClose={() => setModal(null)} onSave={saveRecord} />)}
   </div></main>;
 }
 
@@ -144,6 +176,83 @@ function Transactions({ rows, accountMap, securityMap, onEdit, onDelete }: { row
 
 function Settings({ accounts, securities, onAccount, onSecurity, onDelete }: { accounts: InvestmentAccount[]; securities: InvestmentSecurity[]; onAccount: (row?: InvestmentAccount) => void; onSecurity: (row?: InvestmentSecurity) => void; onDelete: (resource: string, id: string, label: string) => void }) {
   return <div className="grid gap-4 p-4 xl:grid-cols-2"><section className="rounded-lg border border-slate-200"><div className="app-panel-header"><div><h2 className="font-black text-slate-800">券商帳戶</h2><p className="text-xs text-slate-400">股票交易使用的帳戶</p></div><button className="btn btn-sm rounded-lg border-0 bg-indigo-600 text-white" onClick={() => onAccount()}><Plus className="h-4 w-4" />新增</button></div><div className="divide-y divide-slate-100">{accounts.length ? accounts.map((row) => <div key={row.id} className="flex items-center gap-3 p-3"><span className="rounded-lg bg-indigo-50 p-2 text-indigo-600"><Landmark className="h-4 w-4" /></span><div className="min-w-0 flex-1"><strong className="block truncate">{row.name}</strong><span className="text-xs text-slate-400">{row.broker || "未填券商"}・{row.is_active ? "啟用" : "停用"}</span></div><button className="btn btn-ghost btn-xs" onClick={() => onAccount(row)}><Pencil className="h-3.5 w-3.5" /></button><button className="btn btn-ghost btn-xs text-rose-500" onClick={() => onDelete("account", row.id, row.name)}><Trash2 className="h-3.5 w-3.5" /></button></div>) : <div className="app-empty">尚未建立券商帳戶</div>}</div></section><section className="rounded-lg border border-slate-200"><div className="app-panel-header"><div><h2 className="font-black text-slate-800">股票基本資料</h2><p className="text-xs text-slate-400">代號、名稱與選填股價</p></div><button className="btn btn-sm rounded-lg border-0 bg-indigo-600 text-white" onClick={() => onSecurity()}><Plus className="h-4 w-4" />新增</button></div><div className="divide-y divide-slate-100">{securities.length ? securities.map((row) => <div key={row.id} className="flex items-center gap-3 p-3"><span className="rounded-lg bg-sky-50 p-2 text-sky-600"><Building2 className="h-4 w-4" /></span><div className="min-w-0 flex-1"><strong className="block truncate">{row.symbol} {row.name}</strong><span className="text-xs text-slate-400">{row.market}・{row.current_price === null ? "股價未更新" : `${money(row.current_price)}｜${row.current_price_date ?? "未填日期"}`}</span></div><button className="btn btn-ghost btn-xs" onClick={() => onSecurity(row)}><Pencil className="h-3.5 w-3.5" /></button><button className="btn btn-ghost btn-xs text-rose-500" onClick={() => onDelete("security", row.id, `${row.symbol} ${row.name}`)}><Trash2 className="h-3.5 w-3.5" /></button></div>) : <div className="app-empty">尚未建立股票資料</div>}</div></section></div>;
+}
+
+function TransactionRecordModal({ modal, accounts, securities, saving, onClose, onSave }: {
+  modal: Extract<NonNullable<Modal>, { kind: "transaction" }>;
+  accounts: InvestmentAccount[];
+  securities: InvestmentSecurity[];
+  saving: boolean;
+  onClose: () => void;
+  onSave: (resource: string, body: Record<string, unknown>, id?: string) => Promise<void>;
+}) {
+  const tx = modal.row;
+  const initialForm = {
+    transaction_type: tx?.transaction_type ?? modal.transactionType ?? "buy",
+    trade_date: tx?.trade_date ?? today(),
+    account_id: tx?.account_id ?? accounts.find((row) => row.is_active)?.id ?? "",
+    security_mode: tx || securities.length ? "existing" : "new",
+    security_id: tx?.security_id ?? securities.find((row) => row.is_active)?.id ?? "",
+    new_security_symbol: "",
+    new_security_name: "",
+    new_security_market: "TWSE",
+    new_security_current_price: "",
+    new_security_current_price_date: "",
+    quantity: tx?.quantity ? String(tx.quantity) : "",
+    price: tx?.price ? String(tx.price) : "",
+    fee: tx?.fee ? String(tx.fee) : "",
+    tax: tx?.tax ? String(tx.tax) : "",
+    cash_amount: tx?.cash_amount ? String(tx.cash_amount) : "",
+    note: tx?.note ?? "",
+  } satisfies Record<string, string>;
+  const [form, setForm] = useState<Record<string, string>>(initialForm);
+  const field = (key: string, value: string) => setForm((current) => ({ ...current, [key]: value }));
+  const type = form.transaction_type as InvestmentTransactionType;
+  const useNewSecurity = form.security_mode === "new";
+  const activeSecurities = securities.filter((row) => row.is_active || row.id === tx?.security_id);
+
+  return <div className="fixed inset-0 z-[100] flex items-end justify-center bg-slate-950/35 p-0 backdrop-blur-sm sm:items-center sm:p-4" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
+    <div className="max-h-[92vh] w-full overflow-y-auto rounded-t-2xl bg-white shadow-2xl sm:max-w-3xl sm:rounded-xl">
+      <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3">
+        <div><h2 className="text-lg font-black text-slate-900">{tx ? "修改交易" : "新增交易"}</h2><p className="text-xs text-slate-500">{useNewSecurity ? "這次儲存會同時建立股票資料" : "從已建立的股票中選擇"}</p></div>
+        <button className="btn btn-ghost btn-sm" onClick={onClose}><X className="h-5 w-5" /></button>
+      </div>
+      <div className="grid gap-4 p-4 sm:grid-cols-2">
+        <label><span className="mb-1 block text-xs font-bold text-slate-500">交易類型</span><select className="select select-bordered w-full rounded-lg" value={type} onChange={(event) => field("transaction_type", event.target.value)}><option value="buy">買進</option><option value="sell">賣出</option><option value="dividend">股利</option></select></label>
+        <label><span className="mb-1 block text-xs font-bold text-slate-500">日期</span><input type="date" className="input input-bordered w-full rounded-lg" value={form.trade_date} onChange={(event) => field("trade_date", event.target.value)} /></label>
+        <label className="sm:col-span-2"><span className="mb-1 block text-xs font-bold text-slate-500">券商帳戶</span><select className="select select-bordered w-full rounded-lg" value={form.account_id} onChange={(event) => field("account_id", event.target.value)}><option value="">請選擇</option>{accounts.filter((row) => row.is_active || row.id === tx?.account_id).map((row) => <option key={row.id} value={row.id}>{row.name}</option>)}</select></label>
+
+        <fieldset className="grid gap-3 rounded-xl border border-indigo-100 bg-indigo-50/35 p-3 sm:col-span-2 sm:grid-cols-2">
+          <div className="flex items-center justify-between gap-3 sm:col-span-2">
+            <span className="text-sm font-black text-slate-800">股票資料</span>
+            {activeSecurities.length > 0 && <div className="inline-flex rounded-lg bg-white p-1 shadow-sm">
+              <button type="button" aria-pressed={!useNewSecurity} className={`rounded-md px-3 py-1.5 text-xs font-bold ${!useNewSecurity ? "bg-indigo-600 text-white" : "text-slate-500"}`} onClick={() => field("security_mode", "existing")}>選擇既有</button>
+              <button type="button" aria-pressed={useNewSecurity} className={`rounded-md px-3 py-1.5 text-xs font-bold ${useNewSecurity ? "bg-indigo-600 text-white" : "text-slate-500"}`} onClick={() => field("security_mode", "new")}>建立新股票</button>
+            </div>}
+          </div>
+          {useNewSecurity ? <>
+            <label><span className="mb-1 block text-xs font-bold text-slate-500">股票代號</span><input className="input input-bordered w-full rounded-lg bg-white uppercase" value={form.new_security_symbol} onChange={(event) => field("new_security_symbol", event.target.value)} placeholder="例如：2330" /></label>
+            <label><span className="mb-1 block text-xs font-bold text-slate-500">股票名稱</span><input className="input input-bordered w-full rounded-lg bg-white" value={form.new_security_name} onChange={(event) => field("new_security_name", event.target.value)} placeholder="例如：台積電" /></label>
+            <label><span className="mb-1 block text-xs font-bold text-slate-500">市場</span><select className="select select-bordered w-full rounded-lg bg-white" value={form.new_security_market} onChange={(event) => field("new_security_market", event.target.value)}><option value="TWSE">TWSE（台股上市）</option><option value="TPEx">TPEx（台股上櫃）</option><option value="US">US（美股）</option><option value="OTHER">OTHER（其他）</option></select></label>
+            <label><span className="mb-1 block text-xs font-bold text-slate-500">目前股價（選填）</span><input type="number" min="0" step="0.000001" className="input input-bordered w-full rounded-lg bg-white" value={form.new_security_current_price} onChange={(event) => field("new_security_current_price", event.target.value)} /></label>
+            <label className="sm:col-span-2"><span className="mb-1 block text-xs font-bold text-slate-500">股價日期（選填）</span><input type="date" className="input input-bordered w-full rounded-lg bg-white" value={form.new_security_current_price_date} onChange={(event) => field("new_security_current_price_date", event.target.value)} /></label>
+          </> : <label className="sm:col-span-2"><span className="mb-1 block text-xs font-bold text-slate-500">選擇股票</span><select className="select select-bordered w-full rounded-lg bg-white" value={form.security_id} onChange={(event) => field("security_id", event.target.value)}><option value="">請選擇</option>{activeSecurities.map((row) => <option key={row.id} value={row.id}>{row.symbol} {row.name}</option>)}</select></label>}
+        </fieldset>
+
+        {type === "dividend" ? <label className="sm:col-span-2"><span className="mb-1 block text-xs font-bold text-slate-500">股利金額</span><input type="number" min="0" step="0.01" className="input input-bordered w-full rounded-lg" value={form.cash_amount} onChange={(event) => field("cash_amount", event.target.value)} /></label> : <>
+          <label><span className="mb-1 block text-xs font-bold text-slate-500">股數</span><input type="number" min="0" step="0.000001" className="input input-bordered w-full rounded-lg" value={form.quantity} onChange={(event) => field("quantity", event.target.value)} /></label>
+          <label><span className="mb-1 block text-xs font-bold text-slate-500">成交價</span><input type="number" min="0" step="0.000001" className="input input-bordered w-full rounded-lg" value={form.price} onChange={(event) => field("price", event.target.value)} /></label>
+        </>}
+        <label><span className="mb-1 block text-xs font-bold text-slate-500">手續費</span><input type="number" min="0" step="0.01" className="input input-bordered w-full rounded-lg" value={form.fee} onChange={(event) => field("fee", event.target.value)} /></label>
+        <label><span className="mb-1 block text-xs font-bold text-slate-500">交易稅</span><input type="number" min="0" step="0.01" className="input input-bordered w-full rounded-lg" value={form.tax} onChange={(event) => field("tax", event.target.value)} /></label>
+        <label className="sm:col-span-2"><span className="mb-1 block text-xs font-bold text-slate-500">備註</span><textarea className="textarea textarea-bordered min-h-20 w-full rounded-lg" value={form.note} onChange={(event) => field("note", event.target.value)} /></label>
+      </div>
+      <div className="sticky bottom-0 flex justify-end gap-2 border-t border-slate-200 bg-white px-4 py-3">
+        <button className="btn btn-ghost rounded-lg" onClick={onClose}>取消</button>
+        <button className="btn rounded-lg border-0 bg-indigo-600 px-6 text-white hover:bg-indigo-700" disabled={saving} onClick={() => void onSave("transaction", form, tx?.id)}>{saving && <span className="loading loading-spinner loading-sm" />}儲存</button>
+      </div>
+    </div>
+  </div>;
 }
 
 function RecordModal({ modal, accounts, securities, saving, onClose, onSave }: { modal: Exclude<Modal, null>; accounts: InvestmentAccount[]; securities: InvestmentSecurity[]; saving: boolean; onClose: () => void; onSave: (resource: string, body: Record<string, unknown>, id?: string) => Promise<void> }) {
