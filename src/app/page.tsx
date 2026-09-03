@@ -11,6 +11,7 @@ import {
   ShoppingBasket,
   Sun,
   StickyNote,
+  TrendingUp,
   ArrowRight,
   DatabaseBackup,
   Settings
@@ -41,6 +42,10 @@ const financeTools = [
   { name: "帳單管理", desc: "水電信貸等固定支出", href: "/bills", icon: Receipt, theme: "rose" },
 ];
 
+const investmentTools = [
+  { name: "股票買賣管理", desc: "持股、成本與損益紀錄", href: "/investments", icon: TrendingUp, theme: "indigo" },
+];
+
 // 生活工具清單
 const lifeTools = [
   { name: "行事曆", desc: "全家行程與排班規劃", href: "/calendar", icon: CalendarDays, theme: "orange" },
@@ -58,6 +63,7 @@ const settingTools = [
 export default function HomePage() {
   const toolGroups = [
     { title: "帳務", tools: financeTools },
+    { title: "投資", tools: investmentTools },
     { title: "生活", tools: lifeTools },
     { title: "設定", tools: settingTools },
   ];

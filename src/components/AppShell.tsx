@@ -18,6 +18,7 @@ import {
   StickyNote,
   Sun,
   Tags,
+  TrendingUp,
   User,
 } from "lucide-react";
 import BottomNav from "./BottomNav";
@@ -31,6 +32,12 @@ const NAV_GROUPS = [
       { name: "帳單管理", href: "/bills", icon: Receipt },
       { name: "記帳設定", href: "/settings/categories", icon: Tags },
       { name: "資料備份", href: "/settings/backup", icon: DatabaseBackup },
+    ],
+  },
+  {
+    title: "投資工具",
+    items: [
+      { name: "股票管理", href: "/investments", icon: TrendingUp },
     ],
   },
   {
