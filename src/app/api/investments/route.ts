@@ -10,7 +10,7 @@ const workspaceFrom = (request: Request, body?: Record<string, unknown>) => {
 
 function failure(error: unknown, fallback: string) {
   if (error instanceof WorkspaceAccessError) return apiError(error.message, { status: error.status, successFalse: true });
-  if (error instanceof Error && /^(請輸入|缺少|找不到|不支援|交易|股數|成交價|手續費|交易稅|股利|幣別|券商|股票|已有|相同|\d{4}-)/.test(error.message)) {
+  if (error instanceof Error && /^(請輸入|缺少|找不到|不支援|交易|股數|成交價|手續費|交易稅|股利|股權|減資|成本|實際|已收款|幣別|券商|股票|已有|相同|\d{4}-)/.test(error.message)) {
     return apiError(error.message, { status: 400, successFalse: true });
   }
   return apiInternalError(error, { context: fallback, message: fallback, successFalse: true });
