@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import {
   BadgeDollarSign,
   CalendarClock,
-  ExternalLink,
   Link2,
   PackageCheck,
   Pencil,
@@ -59,9 +58,6 @@ const PRIORITY_LABEL: Record<ShoppingPriority, string> = {
 type Draft = {
   id?: string;
   name: string;
-  url: string;
-  estimated_price: string;
-  platform: string;
   sources: ShoppingSourceDraft[];
   requested_by: string;
   purchase_for: string;
@@ -73,9 +69,6 @@ type Draft = {
 
 const EMPTY_DRAFT: Draft = {
   name: "",
-  url: "",
-  estimated_price: "",
-  platform: "",
   sources: [emptyShoppingSource(), emptyShoppingSource(), emptyShoppingSource()],
   requested_by: "",
   purchase_for: "",
@@ -98,10 +91,7 @@ function toDraft(item: ShoppingItem): Draft {
   return {
     id: item.id,
     name: item.name,
-    url: item.url ?? "",
-    estimated_price: item.estimated_price === null ? "" : String(item.estimated_price),
-    platform: item.platform ?? "",
-    sources: draftSources(item.sources, { platform: item.platform, url: item.url, price: item.estimated_price }),
+    sources: draftSources(item.sources),
     requested_by: item.requested_by ?? "",
     purchase_for: item.purchase_for ?? "",
     priority: item.priority,
@@ -150,7 +140,7 @@ export default function ShoppingPage() {
       if (statusFilter !== "all" && item.status !== statusFilter) return false;
       if (!keyword) return true;
       const sourceValues = item.sources.flatMap((source) => [source.platform, source.url, source.note, source.price]);
-      return [item.name, item.platform, item.requested_by, item.purchase_for, item.note, item.url, ...sourceValues]
+      return [item.name, item.requested_by, item.purchase_for, item.note, ...sourceValues]
         .some((value) => String(value ?? "").toLowerCase().includes(keyword));
     });
 
@@ -163,7 +153,7 @@ export default function ShoppingPage() {
   }, [items, query, sortMode, statusFilter]);
 
   const activeItems = items.filter((item) => !["purchased", "skipped"].includes(item.status));
-  const estimatedTotal = activeItems.reduce((sum, item) => sum + Number(bestShoppingPrice(item.sources, item.estimated_price) || 0), 0);
+  const estimatedTotal = activeItems.reduce((sum, item) => sum + Number(bestShoppingPrice(item.sources) || 0), 0);
   const waitingCount = items.filter((item) => item.status === "waiting_sale").length;
 
   async function saveItem(input: Record<string, unknown>, id?: string, forceDuplicate = false): Promise<ShoppingItem | null> {
@@ -187,7 +177,7 @@ export default function ShoppingPage() {
     setQuickSaving(true);
     try {
       const isUrl = /^https?:\/\//i.test(value);
-      const item = await saveItem(isUrl ? { url: value } : { name: value });
+      const item = await saveItem(isUrl ? { sources: [{ url: value }] } : { name: value });
       if (!item) return;
       setItems((current) => [item, ...current]);
       setQuickValue("");
@@ -201,14 +191,14 @@ export default function ShoppingPage() {
 
   async function submitDraft() {
     if (!draft || !WORKSPACE_ID) return;
-    if (!draft.name.trim() && !draft.url.trim() && !draft.sources.some((source) => source.url?.trim())) {
+    if (!draft.name.trim() && !draft.sources.some((source) => source.url?.trim())) {
       toast({ variant: "destructive", title: "請輸入商品名稱或連結" });
       return;
     }
     setSaving(true);
     try {
       const sources = draft.sources.map((source) => ({ ...source, price: source.price || null }));
-      const item = await saveItem({ ...draft, sources, estimated_price: draft.estimated_price || null }, draft.id);
+      const item = await saveItem({ ...draft, sources }, draft.id);
       if (!item) return;
       setItems((current) => draft.id ? current.map((row) => row.id === item.id ? item : row) : [item, ...current]);
       setDraft(null);
@@ -326,7 +316,6 @@ export default function ShoppingPage() {
                   <div className="mb-2 flex flex-wrap items-center gap-2">
                     <span className={`rounded-full border px-2.5 py-1 text-xs font-bold ${STATUS_STYLE[item.status]}`}>{statusLabel(item.status)}</span>
                     {item.priority !== "low" && <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${item.priority === "high" ? "bg-[#ffe1d6] text-[#b7431c]" : "bg-[#f4edf8] text-[var(--ft-wine)]"}`}>{PRIORITY_LABEL[item.priority]}</span>}
-                    {item.platform && <span className="truncate rounded-full bg-[#fff5e8] px-2.5 py-1 text-xs font-bold text-[#9b5a29]">{item.platform}</span>}
                     {item.sources.length > 1 && <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">{item.sources.length} 個來源</span>}
                   </div>
                   <h2 className="line-clamp-2 text-lg font-black leading-7 text-[var(--ft-plum)]">{item.name}</h2>
@@ -338,7 +327,7 @@ export default function ShoppingPage() {
               </div>
 
               <div className="mt-4 grid grid-cols-2 gap-2 rounded-2xl bg-[#fffaf5] p-3 text-sm">
-                <div><span className="block text-xs text-[var(--ft-plum-soft)]">最低價格</span><strong className="text-emerald-700">{priceText(bestShoppingPrice(item.sources, item.estimated_price))}</strong></div>
+                <div><span className="block text-xs text-[var(--ft-plum-soft)]">最低價格</span><strong className="text-emerald-700">{priceText(bestShoppingPrice(item.sources))}</strong></div>
                 <div><span className="block text-xs text-[var(--ft-plum-soft)]">預計購買</span><strong className="text-[var(--ft-plum)]">{item.planned_date || "尚未安排"}</strong></div>
               </div>
 
@@ -350,7 +339,6 @@ export default function ShoppingPage() {
                 <select className={`select select-bordered h-9 min-h-0 flex-1 rounded-xl text-sm font-bold ${STATUS_STYLE[item.status]}`} value={item.status} onChange={(event) => void changeStatus(item, event.target.value as ShoppingStatus)} aria-label={`${item.name} 狀態`}>
                   {STATUS_OPTIONS.filter((option) => option.value !== "all").map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                 </select>
-                {item.url && <a className="btn btn-outline h-9 min-h-0 rounded-xl border-[var(--ft-line)] px-3 text-[var(--ft-wine)] hover:border-[var(--ft-wine)] hover:bg-[var(--ft-wine)] hover:text-white" href={item.url} target="_blank" rel="noreferrer"><ExternalLink className="h-4 w-4" /><span className="hidden sm:inline">商品頁</span></a>}
               </div>
             </article>
           ))}

@@ -7,17 +7,17 @@ export type ShoppingSourceDraft = Pick<ShoppingSource, "platform" | "url" | "not
 
 export const emptyShoppingSource = (): ShoppingSourceDraft => ({ platform: "", url: "", price: "", note: "" });
 
-export function draftSources(sources: ShoppingSource[], fallback: { platform: string | null; url: string | null; price: number | null }) {
-  const rows: ShoppingSourceDraft[] = sources.length ? sources.map((source) => ({
+export function draftSources(sources: ShoppingSource[]) {
+  const rows: ShoppingSourceDraft[] = sources.map((source) => ({
     id: source.id, platform: source.platform ?? "", url: source.url ?? "", price: source.price === null ? "" : String(source.price), note: source.note ?? "",
-  })) : fallback.platform || fallback.url || fallback.price !== null ? [{ platform: fallback.platform ?? "", url: fallback.url ?? "", price: fallback.price === null ? "" : String(fallback.price), note: "" }] : [];
+  }));
   while (rows.length < 3) rows.push(emptyShoppingSource());
   return rows;
 }
 
-export function bestShoppingPrice(sources: ShoppingSource[], fallback: number | null) {
+export function bestShoppingPrice(sources: ShoppingSource[]) {
   const prices = sources.map((source) => source.price).filter((price): price is number => price !== null);
-  return prices.length ? Math.min(...prices) : fallback;
+  return prices.length ? Math.min(...prices) : null;
 }
 
 export function SourceComparisonEditor({ sources, onChange }: { sources: ShoppingSourceDraft[]; onChange: (sources: ShoppingSourceDraft[]) => void }) {

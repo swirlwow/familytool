@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { apiError, parseJson } from "@/lib/api/http";
-import { createShoppingItem, findShoppingDuplicate, listShoppingItems, normalizeShoppingSources, normalizeShoppingUrl } from "@/lib/shoppingRepo";
+import { createShoppingItem, findShoppingDuplicate, listShoppingItems, normalizeShoppingSources } from "@/lib/shoppingRepo";
 
 function workspaceIdFrom(req: Request, body?: Record<string, unknown>) {
   const { searchParams } = new URL(req.url);
@@ -24,10 +24,8 @@ export async function POST(req: Request) {
     const workspaceId = workspaceIdFrom(req, body);
     if (!workspaceId) return apiError("缺少 workspace_id", { successFalse: true });
 
-    const normalizedUrl = normalizeShoppingUrl(body.url);
-    const sourceUrls = Array.isArray(body.sources)
-      ? normalizeShoppingSources(body.sources).flatMap((source) => source.url ? [source.url] : [])
-      : normalizedUrl ? [normalizedUrl] : [];
+    const sourceUrls = normalizeShoppingSources(body.sources)
+      .flatMap((source) => source.url ? [source.url] : []);
     if (body.force_duplicate !== true) {
       for (const url of new Set(sourceUrls)) {
         const duplicate = await findShoppingDuplicate(workspaceId, url);
@@ -40,7 +38,7 @@ export async function POST(req: Request) {
       }
     }
 
-    const data = await createShoppingItem(workspaceId, { ...body, url: normalizedUrl });
+    const data = await createShoppingItem(workspaceId, body);
     return NextResponse.json({ success: true, data }, { status: 201 });
   } catch (error) {
     const message = error instanceof Error ? error.message : "新增待購項目失敗";

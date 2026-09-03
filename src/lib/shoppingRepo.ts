@@ -22,9 +22,6 @@ export type ShoppingItem = {
   id: string;
   workspace_id: string;
   name: string;
-  url: string | null;
-  estimated_price: number | null;
-  platform: string | null;
   requested_by: string | null;
   purchase_for: string | null;
   priority: ShoppingPriority;
@@ -38,7 +35,7 @@ export type ShoppingItem = {
   sources: ShoppingSource[];
 };
 
-const COLUMNS = "id, workspace_id, name, url, estimated_price, platform, requested_by, purchase_for, priority, planned_date, status, note, sort_order, created_at, updated_at, deleted_at";
+const COLUMNS = "id, workspace_id, name, requested_by, purchase_for, priority, planned_date, status, note, sort_order, created_at, updated_at, deleted_at";
 const SOURCE_COLUMNS = "id, workspace_id, shopping_item_id, platform, url, price, note, sort_order, created_at, updated_at";
 
 function cleanOptional(value: unknown, maxLength = 500) {
@@ -132,13 +129,6 @@ async function replaceSources(workspaceId: string, itemId: string, sources: Shop
   return (data ?? []) as ShoppingSource[];
 }
 
-function legacySource(input: Record<string, unknown>) {
-  const url = normalizeShoppingUrl(input.url);
-  const platform = cleanOptional(input.platform, 120) ?? inferShoppingPlatform(url);
-  const price = normalizePrice(input.estimated_price);
-  return platform || url || price !== null ? [{ platform, url, price, note: null }] : [];
-}
-
 export async function listShoppingItems(workspaceId: string) {
   const { data, error } = await supabase.from("shopping_items").select(COLUMNS)
     .eq("workspace_id", workspaceId).is("deleted_at", null)
@@ -152,35 +142,28 @@ export async function listShoppingItems(workspaceId: string) {
 }
 
 export async function findShoppingDuplicate(workspaceId: string, url: string) {
-  const { data, error } = await supabase.from("shopping_items").select("id, name")
-    .eq("workspace_id", workspaceId).eq("url", url).is("deleted_at", null).limit(1).maybeSingle();
-  if (error) throw new Error(error.message);
-  if (data) return data as { id: string; name: string };
-
-  const { data: source, error: sourceError } = await supabase.from("shopping_item_sources")
+  const { data: source, error } = await supabase.from("shopping_item_sources")
     .select("shopping_item_id").eq("workspace_id", workspaceId).eq("url", url).limit(1).maybeSingle();
-  if (sourceError) throw new Error(sourceError.message);
+  if (error) throw new Error(error.message);
   if (!source) return null;
 
-  const { data: sourceItem, error: sourceItemError } = await supabase.from("shopping_items").select("id, name")
+  const { data: item, error: itemError } = await supabase.from("shopping_items").select("id, name")
     .eq("workspace_id", workspaceId).eq("id", source.shopping_item_id).is("deleted_at", null).maybeSingle();
-  if (sourceItemError) throw new Error(sourceItemError.message);
-  return sourceItem as { id: string; name: string } | null;
+  if (itemError) throw new Error(itemError.message);
+  return item as { id: string; name: string } | null;
 }
 
 export async function createShoppingItem(workspaceId: string, input: Record<string, unknown>) {
-  const sources = Array.isArray(input.sources) ? normalizeShoppingSources(input.sources) : legacySource(input);
+  const sources = normalizeShoppingSources(input.sources);
   const primary = sources[0];
-  const url = primary?.url ?? normalizeShoppingUrl(input.url);
-  const platform = primary?.platform ?? cleanOptional(input.platform, 120) ?? inferShoppingPlatform(url);
-  const name = cleanOptional(input.name, 200) ?? inferShoppingName(url, platform);
+  const name = cleanOptional(input.name, 200) ?? inferShoppingName(primary?.url ?? null, primary?.platform ?? null);
   if (!name) throw new Error("請輸入商品名稱或貼上商品連結");
 
   const { data: latest, error: latestError } = await supabase.from("shopping_items").select("sort_order")
     .eq("workspace_id", workspaceId).is("deleted_at", null).order("sort_order", { ascending: false }).limit(1).maybeSingle();
   if (latestError) throw new Error(latestError.message);
   const { data, error } = await supabase.from("shopping_items").insert({
-    workspace_id: workspaceId, name, url, estimated_price: primary?.price ?? normalizePrice(input.estimated_price), platform,
+    workspace_id: workspaceId, name,
     requested_by: cleanOptional(input.requested_by, 80), purchase_for: cleanOptional(input.purchase_for, 80),
     priority: assertPriority(input.priority), planned_date: cleanOptional(input.planned_date, 10), status: assertStatus(input.status),
     note: cleanOptional(input.note, 1000), sort_order: Number(latest?.sort_order ?? 0) + 10,
@@ -200,17 +183,7 @@ export async function updateShoppingItem(workspaceId: string, id: string, input:
   if ("status" in input) payload.status = assertStatus(input.status);
   if ("note" in input) payload.note = cleanOptional(input.note, 1000);
 
-  let sources: ShoppingSourceInput[] | null = null;
-  if (Array.isArray(input.sources)) {
-    sources = normalizeShoppingSources(input.sources);
-    payload.url = sources[0]?.url ?? null;
-    payload.platform = sources[0]?.platform ?? null;
-    payload.estimated_price = sources[0]?.price ?? null;
-  } else {
-    if ("url" in input) payload.url = normalizeShoppingUrl(input.url);
-    if ("estimated_price" in input) payload.estimated_price = normalizePrice(input.estimated_price);
-    if ("platform" in input) payload.platform = cleanOptional(input.platform, 120);
-  }
+  const sources = Array.isArray(input.sources) ? normalizeShoppingSources(input.sources) : null;
 
   const { data, error } = await supabase.from("shopping_items").update(payload)
     .eq("workspace_id", workspaceId).eq("id", id).is("deleted_at", null).select(COLUMNS).maybeSingle();
