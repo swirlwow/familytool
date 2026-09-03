@@ -2,6 +2,7 @@
 
 import { useMemo, useState, type ReactNode } from "react";
 import { X } from "lucide-react";
+import { estimateTradingCosts } from "@/lib/investments";
 import type {
   InvestmentAccount,
   InvestmentCorporateAction,
@@ -53,15 +54,29 @@ export function TransactionModal({ modal, accounts, securities, saving, onClose,
     quantity: tx?.quantity ? String(tx.quantity) : "", price: tx?.price ? String(tx.price) : "", fee: tx?.fee ? String(tx.fee) : "",
     tax: tx?.tax ? String(tx.tax) : "", cash_amount: tx?.cash_amount ? String(tx.cash_amount) : "",
     settlement_amount: tx?.settlement_amount == null ? "" : String(tx.settlement_amount), order_number: tx?.order_number ?? "",
-    currency: tx?.currency ?? "TWD", note: tx?.note ?? "",
+    currency: tx?.currency ?? "TWD", note: tx?.note ?? "", cost_mode: tx ? "manual" : "auto",
   });
   const field = (key: string, value: string) => setForm((current) => ({ ...current, [key]: value }));
   const type = form.transaction_type as InvestmentTransactionType;
   const useNewSecurity = form.security_mode === "new";
   const gross = Number(form.quantity || 0) * Number(form.price || 0);
-  const estimatedSettlement = type === "buy" ? gross + Number(form.fee || 0) + Number(form.tax || 0) : gross - Number(form.fee || 0) - Number(form.tax || 0);
+  const selectedSecurity = useMemo(() => useNewSecurity
+    ? { symbol: form.new_security_symbol, market: form.new_security_market }
+    : securities.find((row) => row.id === form.security_id),
+  [form.new_security_market, form.new_security_symbol, form.security_id, securities, useNewSecurity]);
+  const automaticCosts = useMemo(() => estimateTradingCosts({
+    gross,
+    transactionType: type,
+    symbol: selectedSecurity?.symbol ?? "",
+    market: selectedSecurity?.market ?? "",
+  }), [gross, selectedSecurity?.market, selectedSecurity?.symbol, type]);
+  const editCost = (key: "fee" | "tax", value: string) => setForm((current) => ({ ...current, [key]: value, cost_mode: "manual" }));
+  const resetAutomaticCosts = () => setForm((current) => ({ ...current, cost_mode: "auto" }));
+  const effectiveFee = form.cost_mode === "auto" ? automaticCosts.fee : Number(form.fee || 0);
+  const effectiveTax = form.cost_mode === "auto" ? automaticCosts.tax : Number(form.tax || 0);
+  const estimatedSettlement = type === "buy" ? gross + effectiveFee + effectiveTax : gross - effectiveFee - effectiveTax;
 
-  return <ModalFrame title={tx ? "修改交易" : type === "sell" ? "新增賣出" : "新增買進"} subtitle={useNewSecurity ? "儲存時會同時建立股票資料" : "可修改後重新計算後續持股"} saving={saving} onClose={onClose} onSubmit={() => void onSave("transaction", form, tx?.id)}>
+  return <ModalFrame title={tx ? "修改交易" : type === "sell" ? "新增賣出" : "新增買進"} subtitle={useNewSecurity ? "儲存時會同時建立股票資料" : "可修改後重新計算後續持股"} saving={saving} onClose={onClose} onSubmit={() => void onSave("transaction", { ...form, fee: effectiveFee, tax: effectiveTax }, tx?.id)}>
     <Label title="交易類型"><select className={selectClass} value={type} onChange={(event) => field("transaction_type", event.target.value)}><option value="buy">買進</option><option value="sell">賣出</option>{tx?.transaction_type === "dividend" && <option value="dividend">舊格式股利</option>}</select></Label>
     <Label title="成交日期"><input type="date" className={inputClass} value={form.trade_date} onChange={(event) => field("trade_date", event.target.value)} /></Label>
     <Label title="券商帳戶" wide><AccountSelect value={form.account_id} onChange={(value) => field("account_id", value)} accounts={accounts} includeId={tx?.account_id} /></Label>
@@ -69,7 +84,7 @@ export function TransactionModal({ modal, accounts, securities, saving, onClose,
       {useNewSecurity ? <><Label title="股票代號"><input className={`${inputClass} bg-white uppercase`} value={form.new_security_symbol} onChange={(event) => field("new_security_symbol", event.target.value)} placeholder="例如：2330" /></Label><Label title="股票名稱"><input className={`${inputClass} bg-white`} value={form.new_security_name} onChange={(event) => field("new_security_name", event.target.value)} /></Label><Label title="市場"><select className={`${selectClass} bg-white`} value={form.new_security_market} onChange={(event) => field("new_security_market", event.target.value)}><option value="TWSE">TWSE（台股上市）</option><option value="TPEx">TPEx（台股上櫃）</option><option value="US">US（美股）</option><option value="OTHER">OTHER（其他）</option></select></Label><Label title="目前股價（選填）"><input type="number" min="0" step="0.01" className={`${inputClass} bg-white`} value={form.new_security_current_price} onChange={(event) => field("new_security_current_price", event.target.value)} /></Label></> : <Label title="選擇股票" wide><SecuritySelect value={form.security_id} onChange={(value) => field("security_id", value)} securities={securities} includeId={tx?.security_id} /></Label>}
     </fieldset>
     {type === "dividend" ? <Label title="舊格式股利金額" wide><input type="number" min="0" step="0.01" className={inputClass} value={form.cash_amount} onChange={(event) => field("cash_amount", event.target.value)} /></Label> : <><Label title="股數"><input type="number" min="0" step="0.000001" className={inputClass} value={form.quantity} onChange={(event) => field("quantity", event.target.value)} /></Label><Label title="成交價"><input type="number" min="0" step="0.01" className={inputClass} value={form.price} onChange={(event) => field("price", event.target.value)} /></Label></>}
-    {type !== "dividend" && <><Label title="手續費（選填）"><input type="number" min="0" step="0.01" className={inputClass} value={form.fee} onChange={(event) => field("fee", event.target.value)} /></Label><Label title="交易稅（選填）"><input type="number" min="0" step="0.01" className={inputClass} value={form.tax} onChange={(event) => field("tax", event.target.value)} /></Label><Label title={type === "buy" ? "實際扣款（選填）" : "實際入帳（選填）"}><input type="number" min="0" step="0.01" className={inputClass} value={form.settlement_amount} onChange={(event) => field("settlement_amount", event.target.value)} placeholder={estimatedSettlement > 0 ? `試算 ${estimatedSettlement.toFixed(2)}` : ""} /></Label><Label title="委託單號（選填）"><input className={inputClass} value={form.order_number} onChange={(event) => field("order_number", event.target.value)} /></Label></>}
+    {type !== "dividend" && <><Label title="手續費（自動試算）"><input type="number" min="0" step="1" className={inputClass} value={effectiveFee} onChange={(event) => editCost("fee", event.target.value)} /></Label><Label title="交易稅（自動試算）"><input type="number" min="0" step="1" className={inputClass} value={effectiveTax} onChange={(event) => editCost("tax", event.target.value)} /></Label><div className="flex items-center justify-between gap-3 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500 sm:col-span-2"><span>{selectedSecurity?.market === "TWSE" || selectedSecurity?.market === "TPEx" ? "手續費以 0.1425% 參考費率試算；實際費率與最低收費依券商為準，可手動修改。" : "非台股市場不自動估算費稅，請依券商資料填寫。"}</span><button type="button" className="btn btn-ghost btn-xs shrink-0 text-indigo-700" onClick={resetAutomaticCosts}>重新自動計算</button></div><Label title={type === "buy" ? "實際扣款（選填）" : "實際入帳（選填）"}><input type="number" min="0" step="0.01" className={inputClass} value={form.settlement_amount} onChange={(event) => field("settlement_amount", event.target.value)} placeholder={estimatedSettlement > 0 ? `試算 ${estimatedSettlement.toFixed(0)}` : ""} /></Label><Label title="委託單號（選填、不可重複）"><input className={inputClass} value={form.order_number} onChange={(event) => field("order_number", event.target.value)} /></Label></>}
     <Label title="備註" wide><textarea className="textarea textarea-bordered min-h-20 w-full rounded-lg" value={form.note} onChange={(event) => field("note", event.target.value)} /></Label>
   </ModalFrame>;
 }

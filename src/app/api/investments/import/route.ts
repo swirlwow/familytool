@@ -44,7 +44,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, imported });
   } catch (error) {
     if (error instanceof WorkspaceAccessError) return apiError(error.message, { status: error.status, successFalse: true });
-    if (error instanceof Error && (/^(第 |CSV|請選擇)/.test(error.message) || /格式不正確|賣出股數/.test(error.message))) return apiError(error.message, { successFalse: true });
+    if (error instanceof Error && (/^(第 |CSV|請選擇|委託單號)/.test(error.message) || /格式不正確|賣出股數/.test(error.message))) return apiError(error.message, { successFalse: true });
     return apiInternalError(error, { context: "Investment import failed", message: "匯入股票資料失敗", successFalse: true });
   }
 }

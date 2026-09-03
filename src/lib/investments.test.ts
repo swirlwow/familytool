@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calculateInvestmentSnapshot, type InvestmentAccount, type InvestmentCorporateAction, type InvestmentDividend, type InvestmentSecurity, type InvestmentTransaction } from "./investments";
+import { calculateInvestmentSnapshot, estimateTradingCosts, type InvestmentAccount, type InvestmentCorporateAction, type InvestmentDividend, type InvestmentSecurity, type InvestmentTransaction } from "./investments";
 
 const account = { id: "a", workspace_id: "w", name: "測試帳戶", broker: "券商", currency: "TWD", sort_order: 0, is_active: true, note: null, created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z" } satisfies InvestmentAccount;
 const security = { id: "s", workspace_id: "w", symbol: "2330", name: "台積電", market: "TWSE", currency: "TWD", current_price: 700, current_price_date: "2026-09-03", sort_order: 0, is_active: true, note: null, created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z" } satisfies InvestmentSecurity;
@@ -46,5 +46,20 @@ describe("calculateInvestmentSnapshot", () => {
   it("keeps total cost for a loss-offset capital reduction", () => {
     const result = calculateInvestmentSnapshot([account], [security], [tx({ id: "1", transaction_type: "buy", trade_date: "2026-01-01", quantity: 1000, price: 10 })], [], [action({ action_type: "loss_reduction", cost_adjustment: 0 })]);
     expect(result.holdings[0]).toMatchObject({ quantity: 800, cost_basis: 10000, average_cost: 12.5 });
+  });
+});
+
+describe("estimateTradingCosts", () => {
+  it("estimates listed-stock buy fee using the standard Taiwan rate", () => {
+    expect(estimateTradingCosts({ gross: 9600, transactionType: "buy", symbol: "1718", market: "TWSE" })).toEqual({ fee: 13, tax: 0 });
+  });
+  it("estimates listed-stock sell fee and transaction tax", () => {
+    expect(estimateTradingCosts({ gross: 8120, transactionType: "sell", symbol: "3481", market: "TWSE" })).toEqual({ fee: 11, tax: 24 });
+  });
+  it("uses the ETF sell tax rate for Taiwan ETF symbols", () => {
+    expect(estimateTradingCosts({ gross: 37500, transactionType: "sell", symbol: "0056", market: "TWSE" })).toEqual({ fee: 53, tax: 37 });
+  });
+  it("does not guess fees for unsupported overseas markets", () => {
+    expect(estimateTradingCosts({ gross: 10000, transactionType: "sell", symbol: "AAPL", market: "US" })).toEqual({ fee: 0, tax: 0 });
   });
 });

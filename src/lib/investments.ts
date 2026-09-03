@@ -69,6 +69,25 @@ type InvestmentEvent =
   | { kind: "corporate_action"; date: string; created_at: string; id: string; row: InvestmentCorporateAction };
 const money = (value: number) => Math.round((value + Number.EPSILON) * 100) / 100;
 const quantity = (value: number) => Math.round((value + Number.EPSILON) * 1_000_000) / 1_000_000;
+
+export function estimateTradingCosts({ gross, transactionType, symbol, market }: {
+  gross: number;
+  transactionType: InvestmentTransactionType;
+  symbol: string;
+  market: string;
+}) {
+  if (!Number.isFinite(gross) || gross <= 0 || transactionType === "dividend") return { fee: 0, tax: 0 };
+  const isTaiwanMarket = market === "TWSE" || market === "TPEx";
+  if (!isTaiwanMarket) return { fee: 0, tax: 0 };
+  const fee = Math.floor(gross * 0.001425 + Number.EPSILON);
+  const isEtf = /^00\d/.test(symbol.trim());
+  const taxRate = transactionType === "sell" ? (isEtf ? 0.001 : 0.003) : 0;
+  return {
+    fee,
+    tax: Math.floor(gross * taxRate + Number.EPSILON),
+  };
+}
+
 const numberValue = (value: unknown, field: string, allowZero = true) => {
   if (value === "" || value === null || value === undefined) return 0;
   const parsed = Number(value);
@@ -301,7 +320,7 @@ export async function createInvestmentRecord(workspaceId: string, resource: stri
     const existing = await getInvestmentSnapshot(workspaceId);
     calculateInvestmentSnapshot(existing.accounts, existing.securities, [...existing.transactions, { ...payload, id: "candidate", created_at: new Date().toISOString(), updated_at: new Date().toISOString() } as InvestmentTransaction], existing.dividends, existing.corporate_actions);
     const { data, error } = await supabase.from("investment_transactions").insert(payload).select(TRANSACTION_COLUMNS).single();
-    if (error) throw new Error(error.message); return data;
+    if (error) throw new Error(error.code === "23505" ? "委託單號已存在，請輸入不同單號" : error.message); return data;
   }
   throw new Error("不支援的投資資料類型");
 }
@@ -388,7 +407,7 @@ export async function updateInvestmentRecord(workspaceId: string, resource: stri
     const patch = { account_id: requiredText(merged.account_id, "券商帳戶"), security_id: requiredText(merged.security_id, "股票"), transaction_type: type, trade_date: tradeDate(merged.trade_date), quantity: type === "dividend" ? 0 : numberValue(merged.quantity, "股數", false), price: type === "dividend" ? 0 : numberValue(merged.price, "成交價", false), fee: numberValue(merged.fee, "手續費"), tax: numberValue(merged.tax, "交易稅"), cash_amount: type === "dividend" ? numberValue(merged.cash_amount, "股利金額", false) : 0, settlement_amount: merged.settlement_amount === "" || merged.settlement_amount == null ? null : numberValue(merged.settlement_amount, "實付或實收金額"), order_number: optionalText(merged.order_number, 120), currency: currencyCode(merged.currency), note: optionalText(merged.note, 1000), updated_at: new Date().toISOString() };
     calculateInvestmentSnapshot(snapshot.accounts, snapshot.securities, snapshot.transactions.map((row) => row.id === id ? { ...row, ...patch } : row), snapshot.dividends, snapshot.corporate_actions);
     const { data, error } = await supabase.from("investment_transactions").update(patch).eq("workspace_id", workspaceId).eq("id", id).select(TRANSACTION_COLUMNS).maybeSingle();
-    if (error) throw new Error(error.message); if (!data) throw new Error("找不到交易紀錄"); return data;
+    if (error) throw new Error(error.code === "23505" ? "委託單號已存在，請輸入不同單號" : error.message); if (!data) throw new Error("找不到交易紀錄"); return data;
   }
   throw new Error("不支援的投資資料類型");
 }
