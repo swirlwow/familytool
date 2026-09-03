@@ -8,6 +8,7 @@ import {
   Calculator,
   Receipt,
   CalendarDays,
+  ShoppingBasket,
   Sun,
   StickyNote,
   ArrowRight,
@@ -43,6 +44,7 @@ const financeTools = [
 // 生活工具清單
 const lifeTools = [
   { name: "行事曆", desc: "全家行程與排班規劃", href: "/calendar", icon: CalendarDays, theme: "orange" },
+  { name: "待購清單", desc: "保存連結與安排採買", href: "/shopping", icon: ShoppingBasket, theme: "emerald" },
   { name: "便條紙", desc: "隨手紀錄與牆上便利貼", href: "/stickies", icon: StickyNote, theme: "yellow" },
   { name: "值班休假", desc: "值班、補休與特休管理", href: "https://shift-leave-manager.vercel.app/", icon: Sun, theme: "pink" },
 ];

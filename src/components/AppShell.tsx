@@ -14,6 +14,7 @@ import {
   LayoutDashboard,
   LogOut,
   Receipt,
+  ShoppingBasket,
   StickyNote,
   Sun,
   Tags,
@@ -36,6 +37,7 @@ const NAV_GROUPS = [
     title: "生活工具",
     items: [
       { name: "行事曆", href: "/calendar", icon: CalendarDays },
+      { name: "待購清單", href: "/shopping", icon: ShoppingBasket },
       { name: "便條紙", href: "/stickies", icon: StickyNote },
     ],
   },
