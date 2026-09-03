@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { apiError, parseJson } from "@/lib/api/http";
-import { deleteShoppingItem, findShoppingDuplicate, normalizeShoppingUrl, updateShoppingItem } from "@/lib/shoppingRepo";
+import { deleteShoppingItem, findShoppingDuplicate, normalizeShoppingSources, normalizeShoppingUrl, updateShoppingItem } from "@/lib/shoppingRepo";
 
 function workspaceIdFrom(req: Request, body?: Record<string, unknown>) {
   const { searchParams } = new URL(req.url);
@@ -20,16 +20,21 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
     const workspaceId = workspaceIdFrom(req, body);
     if (!workspaceId) return apiError("缺少 workspace_id", { successFalse: true });
 
-    if ("url" in body) {
+    if ("url" in body || Array.isArray(body.sources)) {
       const normalizedUrl = normalizeShoppingUrl(body.url);
       body.url = normalizedUrl;
-      if (normalizedUrl && body.force_duplicate !== true) {
-        const duplicate = await findShoppingDuplicate(workspaceId, normalizedUrl);
-        if (duplicate && duplicate.id !== id) {
-          return NextResponse.json(
-            { success: false, error: `已有相同連結：「${duplicate.name}」`, duplicate },
-            { status: 409 },
-          );
+      const sourceUrls = Array.isArray(body.sources)
+        ? normalizeShoppingSources(body.sources).flatMap((source) => source.url ? [source.url] : [])
+        : normalizedUrl ? [normalizedUrl] : [];
+      if (body.force_duplicate !== true) {
+        for (const url of new Set(sourceUrls)) {
+          const duplicate = await findShoppingDuplicate(workspaceId, url);
+          if (duplicate && duplicate.id !== id) {
+            return NextResponse.json(
+              { success: false, error: `已有相同連結：「${duplicate.name}」`, duplicate },
+              { status: 409 },
+            );
+          }
         }
       }
     }

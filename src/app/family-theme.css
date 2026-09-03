@@ -184,16 +184,58 @@ body {
 }
 
 .family-nav-group {
-  margin-top: 15px;
+  margin-top: 8px;
+  border: 1px solid transparent;
+  border-radius: 13px;
+  transition: border-color 0.18s ease, background 0.18s ease;
 }
 
-.family-nav-group h3 {
-  margin: 0 0 5px;
-  padding: 0 12px;
-  color: #a28c94;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
+.family-nav-group.expanded {
+  border-color: #eadde2;
+  background: rgba(255, 255, 255, 0.66);
+}
+
+.family-nav-group-toggle {
+  display: flex;
+  width: 100%;
+  min-height: 38px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 11px;
+  color: #806b74;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.06em;
+  transition: color 0.16s ease, background 0.16s ease;
+}
+
+.family-nav-group-toggle:hover,
+.family-nav-group-toggle:focus-visible {
+  color: var(--ft-plum);
+  background: #fff1ef;
+  outline: none;
+}
+
+.family-nav-group-toggle svg {
+  width: 15px;
+  height: 15px;
+  transition: transform 0.18s ease;
+}
+
+.family-nav-group.expanded .family-nav-group-toggle svg {
+  transform: rotate(180deg);
+}
+
+.family-nav-group-items {
+  padding: 0 4px 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .family-nav-group,
+  .family-nav-group-toggle svg {
+    transition: none;
+  }
 }
 
 .family-nav-link {

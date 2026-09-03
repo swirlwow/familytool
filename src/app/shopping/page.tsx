@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { ShoppingItem, ShoppingPriority, ShoppingStatus } from "@/lib/shoppingRepo";
+import { bestShoppingPrice, draftSources, emptyShoppingSource, SourceComparisonEditor, SourceComparisonList, type ShoppingSourceDraft } from "@/components/shopping/SourceComparisonEditor";
 
 const WORKSPACE_ID = process.env.NEXT_PUBLIC_WORKSPACE_ID || "";
 const SHOPPING_THEME = {
@@ -61,6 +62,7 @@ type Draft = {
   url: string;
   estimated_price: string;
   platform: string;
+  sources: ShoppingSourceDraft[];
   requested_by: string;
   purchase_for: string;
   priority: ShoppingPriority;
@@ -74,6 +76,7 @@ const EMPTY_DRAFT: Draft = {
   url: "",
   estimated_price: "",
   platform: "",
+  sources: [emptyShoppingSource(), emptyShoppingSource(), emptyShoppingSource()],
   requested_by: "",
   purchase_for: "",
   priority: "normal",
@@ -98,6 +101,7 @@ function toDraft(item: ShoppingItem): Draft {
     url: item.url ?? "",
     estimated_price: item.estimated_price === null ? "" : String(item.estimated_price),
     platform: item.platform ?? "",
+    sources: draftSources(item.sources, { platform: item.platform, url: item.url, price: item.estimated_price }),
     requested_by: item.requested_by ?? "",
     purchase_for: item.purchase_for ?? "",
     priority: item.priority,
@@ -145,7 +149,8 @@ export default function ShoppingPage() {
     const filtered = items.filter((item) => {
       if (statusFilter !== "all" && item.status !== statusFilter) return false;
       if (!keyword) return true;
-      return [item.name, item.platform, item.requested_by, item.purchase_for, item.note, item.url]
+      const sourceValues = item.sources.flatMap((source) => [source.platform, source.url, source.note, source.price]);
+      return [item.name, item.platform, item.requested_by, item.purchase_for, item.note, item.url, ...sourceValues]
         .some((value) => String(value ?? "").toLowerCase().includes(keyword));
     });
 
@@ -158,7 +163,7 @@ export default function ShoppingPage() {
   }, [items, query, sortMode, statusFilter]);
 
   const activeItems = items.filter((item) => !["purchased", "skipped"].includes(item.status));
-  const estimatedTotal = activeItems.reduce((sum, item) => sum + Number(item.estimated_price || 0), 0);
+  const estimatedTotal = activeItems.reduce((sum, item) => sum + Number(bestShoppingPrice(item.sources, item.estimated_price) || 0), 0);
   const waitingCount = items.filter((item) => item.status === "waiting_sale").length;
 
   async function saveItem(input: Record<string, unknown>, id?: string, forceDuplicate = false): Promise<ShoppingItem | null> {
@@ -196,13 +201,14 @@ export default function ShoppingPage() {
 
   async function submitDraft() {
     if (!draft || !WORKSPACE_ID) return;
-    if (!draft.name.trim() && !draft.url.trim()) {
+    if (!draft.name.trim() && !draft.url.trim() && !draft.sources.some((source) => source.url?.trim())) {
       toast({ variant: "destructive", title: "請輸入商品名稱或連結" });
       return;
     }
     setSaving(true);
     try {
-      const item = await saveItem({ ...draft, estimated_price: draft.estimated_price || null }, draft.id);
+      const sources = draft.sources.map((source) => ({ ...source, price: source.price || null }));
+      const item = await saveItem({ ...draft, sources, estimated_price: draft.estimated_price || null }, draft.id);
       if (!item) return;
       setItems((current) => draft.id ? current.map((row) => row.id === item.id ? item : row) : [item, ...current]);
       setDraft(null);
@@ -321,6 +327,7 @@ export default function ShoppingPage() {
                     <span className={`rounded-full border px-2.5 py-1 text-xs font-bold ${STATUS_STYLE[item.status]}`}>{statusLabel(item.status)}</span>
                     {item.priority !== "low" && <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${item.priority === "high" ? "bg-[#ffe1d6] text-[#b7431c]" : "bg-[#f4edf8] text-[var(--ft-wine)]"}`}>{PRIORITY_LABEL[item.priority]}</span>}
                     {item.platform && <span className="truncate rounded-full bg-[#fff5e8] px-2.5 py-1 text-xs font-bold text-[#9b5a29]">{item.platform}</span>}
+                    {item.sources.length > 1 && <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">{item.sources.length} 個來源</span>}
                   </div>
                   <h2 className="line-clamp-2 text-lg font-black leading-7 text-[var(--ft-plum)]">{item.name}</h2>
                 </div>
@@ -331,12 +338,13 @@ export default function ShoppingPage() {
               </div>
 
               <div className="mt-4 grid grid-cols-2 gap-2 rounded-2xl bg-[#fffaf5] p-3 text-sm">
-                <div><span className="block text-xs text-[var(--ft-plum-soft)]">預估價格</span><strong className="text-[var(--ft-plum)]">{priceText(item.estimated_price)}</strong></div>
+                <div><span className="block text-xs text-[var(--ft-plum-soft)]">最低價格</span><strong className="text-emerald-700">{priceText(bestShoppingPrice(item.sources, item.estimated_price))}</strong></div>
                 <div><span className="block text-xs text-[var(--ft-plum-soft)]">預計購買</span><strong className="text-[var(--ft-plum)]">{item.planned_date || "尚未安排"}</strong></div>
               </div>
 
               {(item.requested_by || item.purchase_for) && <div className="mt-3 flex flex-wrap gap-2 text-xs text-[var(--ft-plum-soft)]">{item.requested_by && <span className="flex items-center gap-1 rounded-full border border-[var(--ft-line)] px-2.5 py-1"><UserRound className="h-3.5 w-3.5" />{item.requested_by} 提出</span>}{item.purchase_for && <span className="rounded-full border border-[var(--ft-line)] px-2.5 py-1">購買給 {item.purchase_for}</span>}</div>}
               {item.note && <p className="mt-3 line-clamp-2 text-sm leading-6 text-[var(--ft-plum-soft)]">{item.note}</p>}
+              <SourceComparisonList sources={item.sources} />
 
               <div className="mt-4 flex items-center gap-2 border-t border-[var(--ft-line)] pt-3">
                 <select className={`select select-bordered h-9 min-h-0 flex-1 rounded-xl text-sm font-bold ${STATUS_STYLE[item.status]}`} value={item.status} onChange={(event) => void changeStatus(item, event.target.value as ShoppingStatus)} aria-label={`${item.name} 狀態`}>
@@ -359,9 +367,7 @@ export default function ShoppingPage() {
 
             <div className="grid gap-4 p-5 sm:grid-cols-2">
               <label className="sm:col-span-2"><span className="mb-1.5 block text-sm font-bold text-[var(--ft-plum)]">商品名稱</span><input className="input input-bordered w-full rounded-xl border-[var(--ft-line)] bg-white" placeholder="例如：保冷壺" value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} /></label>
-              <label className="sm:col-span-2"><span className="mb-1.5 block text-sm font-bold text-[var(--ft-plum)]">商品連結</span><input type="url" className="input input-bordered w-full rounded-xl border-[var(--ft-line)] bg-white" placeholder="https://..." value={draft.url} onChange={(event) => setDraft({ ...draft, url: event.target.value })} /></label>
-              <label><span className="mb-1.5 block text-sm font-bold text-[var(--ft-plum)]">預估價格</span><input type="number" min="0" step="1" className="input input-bordered w-full rounded-xl border-[var(--ft-line)] bg-white" placeholder="0" value={draft.estimated_price} onChange={(event) => setDraft({ ...draft, estimated_price: event.target.value })} /></label>
-              <label><span className="mb-1.5 block text-sm font-bold text-[var(--ft-plum)]">平台／店家</span><input className="input input-bordered w-full rounded-xl border-[var(--ft-line)] bg-white" placeholder="會依連結自動判斷，也可自行輸入" value={draft.platform} onChange={(event) => setDraft({ ...draft, platform: event.target.value })} /></label>
+              <SourceComparisonEditor sources={draft.sources} onChange={(sources) => setDraft({ ...draft, sources })} />
               <label><span className="mb-1.5 block text-sm font-bold text-[var(--ft-plum)]">誰提出</span><input list="shopping-requesters" className="input input-bordered w-full rounded-xl border-[var(--ft-line)] bg-white" placeholder="我、先生…" value={draft.requested_by} onChange={(event) => setDraft({ ...draft, requested_by: event.target.value })} /></label>
               <label><span className="mb-1.5 block text-sm font-bold text-[var(--ft-plum)]">購買給誰</span><input list="shopping-for" className="input input-bordered w-full rounded-xl border-[var(--ft-line)] bg-white" placeholder="家庭、自己…" value={draft.purchase_for} onChange={(event) => setDraft({ ...draft, purchase_for: event.target.value })} /></label>
               <datalist id="shopping-requesters"><option value="我" /><option value="先生" /></datalist><datalist id="shopping-for"><option value="家庭" /><option value="自己" /><option value="先生" /></datalist>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
@@ -9,6 +9,7 @@ import {
   ArrowUpRight,
   Calculator,
   CalendarDays,
+  ChevronDown,
   DatabaseBackup,
   HouseHeart,
   LayoutDashboard,
@@ -55,6 +56,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const activeGroup = useMemo(() => NAV_GROUPS.find((group) => group.items.some((item) => {
+    if (item.href === "/settings/categories") return ["/settings/categories", "/settings/payment-methods", "/settings/merchants", "/settings/payers"].includes(pathname);
+    return pathname === item.href || pathname.startsWith(`${item.href}/`);
+  }))?.title ?? null, [pathname]);
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => new Set());
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => setUser(user));
@@ -68,6 +74,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     });
     return () => subscription.unsubscribe();
   }, [router]);
+
+  useEffect(() => {
+    if (activeGroup) setExpandedGroups((current) => current.has(activeGroup) ? current : new Set([...current, activeGroup]));
+  }, [activeGroup]);
 
   const handleLogout = async () => {
     try {
@@ -83,6 +93,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     if (href === "/") return pathname === "/";
     return pathname === href || pathname.startsWith(`${href}/`);
   };
+
+  const toggleGroup = (title: string) => setExpandedGroups((current) => {
+    const next = new Set(current);
+    if (next.has(title)) next.delete(title); else next.add(title);
+    return next;
+  });
 
   if (pathname === "/login") return <>{children}</>;
 
@@ -109,16 +125,23 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           </Link>
 
           <nav className="family-nav flex-1" aria-label="主要導覽">
-            {NAV_GROUPS.map((group) => (
-              <div key={group.title} className="family-nav-group">
-                <h3>{group.title}</h3>
-                {group.items.map(({ name, href, icon: Icon }) => (
-                  <Link key={href} href={href} aria-current={isActive(href) ? "page" : undefined} onClick={() => setDrawerOpen(false)} className={isActive(href) ? "family-nav-link active" : "family-nav-link"}>
-                    <Icon aria-hidden="true" /><span>{name}</span>
-                  </Link>
-                ))}
-              </div>
-            ))}
+            {NAV_GROUPS.map((group) => {
+              const expanded = expandedGroups.has(group.title);
+              return (
+                <div key={group.title} className={`family-nav-group${expanded ? " expanded" : ""}`}>
+                  <button type="button" className="family-nav-group-toggle" aria-expanded={expanded} aria-controls={`nav-${group.title}`} onClick={() => toggleGroup(group.title)}>
+                    <span>{group.title}</span><ChevronDown aria-hidden="true" />
+                  </button>
+                  <div id={`nav-${group.title}`} className="family-nav-group-items" hidden={!expanded}>
+                    {group.items.map(({ name, href, icon: Icon }) => (
+                      <Link key={href} href={href} aria-current={isActive(href) ? "page" : undefined} onClick={() => setDrawerOpen(false)} className={isActive(href) ? "family-nav-link active" : "family-nav-link"}>
+                        <Icon aria-hidden="true" /><span>{name}</span>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </nav>
 
           {user && (

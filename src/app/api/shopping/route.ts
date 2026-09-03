@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { apiError, parseJson } from "@/lib/api/http";
-import { createShoppingItem, findShoppingDuplicate, listShoppingItems, normalizeShoppingUrl } from "@/lib/shoppingRepo";
+import { createShoppingItem, findShoppingDuplicate, listShoppingItems, normalizeShoppingSources, normalizeShoppingUrl } from "@/lib/shoppingRepo";
 
 function workspaceIdFrom(req: Request, body?: Record<string, unknown>) {
   const { searchParams } = new URL(req.url);
@@ -25,13 +25,18 @@ export async function POST(req: Request) {
     if (!workspaceId) return apiError("缺少 workspace_id", { successFalse: true });
 
     const normalizedUrl = normalizeShoppingUrl(body.url);
-    if (normalizedUrl && body.force_duplicate !== true) {
-      const duplicate = await findShoppingDuplicate(workspaceId, normalizedUrl);
-      if (duplicate) {
-        return NextResponse.json(
-          { success: false, error: `已有相同連結：「${duplicate.name}」`, duplicate },
-          { status: 409 },
-        );
+    const sourceUrls = Array.isArray(body.sources)
+      ? normalizeShoppingSources(body.sources).flatMap((source) => source.url ? [source.url] : [])
+      : normalizedUrl ? [normalizedUrl] : [];
+    if (body.force_duplicate !== true) {
+      for (const url of new Set(sourceUrls)) {
+        const duplicate = await findShoppingDuplicate(workspaceId, url);
+        if (duplicate) {
+          return NextResponse.json(
+            { success: false, error: `已有相同連結：「${duplicate.name}」`, duplicate },
+            { status: 409 },
+          );
+        }
       }
     }
 
