@@ -15,7 +15,7 @@ const TYPE_META: Record<InvestmentTransactionType, { label: string; className: s
 type Tab = "holdings" | "transactions" | "settings";
 type Modal = { kind: "transaction"; row?: InvestmentTransaction; transactionType?: InvestmentTransactionType } | { kind: "account"; row?: InvestmentAccount } | { kind: "security"; row?: InvestmentSecurity } | null;
 const today = () => new Date().toISOString().slice(0, 10);
-const money = (value: number | null, empty = "尚未更新") => value === null ? empty : new Intl.NumberFormat("zh-TW", { style: "currency", currency: "TWD", maximumFractionDigits: 0 }).format(value);
+const money = (value: number | null, empty = "尚未更新") => value === null ? empty : new Intl.NumberFormat("zh-TW", { style: "currency", currency: "TWD", maximumFractionDigits: 2 }).format(value);
 const signedMoney = (value: number | null) => value === null ? "—" : `${value >= 0 ? "+" : "−"}${money(Math.abs(value))}`;
 const numberText = (value: number) => new Intl.NumberFormat("zh-TW", { maximumFractionDigits: 6 }).format(value);
 
