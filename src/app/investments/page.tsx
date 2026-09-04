@@ -49,7 +49,9 @@ export default function InvestmentsPage() {
     const keyword = query.trim().toLowerCase(); const account = accountMap.get(accountId); const security = securityMap.get(securityId);
     return (accountFilter === "all" || accountId === accountFilter) && (securityFilter === "all" || securityId === securityFilter) && (!keyword || [account?.name, security?.symbol, security?.name, security?.market, note].some((value) => String(value ?? "").toLowerCase().includes(keyword)));
   }, [query, accountFilter, securityFilter, accountMap, securityMap]);
-  const filteredHoldings = useMemo(() => snapshot.holdings.filter((row) => row.quantity > 0 && matches(row.account_id, row.security_id)), [snapshot.holdings, matches]);
+  const filteredHoldings = useMemo(() => snapshot.holdings
+    .filter((row) => row.quantity > 0 && matches(row.account_id, row.security_id))
+    .sort((a, b) => a.symbol.localeCompare(b.symbol, "zh-TW", { numeric: true, sensitivity: "base" }) || a.account_name.localeCompare(b.account_name, "zh-TW")), [snapshot.holdings, matches]);
   const filteredTransactions = useMemo(() => snapshot.transactions.filter((row) => row.transaction_type !== "dividend" && (typeFilter === "all" || row.transaction_type === typeFilter) && matches(row.account_id, row.security_id, row.note)), [snapshot.transactions, typeFilter, matches]);
   const filteredDividends = useMemo(() => snapshot.dividends.filter((row) => matches(row.account_id, row.security_id, row.note)), [snapshot.dividends, matches]);
   const filteredActions = useMemo(() => snapshot.corporate_actions.filter((row) => matches(row.account_id, row.security_id, row.note)), [snapshot.corporate_actions, matches]);
