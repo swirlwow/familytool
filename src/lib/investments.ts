@@ -320,7 +320,7 @@ export async function createInvestmentRecord(workspaceId: string, resource: stri
     const existing = await getInvestmentSnapshot(workspaceId);
     calculateInvestmentSnapshot(existing.accounts, existing.securities, [...existing.transactions, { ...payload, id: "candidate", created_at: new Date().toISOString(), updated_at: new Date().toISOString() } as InvestmentTransaction], existing.dividends, existing.corporate_actions);
     const { data, error } = await supabase.from("investment_transactions").insert(payload).select(TRANSACTION_COLUMNS).single();
-    if (error) throw new Error(error.code === "23505" ? "委託單號已存在，請輸入不同單號" : error.message); return data;
+    if (error) throw new Error(error.code === "23505" ? "同一券商帳戶與交易日已有相同委託單號" : error.message); return data;
   }
   throw new Error("不支援的投資資料類型");
 }
@@ -407,7 +407,7 @@ export async function updateInvestmentRecord(workspaceId: string, resource: stri
     const patch = { account_id: requiredText(merged.account_id, "券商帳戶"), security_id: requiredText(merged.security_id, "股票"), transaction_type: type, trade_date: tradeDate(merged.trade_date), quantity: type === "dividend" ? 0 : numberValue(merged.quantity, "股數", false), price: type === "dividend" ? 0 : numberValue(merged.price, "成交價", false), fee: numberValue(merged.fee, "手續費"), tax: numberValue(merged.tax, "交易稅"), cash_amount: type === "dividend" ? numberValue(merged.cash_amount, "股利金額", false) : 0, settlement_amount: merged.settlement_amount === "" || merged.settlement_amount == null ? null : numberValue(merged.settlement_amount, "實付或實收金額"), order_number: optionalText(merged.order_number, 120), currency: currencyCode(merged.currency), note: optionalText(merged.note, 1000), updated_at: new Date().toISOString() };
     calculateInvestmentSnapshot(snapshot.accounts, snapshot.securities, snapshot.transactions.map((row) => row.id === id ? { ...row, ...patch } : row), snapshot.dividends, snapshot.corporate_actions);
     const { data, error } = await supabase.from("investment_transactions").update(patch).eq("workspace_id", workspaceId).eq("id", id).select(TRANSACTION_COLUMNS).maybeSingle();
-    if (error) throw new Error(error.code === "23505" ? "委託單號已存在，請輸入不同單號" : error.message); if (!data) throw new Error("找不到交易紀錄"); return data;
+    if (error) throw new Error(error.code === "23505" ? "同一券商帳戶與交易日已有相同委託單號" : error.message); if (!data) throw new Error("找不到交易紀錄"); return data;
   }
   throw new Error("不支援的投資資料類型");
 }
