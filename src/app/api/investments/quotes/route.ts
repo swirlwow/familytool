@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { apiError, apiInternalError, parseJson } from "@/lib/api/http";
 import { assertWorkspaceAccess, WorkspaceAccessError } from "@/lib/api/workspaceAccess";
 import { getInvestmentSnapshot, updateInvestmentRecord } from "@/lib/investments";
-import { getOfficialClosingQuotes, supportsOfficialClosingQuote } from "@/lib/investment-quotes";
+import { getOfficialLatestQuotes, supportsOfficialClosingQuote } from "@/lib/investment-quotes";
 
 function failure(error: unknown) {
   if (error instanceof WorkspaceAccessError) return apiError(error.message, { status: error.status, successFalse: true });
@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     const heldSecurities = snapshot.securities.filter((security) => heldSecurityIds.has(security.id));
     const supported = heldSecurities.filter(supportsOfficialClosingQuote);
     const unsupported = heldSecurities.length - supported.length;
-    const { quotes, failedMarkets } = await getOfficialClosingQuotes(supported);
+    const { quotes, failedMarkets } = await getOfficialLatestQuotes(supported);
     const updates = await Promise.allSettled(quotes.map((quote) => updateInvestmentRecord(workspaceId, "security", quote.securityId, {
       current_price: quote.price,
       current_price_date: quote.date,

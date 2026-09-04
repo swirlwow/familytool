@@ -128,7 +128,7 @@ export default function InvestmentsPage() {
       await load();
       const result = json.data ?? {};
       const skipped = Number(result.unavailable ?? 0) + Number(result.unsupported ?? 0) + Number(result.failed ?? 0);
-      toast({ title: `已更新 ${Number(result.updated ?? 0)} 檔持股股價`, description: skipped > 0 ? `${skipped} 檔暫無官方收盤價或不支援自動更新` : "已採用官方最新收盤價" });
+      toast({ title: `已更新 ${Number(result.updated ?? 0)} 檔持股股價`, description: skipped > 0 ? `${skipped} 檔暫無官方報價或不支援自動更新` : "已採用官方最新成交價；無當日成交時使用最新收盤價" });
     } catch (error) {
       toast({ variant: "destructive", title: "更新持股股價失敗", description: error instanceof Error ? error.message : "請稍後再試" });
     } finally { setUpdatingPrices(false); }
