@@ -1,6 +1,6 @@
 "use client";
 
-import { BriefcaseBusiness, Building2, Landmark, Pencil, Trash2 } from "lucide-react";
+import { BriefcaseBusiness, Building2, Landmark, Pencil, RefreshCw, Trash2 } from "lucide-react";
 import type {
   InvestmentAccount,
   InvestmentCorporateAction,
@@ -87,7 +87,7 @@ export function CorporateActionList({ rows, accountMap, securityMap, onEdit, onD
   })}</div>;
 }
 
-export function InvestmentSettings({ accounts, securities, holdings, onAccount, onSecurity, onDelete }: { accounts: InvestmentAccount[]; securities: InvestmentSecurity[]; holdings: InvestmentHolding[]; onAccount: (row?: InvestmentAccount) => void; onSecurity: (row?: InvestmentSecurity) => void; onDelete: (resource: string, id: string, label: string) => void }) {
+export function InvestmentSettings({ accounts, securities, holdings, updatingPrices, onUpdatePrices, onAccount, onSecurity, onDelete }: { accounts: InvestmentAccount[]; securities: InvestmentSecurity[]; holdings: InvestmentHolding[]; updatingPrices: boolean; onUpdatePrices: () => void; onAccount: (row?: InvestmentAccount) => void; onSecurity: (row?: InvestmentSecurity) => void; onDelete: (resource: string, id: string, label: string) => void }) {
   const heldSecurityIds = new Set(holdings.filter((row) => row.quantity > 0).map((row) => row.security_id));
   const sortedSecurities = [...securities].sort((a, b) => Number(heldSecurityIds.has(b.id)) - Number(heldSecurityIds.has(a.id)) || a.sort_order - b.sort_order || a.symbol.localeCompare(b.symbol));
   return <div className="space-y-4 p-4">
@@ -96,8 +96,9 @@ export function InvestmentSettings({ accounts, securities, holdings, onAccount, 
       <div className="grid gap-3 p-3 sm:grid-cols-2 xl:grid-cols-4">{accounts.length ? accounts.map((row) => <article key={row.id} className="flex min-w-0 flex-col gap-3 rounded-lg border border-slate-200 bg-white p-3"><div className="flex min-w-0 items-center gap-3"><span className="rounded-lg bg-indigo-50 p-2 text-indigo-600"><Landmark className="h-4 w-4" /></span><div className="min-w-0 flex-1"><strong className="block truncate">{row.name}</strong><span className="text-xs text-slate-400">{row.broker || "未填券商"}・{row.is_active ? "啟用" : "停用"}</span></div></div><Actions onEdit={() => onAccount(row)} onDelete={() => onDelete("account", row.id, row.name)} /></article>) : <div className="app-empty sm:col-span-2 xl:col-span-4">尚未建立券商帳戶</div>}</div>
     </section>
     <section className="rounded-lg border border-slate-200">
-      <div className="app-panel-header"><div><h2 className="font-black text-slate-800">股票基本資料</h2><p className="text-xs text-slate-400">現有持股優先，其餘依設定順序排列・共 {securities.length} 檔</p></div><button className="btn btn-sm rounded-lg border-0 bg-indigo-600 text-white" onClick={() => onSecurity()}>新增</button></div>
-      <div className="divide-y divide-slate-100">{sortedSecurities.length ? sortedSecurities.map((row) => <div key={row.id} className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center"><div className="flex min-w-0 flex-1 items-center gap-3"><span className="rounded-lg bg-sky-50 p-2 text-sky-600"><Building2 className="h-4 w-4" /></span><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><strong className="truncate">{row.symbol} {row.name}</strong>{heldSecurityIds.has(row.id) && <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700">現有持股</span>}</div><span className="text-xs text-slate-400">{row.market}・{row.current_price === null ? "股價未更新" : `${priceMoney(row.current_price)}｜${row.current_price_date ?? "未填日期"}`}</span></div></div><Actions onEdit={() => onSecurity(row)} onDelete={() => onDelete("security", row.id, `${row.symbol} ${row.name}`)} /></div>) : <div className="app-empty">尚未建立股票資料</div>}</div>
+      <div className="app-panel-header"><div><h2 className="font-black text-slate-800">股票基本資料</h2><p className="text-xs text-slate-400">現有持股優先，其餘依設定順序排列・共 {securities.length} 檔</p></div><div className="flex flex-wrap justify-end gap-2"><button className="btn btn-sm rounded-lg border-sky-200 bg-sky-50 text-sky-700" onClick={onUpdatePrices} disabled={updatingPrices || heldSecurityIds.size === 0}><RefreshCw className={`h-4 w-4 ${updatingPrices ? "animate-spin" : ""}`} />{updatingPrices ? "更新中" : "更新持股股價"}</button><button className="btn btn-sm rounded-lg border-0 bg-indigo-600 text-white" onClick={() => onSecurity()}>新增</button></div></div>
+      <div className="grid gap-3 p-3 sm:grid-cols-2 xl:grid-cols-4">{sortedSecurities.length ? sortedSecurities.map((row) => <article key={row.id} className={`flex min-w-0 flex-col gap-3 rounded-lg border p-3 ${heldSecurityIds.has(row.id) ? "border-emerald-200 bg-emerald-50/30" : "border-slate-200 bg-white"}`}><div className="flex min-w-0 items-center gap-3"><span className="rounded-lg bg-sky-50 p-2 text-sky-600"><Building2 className="h-4 w-4" /></span><div className="min-w-0 flex-1"><div className="flex items-center gap-2"><strong className="truncate">{row.symbol} {row.name}</strong>{heldSecurityIds.has(row.id) && <span className="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-700">持有</span>}</div><span className="block truncate text-xs text-slate-400">{row.market}・{row.current_price === null ? "股價未更新" : `${priceMoney(row.current_price)}｜${row.current_price_date ?? "未填日期"}`}</span></div></div><Actions onEdit={() => onSecurity(row)} onDelete={() => onDelete("security", row.id, `${row.symbol} ${row.name}`)} /></article>) : <div className="app-empty sm:col-span-2 xl:col-span-4">尚未建立股票資料</div>}</div>
     </section>
+
   </div>;
 }
