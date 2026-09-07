@@ -14,9 +14,9 @@ import type {
 } from "@/lib/investments";
 
 export type InvestmentModal =
-  | { kind: "transaction"; row?: InvestmentTransaction; transactionType?: InvestmentTransactionType }
-  | { kind: "dividend"; row?: InvestmentDividend }
-  | { kind: "corporate_action"; row?: InvestmentCorporateAction }
+  | { kind: "transaction"; row?: InvestmentTransaction; transactionType?: InvestmentTransactionType; accountId?: string }
+  | { kind: "dividend"; row?: InvestmentDividend; accountId?: string }
+  | { kind: "corporate_action"; row?: InvestmentCorporateAction; accountId?: string }
   | { kind: "account"; row?: InvestmentAccount }
   | { kind: "security"; row?: InvestmentSecurity };
 
@@ -47,7 +47,7 @@ function AccountSelect({ value, onChange, accounts, includeId }: { value: string
 export function TransactionModal({ modal, accounts, securities, holdings, saving, onClose, onSave }: { modal: Extract<InvestmentModal, { kind: "transaction" }>; accounts: InvestmentAccount[]; securities: InvestmentSecurity[]; holdings: InvestmentHolding[]; saving: boolean; onClose: () => void; onSave: Save }) {
   const tx = modal.row;
   const initialType = tx?.transaction_type ?? modal.transactionType ?? "buy";
-  const initialAccountId = tx?.account_id ?? accounts.find((row) => row.is_active)?.id ?? "";
+  const initialAccountId = tx?.account_id ?? modal.accountId ?? accounts.find((row) => row.is_active)?.id ?? "";
   const initialHoldingSecurityId = holdings.find((row) => row.account_id === initialAccountId && row.quantity > 0)?.security_id;
   const [form, setForm] = useState<Record<string, string>>({
     transaction_type: initialType, trade_date: tx?.trade_date ?? today(),
@@ -109,7 +109,7 @@ export function TransactionModal({ modal, accounts, securities, holdings, saving
 
 export function DividendModal({ modal, accounts, securities, saving, onClose, onSave }: { modal: Extract<InvestmentModal, { kind: "dividend" }>; accounts: InvestmentAccount[]; securities: InvestmentSecurity[]; saving: boolean; onClose: () => void; onSave: Save }) {
   const row = modal.row;
-  const [form, setForm] = useState<Record<string, string>>({ account_id: row?.account_id ?? accounts.find((item) => item.is_active)?.id ?? "", security_id: row?.security_id ?? securities.find((item) => item.is_active)?.id ?? "", dividend_type: row?.dividend_type ?? "cash", ex_dividend_date: row?.ex_dividend_date ?? today(), eligible_quantity: row ? String(row.eligible_quantity) : "", dividend_per_share: row ? String(row.dividend_per_share) : "", stock_dividend_rate: row ? String(row.stock_dividend_rate) : "", status: row?.status ?? "pending", payment_date: row?.payment_date ?? "", received_amount: row?.received_amount == null ? "" : String(row.received_amount), shares_received: row?.shares_received == null ? "" : String(row.shares_received), deduction_type: row?.deduction_type ?? "unclassified", note: row?.note ?? "" });
+  const [form, setForm] = useState<Record<string, string>>({ account_id: row?.account_id ?? modal.accountId ?? accounts.find((item) => item.is_active)?.id ?? "", security_id: row?.security_id ?? securities.find((item) => item.is_active)?.id ?? "", dividend_type: row?.dividend_type ?? "cash", ex_dividend_date: row?.ex_dividend_date ?? today(), eligible_quantity: row ? String(row.eligible_quantity) : "", dividend_per_share: row ? String(row.dividend_per_share) : "", stock_dividend_rate: row ? String(row.stock_dividend_rate) : "", status: row?.status ?? "pending", payment_date: row?.payment_date ?? "", received_amount: row?.received_amount == null ? "" : String(row.received_amount), shares_received: row?.shares_received == null ? "" : String(row.shares_received), deduction_type: row?.deduction_type ?? "unclassified", note: row?.note ?? "" });
   const field = (key: string, value: string) => setForm((current) => ({ ...current, [key]: value }));
   const isStock = form.dividend_type === "stock";
   const expected = Number(form.eligible_quantity || 0) * Number(form.dividend_per_share || 0);
@@ -128,7 +128,7 @@ export function DividendModal({ modal, accounts, securities, saving, onClose, on
 
 export function CorporateActionModal({ modal, accounts, securities, holdings, saving, onClose, onSave }: { modal: Extract<InvestmentModal, { kind: "corporate_action" }>; accounts: InvestmentAccount[]; securities: InvestmentSecurity[]; holdings: InvestmentHolding[]; saving: boolean; onClose: () => void; onSave: Save }) {
   const row = modal.row;
-  const defaultAccount = row?.account_id ?? accounts.find((item) => item.is_active)?.id ?? "";
+  const defaultAccount = row?.account_id ?? modal.accountId ?? accounts.find((item) => item.is_active)?.id ?? "";
   const defaultSecurity = row?.security_id ?? securities.find((item) => item.is_active)?.id ?? "";
   const holding = holdings.find((item) => item.account_id === defaultAccount && item.security_id === defaultSecurity);
   const [form, setForm] = useState<Record<string, string>>({ account_id: defaultAccount, security_id: defaultSecurity, action_type: row?.action_type ?? "capital_reduction", event_date: row?.event_date ?? today(), quantity_before: row ? String(row.quantity_before) : holding ? String(holding.quantity) : "", reduction_ratio_percent: row ? String(row.reduction_ratio * 100) : "", quantity_after: row ? String(row.quantity_after) : "", cash_return: row ? String(row.cash_return) : "", cost_adjustment: row ? String(row.cost_adjustment) : "", note: row?.note ?? "" });
