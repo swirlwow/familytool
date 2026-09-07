@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseOfficialClosingQuotes, parseOfficialRealtimeQuotes, supportsOfficialClosingQuote } from "@/lib/investment-quotes";
+import { officialRealtimeChannel, parseOfficialClosingQuotes, parseOfficialRealtimeQuotes, supportsOfficialClosingQuote } from "@/lib/investment-quotes";
 
 describe("parseOfficialClosingQuotes", () => {
   it("parses TWSE prices and ROC dates", () => {
@@ -22,6 +22,10 @@ describe("parseOfficialClosingQuotes", () => {
     expect(supportsOfficialClosingQuote({ market: "US" })).toBe(false);
   });
 
+  it("preserves uppercase letters in official realtime channels", () => {
+    expect(officialRealtimeChannel({ market: "TWSE", symbol: "00403A" })).toBe("tse_00403A.tw");
+  });
+
   it("parses the latest MIS trade price and Gregorian date", () => {
     const quotes = parseOfficialRealtimeQuotes({
       msgArray: [
@@ -29,7 +33,14 @@ describe("parseOfficialClosingQuotes", () => {
         { c: "2014", d: "20260904", t: "13:30:00", z: "-", y: "16.9000" },
       ],
     });
-    expect(quotes.get("1718")).toEqual({ price: 10.6, date: "2026-09-04" });
+    expect(quotes.get("1718")).toEqual({ price: 10.6, date: "2026-09-04", time: "13:30:00", source: "realtime_trade" });
     expect(quotes.has("2014")).toBe(false);
+  });
+
+  it("uses the same-day best bid when an MIS snapshot omits the latest trade", () => {
+    const quotes = parseOfficialRealtimeQuotes({
+      msgArray: [{ c: "00878", d: "20260907", t: "11:26:54", z: "-", b: "34.3300_34.3200_", y: "34.1100" }],
+    });
+    expect(quotes.get("00878")).toEqual({ price: 34.33, date: "2026-09-07", time: "11:26:54", source: "realtime_bid" });
   });
 });

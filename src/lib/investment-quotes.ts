@@ -8,6 +8,8 @@ export type InvestmentQuote = {
   market: QuoteMarket;
   price: number;
   date: string;
+  time?: string;
+  source: "realtime_trade" | "realtime_bid" | "closing";
 };
 
 const MARKET_URLS: Record<QuoteMarket, string> = {
@@ -24,6 +26,12 @@ const quoteMarket = (value: string): QuoteMarket | null => {
 };
 
 export const supportsOfficialClosingQuote = (security: Pick<InvestmentSecurity, "market">) => quoteMarket(security.market) !== null;
+
+export const officialRealtimeChannel = (security: Pick<InvestmentSecurity, "market" | "symbol">) => {
+  const market = quoteMarket(security.market);
+  if (!market) return null;
+  return `${market === "TWSE" ? "tse" : "otc"}_${security.symbol.trim()}.tw`;
+};
 
 const rocDateToIso = (value: unknown) => {
   const digits = String(value ?? "").replace(/\D/g, "");
@@ -58,8 +66,10 @@ export function parseOfficialClosingQuotes(rows: unknown[], market: QuoteMarket)
   return result;
 }
 
+const firstBookPrice = (value: unknown) => positiveNumber(String(value ?? "").split("_")[0]);
+
 export function parseOfficialRealtimeQuotes(payload: unknown) {
-  const result = new Map<string, { price: number; date: string }>();
+  const result = new Map<string, { price: number; date: string; time?: string; source: "realtime_trade" | "realtime_bid" }>();
   if (!payload || typeof payload !== "object") return result;
   const rows = (payload as { msgArray?: unknown[] }).msgArray;
   if (!Array.isArray(rows)) return result;
@@ -67,19 +77,18 @@ export function parseOfficialRealtimeQuotes(payload: unknown) {
     if (!raw || typeof raw !== "object") continue;
     const row = raw as Record<string, unknown>;
     const symbol = String(row.c ?? "").trim().toUpperCase();
-    const price = positiveNumber(row.z);
+    const tradePrice = positiveNumber(row.z);
+    const bidPrice = firstBookPrice(row.b);
+    const price = tradePrice ?? bidPrice;
     const date = gregorianDateToIso(row.d);
-    if (symbol && price !== null && date) result.set(symbol, { price, date });
+    const time = /^\d{2}:\d{2}:\d{2}$/.test(String(row.t ?? "")) ? String(row.t) : undefined;
+    if (symbol && price !== null && date) result.set(symbol, { price, date, time, source: tradePrice !== null ? "realtime_trade" : "realtime_bid" });
   }
   return result;
 }
 
 async function fetchRealtimeQuotes(securities: InvestmentSecurity[]) {
-  const channels = securities.map((security) => {
-    const market = quoteMarket(security.market);
-    if (!market) return null;
-    return `${market === "TWSE" ? "tse" : "otc"}_${security.symbol.trim().toLowerCase()}.tw`;
-  }).filter((channel): channel is string => channel !== null);
+  const channels = securities.map(officialRealtimeChannel).filter((channel): channel is string => channel !== null);
   const batches = Array.from({ length: Math.ceil(channels.length / 50) }, (_, index) => channels.slice(index * 50, (index + 1) * 50));
   const settled = await Promise.allSettled(batches.map(async (batch) => {
     const query = new URLSearchParams({ ex_ch: batch.join("|"), json: "1", delay: "0" });
@@ -95,7 +104,7 @@ async function fetchRealtimeQuotes(securities: InvestmentSecurity[]) {
     if (!response.ok) throw new Error(`MIS 行情服務回應 ${response.status}`);
     return parseOfficialRealtimeQuotes(await response.json());
   }));
-  const result = new Map<string, { price: number; date: string }>();
+  const result = new Map<string, { price: number; date: string; time?: string; source: "realtime_trade" | "realtime_bid" }>();
   for (const batch of settled) {
     if (batch.status !== "fulfilled") continue;
     for (const [symbol, quote] of batch.value) result.set(symbol, quote);
@@ -130,7 +139,7 @@ export async function getOfficialClosingQuotes(securities: InvestmentSecurity[])
     const market = quoteMarket(security.market);
     if (!market) continue;
     const quote = marketQuotes.get(market)?.get(security.symbol.trim().toUpperCase());
-    if (quote) quotes.push({ securityId: security.id, symbol: security.symbol, market, ...quote });
+    if (quote) quotes.push({ securityId: security.id, symbol: security.symbol, market, ...quote, source: "closing" });
   }
   return { quotes, failedMarkets };
 }

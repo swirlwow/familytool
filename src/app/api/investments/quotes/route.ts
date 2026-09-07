@@ -26,7 +26,16 @@ export async function POST(request: Request) {
     const updated = updates.filter((result) => result.status === "fulfilled").length;
     const failed = updates.length - updated;
     const unavailable = supported.length - quotes.length;
-    return NextResponse.json({ success: true, data: { updated, failed, unavailable, unsupported, failed_markets: failedMarkets } });
+    const successfulQuotes = quotes.filter((_, index) => updates[index]?.status === "fulfilled");
+    const realtimeTrade = successfulQuotes.filter((quote) => quote.source === "realtime_trade").length;
+    const realtimeBid = successfulQuotes.filter((quote) => quote.source === "realtime_bid").length;
+    const closing = successfulQuotes.filter((quote) => quote.source === "closing").length;
+    const latestRealtimeTime = successfulQuotes
+      .filter((quote) => quote.source !== "closing" && quote.time)
+      .map((quote) => quote.time as string)
+      .sort()
+      .at(-1);
+    return NextResponse.json({ success: true, data: { updated, failed, unavailable, unsupported, realtime_trade: realtimeTrade, realtime_bid: realtimeBid, closing, latest_realtime_time: latestRealtimeTime, failed_markets: failedMarkets } });
   } catch (error) {
     return failure(error);
   }
