@@ -22,6 +22,7 @@ export async function POST(request: Request) {
     const updates = await Promise.allSettled(quotes.map((quote) => updateInvestmentRecord(workspaceId, "security", quote.securityId, {
       current_price: quote.price,
       current_price_date: quote.date,
+      market: quote.market,
     })));
     const updated = updates.filter((result) => result.status === "fulfilled").length;
     const failed = updates.length - updated;

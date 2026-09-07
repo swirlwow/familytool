@@ -27,10 +27,11 @@ const quoteMarket = (value: string): QuoteMarket | null => {
 
 export const supportsOfficialClosingQuote = (security: Pick<InvestmentSecurity, "market">) => quoteMarket(security.market) !== null;
 
-export const officialRealtimeChannel = (security: Pick<InvestmentSecurity, "market" | "symbol">) => {
+export const officialRealtimeChannel = (security: Pick<InvestmentSecurity, "market" | "symbol">, alternateMarket = false) => {
   const market = quoteMarket(security.market);
   if (!market) return null;
-  return `${market === "TWSE" ? "tse" : "otc"}_${security.symbol.trim()}.tw`;
+  const channelMarket = alternateMarket ? (market === "TWSE" ? "TPEx" : "TWSE") : market;
+  return `${channelMarket === "TWSE" ? "tse" : "otc"}_${security.symbol.trim()}.tw`;
 };
 
 const rocDateToIso = (value: unknown) => {
@@ -69,7 +70,7 @@ export function parseOfficialClosingQuotes(rows: unknown[], market: QuoteMarket)
 const firstBookPrice = (value: unknown) => positiveNumber(String(value ?? "").split("_")[0]);
 
 export function parseOfficialRealtimeQuotes(payload: unknown) {
-  const result = new Map<string, { price: number; date: string; time?: string; source: "realtime_trade" | "realtime_bid" }>();
+  const result = new Map<string, { price: number; date: string; time?: string; source: "realtime_trade" | "realtime_bid"; market: QuoteMarket }>();
   if (!payload || typeof payload !== "object") return result;
   const rows = (payload as { msgArray?: unknown[] }).msgArray;
   if (!Array.isArray(rows)) return result;
@@ -82,13 +83,15 @@ export function parseOfficialRealtimeQuotes(payload: unknown) {
     const price = tradePrice ?? bidPrice;
     const date = gregorianDateToIso(row.d);
     const time = /^\d{2}:\d{2}:\d{2}$/.test(String(row.t ?? "")) ? String(row.t) : undefined;
-    if (symbol && price !== null && date) result.set(symbol, { price, date, time, source: tradePrice !== null ? "realtime_trade" : "realtime_bid" });
+    const exchange = String(row.ex ?? "").trim().toLowerCase();
+    const market = exchange === "tse" ? "TWSE" : exchange === "otc" ? "TPEx" : null;
+    if (symbol && price !== null && date && market) result.set(symbol, { price, date, time, source: tradePrice !== null ? "realtime_trade" : "realtime_bid", market });
   }
   return result;
 }
 
-async function fetchRealtimeQuotes(securities: InvestmentSecurity[]) {
-  const channels = securities.map(officialRealtimeChannel).filter((channel): channel is string => channel !== null);
+async function fetchRealtimeQuotes(securities: InvestmentSecurity[], alternateMarket = false) {
+  const channels = securities.map((security) => officialRealtimeChannel(security, alternateMarket)).filter((channel): channel is string => channel !== null);
   const batches = Array.from({ length: Math.ceil(channels.length / 50) }, (_, index) => channels.slice(index * 50, (index + 1) * 50));
   const settled = await Promise.allSettled(batches.map(async (batch) => {
     const query = new URLSearchParams({ ex_ch: batch.join("|"), json: "1", delay: "0" });
@@ -104,7 +107,7 @@ async function fetchRealtimeQuotes(securities: InvestmentSecurity[]) {
     if (!response.ok) throw new Error(`MIS 行情服務回應 ${response.status}`);
     return parseOfficialRealtimeQuotes(await response.json());
   }));
-  const result = new Map<string, { price: number; date: string; time?: string; source: "realtime_trade" | "realtime_bid" }>();
+  const result = new Map<string, { price: number; date: string; time?: string; source: "realtime_trade" | "realtime_bid"; market: QuoteMarket }>();
   for (const batch of settled) {
     if (batch.status !== "fulfilled") continue;
     for (const [symbol, quote] of batch.value) result.set(symbol, quote);
@@ -146,14 +149,17 @@ export async function getOfficialClosingQuotes(securities: InvestmentSecurity[])
 
 export async function getOfficialLatestQuotes(securities: InvestmentSecurity[]) {
   const realtimeQuotes = await fetchRealtimeQuotes(securities);
+  const missingPrimary = securities.filter((security) => !realtimeQuotes.has(security.symbol.trim().toUpperCase()));
+  const alternateQuotes = await fetchRealtimeQuotes(missingPrimary, true);
+  for (const [symbol, quote] of alternateQuotes) realtimeQuotes.set(symbol, quote);
   const missing = securities.filter((security) => !realtimeQuotes.has(security.symbol.trim().toUpperCase()));
   const closing = await getOfficialClosingQuotes(missing);
   const closingBySecurityId = new Map(closing.quotes.map((quote) => [quote.securityId, quote]));
   const quotes = securities.flatMap((security) => {
-    const market = quoteMarket(security.market);
-    if (!market) return [];
+    const configuredMarket = quoteMarket(security.market);
+    if (!configuredMarket) return [];
     const realtime = realtimeQuotes.get(security.symbol.trim().toUpperCase());
-    if (realtime) return [{ securityId: security.id, symbol: security.symbol, market, ...realtime }];
+    if (realtime) return [{ securityId: security.id, symbol: security.symbol, ...realtime }];
     const fallback = closingBySecurityId.get(security.id);
     return fallback ? [fallback] : [];
   });
