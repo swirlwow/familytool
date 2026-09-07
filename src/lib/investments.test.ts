@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calculateInvestmentSnapshot, estimateTradingCosts, type InvestmentAccount, type InvestmentCorporateAction, type InvestmentDividend, type InvestmentSecurity, type InvestmentTransaction } from "./investments";
+import { calculateInvestmentSnapshot, estimateTradingCosts, resolveDividendStatus, type InvestmentAccount, type InvestmentCorporateAction, type InvestmentDividend, type InvestmentSecurity, type InvestmentTransaction } from "./investments";
 
 const account = { id: "a", workspace_id: "w", name: "測試帳戶", broker: "券商", currency: "TWD", sort_order: 0, is_active: true, note: null, created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z" } satisfies InvestmentAccount;
 const security = { id: "s", workspace_id: "w", symbol: "2330", name: "台積電", market: "TWSE", currency: "TWD", current_price: 700, current_price_date: "2026-09-03", sort_order: 0, is_active: true, note: null, created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z" } satisfies InvestmentSecurity;
@@ -61,5 +61,17 @@ describe("estimateTradingCosts", () => {
   });
   it("does not guess fees for unsupported overseas markets", () => {
     expect(estimateTradingCosts({ gross: 10000, transactionType: "sell", symbol: "AAPL", market: "US" })).toEqual({ fee: 0, tax: 0 });
+  });
+});
+
+describe("resolveDividendStatus", () => {
+  it("marks a cash dividend received when its payment date is today or earlier", () => {
+    expect(resolveDividendStatus("cash", "2026-09-06", "pending", "2026-09-07")).toBe("received");
+    expect(resolveDividendStatus("cash", "2026-09-07", "pending", "2026-09-07")).toBe("received");
+  });
+
+  it("keeps future cash and stock dividend statuses unchanged", () => {
+    expect(resolveDividendStatus("cash", "2026-09-08", "pending", "2026-09-07")).toBe("pending");
+    expect(resolveDividendStatus("stock", "2026-09-06", "pending", "2026-09-07")).toBe("pending");
   });
 });

@@ -120,6 +120,22 @@ const optionalDate = (value: unknown, field: string) => {
   return date;
 };
 
+const taipeiToday = () => {
+  const parts = new Intl.DateTimeFormat("en-US", { timeZone: "Asia/Taipei", year: "numeric", month: "2-digit", day: "2-digit" })
+    .formatToParts(new Date());
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${values.year}-${values.month}-${values.day}`;
+};
+
+export function resolveDividendStatus(
+  dividendType: InvestmentDividendType,
+  paymentDate: string | null,
+  status: InvestmentDividend["status"],
+  todayIso = taipeiToday(),
+): InvestmentDividend["status"] {
+  return dividendType === "cash" && paymentDate && paymentDate <= todayIso ? "received" : status;
+}
+
 export function calculateInvestmentSnapshot(
   accounts: InvestmentAccount[], securities: InvestmentSecurity[], transactions: InvestmentTransaction[],
   dividends: InvestmentDividend[] = [], corporateActions: InvestmentCorporateAction[] = [],
@@ -233,7 +249,7 @@ export async function getInvestmentSnapshot(workspaceId: string): Promise<Invest
   const dividends = ((dividendsResult.data ?? []) as Omit<InvestmentDividend, "expected_amount" | "expected_shares" | "deduction_amount">[]).map((row) => {
     const expectedAmount = row.dividend_type === "cash" ? money(Number(row.eligible_quantity) * Number(row.dividend_per_share)) : 0;
     const expectedShares = row.dividend_type === "stock" ? quantity(Number(row.eligible_quantity) * Number(row.stock_dividend_rate) / 10) : 0;
-    return { ...row, expected_amount: expectedAmount, expected_shares: expectedShares, deduction_amount: row.received_amount === null ? 0 : money(Math.max(0, expectedAmount - Number(row.received_amount))) };
+    return { ...row, status: resolveDividendStatus(row.dividend_type, row.payment_date, row.status), expected_amount: expectedAmount, expected_shares: expectedShares, deduction_amount: row.received_amount === null ? 0 : money(Math.max(0, expectedAmount - Number(row.received_amount))) };
   });
   const corporateActions = (corporateActionsResult.data ?? []) as InvestmentCorporateAction[];
   return { accounts, securities, transactions, dividends, corporate_actions: corporateActions, ...calculateInvestmentSnapshot(accounts, securities, transactions, dividends, corporateActions) };
@@ -252,9 +268,9 @@ export async function createInvestmentRecord(workspaceId: string, resource: stri
   }
   if (resource === "dividend") {
     const dividendType: InvestmentDividendType = input.dividend_type === "stock" ? "stock" : "cash";
-    const status: InvestmentDividend["status"] = input.status === "received" ? "received" : "pending";
     const eligibleQuantity = numberValue(input.eligible_quantity, "計算股數", false);
     const paymentDate = optionalDate(input.payment_date, "實際收款日期");
+    const status = resolveDividendStatus(dividendType, paymentDate, input.status === "received" ? "received" : "pending");
     const dividendPerShare = dividendType === "cash" ? numberValue(input.dividend_per_share, "每股現金股利", false) : 0;
     const stockDividendRate = dividendType === "stock" ? numberValue(input.stock_dividend_rate, "股票股利配股率", false) : 0;
     const expectedAmount = money(eligibleQuantity * dividendPerShare);
@@ -348,9 +364,9 @@ export async function updateInvestmentRecord(workspaceId: string, resource: stri
     const current = snapshot.dividends.find((row) => row.id === id); if (!current) throw new Error("找不到股利紀錄");
     const merged = { ...current, ...input } as Record<string, unknown>;
     const dividendType: InvestmentDividendType = merged.dividend_type === "stock" ? "stock" : "cash";
-    const status: InvestmentDividend["status"] = merged.status === "received" ? "received" : "pending";
     const eligibleQuantity = numberValue(merged.eligible_quantity, "計算股數", false);
     const paymentDate = optionalDate(merged.payment_date, "實際收款日期");
+    const status = resolveDividendStatus(dividendType, paymentDate, merged.status === "received" ? "received" : "pending");
     const dividendPerShare = dividendType === "cash" ? numberValue(merged.dividend_per_share, "每股現金股利", false) : 0;
     const stockDividendRate = dividendType === "stock" ? numberValue(merged.stock_dividend_rate, "股票股利配股率", false) : 0;
     const expectedAmount = money(eligibleQuantity * dividendPerShare);
