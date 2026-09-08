@@ -21,6 +21,8 @@ export async function GET(request: Request) {
       accountId: searchParams.get("account_id"),
       securityId: searchParams.get("security_id"),
       transactionType: searchParams.get("transaction_type"),
+      dateFrom: searchParams.get("date_from"),
+      dateTo: searchParams.get("date_to"),
       query: searchParams.get("query"),
     });
     return new NextResponse(`\ufeff${csv}`, { headers: { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": `attachment; filename="${investmentCsvFilename(scope, date)}"`, "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff" } });

@@ -7,6 +7,8 @@ type InvestmentCsvOptions = {
   accountId?: string | null;
   securityId?: string | null;
   transactionType?: string | null;
+  dateFrom?: string | null;
+  dateTo?: string | null;
   query?: string | null;
 };
 
@@ -62,6 +64,8 @@ export function buildInvestmentCsv(snapshot: InvestmentSnapshot, options: Invest
   const rows = snapshot.transactions
     .filter((row) => row.transaction_type !== "dividend")
     .filter((row) => !options.transactionType || options.transactionType === "all" || row.transaction_type === options.transactionType)
+    .filter((row) => !options.dateFrom || row.trade_date >= options.dateFrom)
+    .filter((row) => !options.dateTo || row.trade_date <= options.dateTo)
     .filter((row) => matches(row.account_id, row.security_id, row.note))
     .map((row) => {
       const account = accountMap.get(row.account_id); const security = securityMap.get(row.security_id);

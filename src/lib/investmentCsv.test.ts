@@ -20,6 +20,11 @@ describe("buildInvestmentCsv", () => {
     expect(csv).not.toContain('"除權息日期"');
   });
 
+  it("applies the transaction date range", () => {
+    expect(buildInvestmentCsv(snapshot, { scope: "transactions", dateFrom: "2026-02-01" })).not.toContain('"A001"');
+    expect(buildInvestmentCsv(snapshot, { scope: "transactions", dateTo: "2026-01-02" })).toContain('"A001"');
+  });
+
   it("exports dividend records for the dividend scope", () => {
     const csv = buildInvestmentCsv(snapshot, { scope: "dividends", accountId: "a" });
     expect(csv).toContain('"除權息日期"');

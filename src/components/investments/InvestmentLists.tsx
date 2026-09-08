@@ -14,6 +14,8 @@ const wholeMoney = (value: number | null, empty = "—") => value === null ? emp
 const priceMoney = (value: number | null, empty = "—") => value === null ? empty : new Intl.NumberFormat("zh-TW", { style: "currency", currency: "TWD", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value);
 const numberText = (value: number) => new Intl.NumberFormat("zh-TW", { maximumFractionDigits: 6 }).format(value);
 const signedWholeMoney = (value: number | null) => value === null ? "—" : `${value >= 0 ? "+" : "−"}${wholeMoney(Math.abs(value))}`;
+const signedPercent = (value: number | null) => value === null ? "—" : `${value >= 0 ? "+" : "−"}${Math.abs(value).toFixed(2)}%`;
+const profitTone = (value: number | null) => (value ?? 0) >= 0 ? "text-rose-600" : "text-emerald-600";
 const sourceLabel = { manual: "手動", csv: "CSV", excel: "Excel" } as const;
 const deductionLabel = { transfer_fee: "匯費", nhi: "補充保費", withholding_tax: "扣繳稅", other: "其他", unclassified: "未分類扣款" } as const;
 const actionLabel = { capital_reduction: "現金減資", loss_reduction: "彌補虧損減資" } as const;
@@ -28,20 +30,29 @@ function Actions({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => voi
 export function HoldingsList({ rows, onPrice, onManage }: { rows: InvestmentHolding[]; onPrice: (id: string) => void; onManage: (row: InvestmentHolding) => void }) {
   if (!rows.length) return <div className="app-empty"><BriefcaseBusiness className="mx-auto mb-2 h-8 w-8 text-slate-300" /><p>尚無現有持股</p><p className="mt-1 text-xs">先建立券商帳戶與股票，再新增買進紀錄。</p></div>;
   return <><div className="hidden overflow-x-auto md:block"><table className="table">
-    <thead><tr><th>券商帳戶</th><th>股票</th><th className="text-right">持有股數</th><th className="text-right">平均成本</th><th className="text-right">目前股價</th><th className="text-right">市值</th><th className="text-right">未實現損益</th><th /></tr></thead>
+    <thead><tr><th>券商帳戶</th><th>股票</th><th className="text-right">持有股數</th><th className="text-right">目前股價</th><th className="text-right">市值</th><th className="text-right">持有成本</th><th className="text-right">未實現損益</th><th className="text-right">含股利總損益</th><th /></tr></thead>
     <tbody>{rows.map((row) => <tr key={row.key}>
       <td>{row.account_name}<div className="text-xs text-slate-400">{row.broker}</div></td>
       <td><strong>{row.symbol} {row.security_name}</strong><div className="text-xs text-slate-400">{row.market}</div></td>
-      <td className="text-right font-mono">{numberText(row.quantity)}</td><td className="text-right font-mono">{priceMoney(row.average_cost)}</td>
+      <td className="text-right font-mono">{numberText(row.quantity)}</td>
       <td className="text-right font-mono">{row.current_price === null ? "未更新" : priceMoney(row.current_price)}<div className="text-[10px] text-slate-400">{row.current_price_date}</div></td>
-      <td className="text-right font-bold">{wholeMoney(row.market_value)}</td>
-      <td className={`text-right font-black ${(row.unrealized_profit ?? 0) >= 0 ? "text-rose-600" : "text-emerald-600"}`}>{signedWholeMoney(row.unrealized_profit)}</td>
+      <td className="text-right"><b>{wholeMoney(row.market_value)}</b><div className="text-[11px] text-slate-400">預估賣出淨值 {wholeMoney(row.estimated_sale_value)}</div></td>
+      <td className="text-right"><b>{wholeMoney(row.cost_basis)}</b><div className="text-[11px] text-slate-400">除息後 {wholeMoney(row.dividend_adjusted_cost_basis)}</div>{row.position_dividend_gross > 0 && <div className="text-[10px] text-emerald-600">累計除息 {wholeMoney(row.position_dividend_gross)}</div>}</td>
+      <td className={`text-right font-black ${profitTone(row.unrealized_profit_after_sale_costs)}`}>{signedWholeMoney(row.unrealized_profit_after_sale_costs)}<div className="text-[11px] font-semibold">{signedPercent(row.unrealized_return)}</div></td>
+      <td className={`text-right font-black ${profitTone(row.dividend_adjusted_profit)}`}>{signedWholeMoney(row.dividend_adjusted_profit)}<div className="text-[11px] font-semibold">{signedPercent(row.dividend_adjusted_return)}</div></td>
       <td><div className="flex justify-end gap-1"><button className="btn btn-ghost btn-xs whitespace-nowrap" onClick={() => onPrice(row.security_id)}>更新股價</button><button className="btn btn-ghost btn-xs whitespace-nowrap" onClick={() => onManage(row)}><Pencil className="h-3.5 w-3.5" />修改／刪除</button></div></td>
     </tr>)}</tbody>
   </table></div>
   <div className="divide-y divide-slate-100 md:hidden">{rows.map((row) => <article key={row.key} className="p-4">
     <div className="flex justify-between gap-3"><div><p className="text-xs font-bold text-slate-500">{row.account_name}</p><strong>{row.symbol} {row.security_name}</strong><p className="text-xs text-slate-400">{row.market}</p></div><div className="flex items-start gap-1"><button className="btn btn-ghost btn-xs" onClick={() => onPrice(row.security_id)}>股價</button><button className="btn btn-ghost btn-xs" onClick={() => onManage(row)}>修改／刪除</button></div></div>
-    <div className="mt-3 grid grid-cols-2 gap-2 text-sm"><span>持有 <b>{numberText(row.quantity)}</b></span><span>均價 <b>{priceMoney(row.average_cost)}</b></span><span>市值 <b>{wholeMoney(row.market_value)}</b></span><span className={(row.unrealized_profit ?? 0) >= 0 ? "text-rose-600" : "text-emerald-600"}>損益 <b>{signedWholeMoney(row.unrealized_profit)}</b></span></div>
+    <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
+      <span><small className="block text-slate-400">持有股數</small><b>{numberText(row.quantity)}</b></span>
+      <span><small className="block text-slate-400">目前股價</small><b>{priceMoney(row.current_price)}</b></span>
+      <span><small className="block text-slate-400">市值</small><b>{wholeMoney(row.market_value)}</b><small className="block text-slate-400">預估淨值 {wholeMoney(row.estimated_sale_value)}</small></span>
+      <span><small className="block text-slate-400">持有成本</small><b>{wholeMoney(row.cost_basis)}</b><small className="block text-slate-400">除息後 {wholeMoney(row.dividend_adjusted_cost_basis)}</small></span>
+      <span className={profitTone(row.unrealized_profit_after_sale_costs)}><small className="block text-slate-400">未實現損益</small><b>{signedWholeMoney(row.unrealized_profit_after_sale_costs)}</b><small className="ml-1">{signedPercent(row.unrealized_return)}</small></span>
+      <span className={profitTone(row.dividend_adjusted_profit)}><small className="block text-slate-400">含股利總損益</small><b>{signedWholeMoney(row.dividend_adjusted_profit)}</b><small className="ml-1">{signedPercent(row.dividend_adjusted_return)}</small></span>
+    </div>
   </article>)}</div></>;
 }
 
@@ -55,7 +66,7 @@ export function TransactionList({ rows, accountMap, securityMap, onEdit, onDelet
     return <article key={row.id} className="p-4">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-center">
         <div className="flex min-w-0 flex-1 items-start gap-3"><span className={`rounded-full border px-2.5 py-1 text-xs font-black ${tone}`}>{row.transaction_type === "buy" ? "買進" : row.transaction_type === "sell" ? "賣出" : "股利"}</span><div className="min-w-0"><strong className="block truncate text-slate-900">{security?.symbol} {security?.name}</strong><p className="text-xs text-slate-500">{row.trade_date}・{account?.name}・{sourceLabel[row.source] ?? row.source}</p>{row.note && <p className="mt-1 text-xs text-slate-400">{row.note}</p>}</div></div>
-        <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-5 xl:min-w-[760px]"><span><small className="block text-slate-400">數量／單價</small>{row.transaction_type === "dividend" ? "—" : `${numberText(row.quantity)} × ${priceMoney(row.price)}`}</span><span><small className="block text-slate-400">成交價</small><b>{wholeMoney(gross)}</b></span><span><small className="block text-slate-400">手續費</small>{wholeMoney(row.fee)}</span><span><small className="block text-slate-400">交易稅</small>{wholeMoney(row.tax)}</span><span><small className="block text-slate-400">{row.transaction_type === "buy" ? "實付" : "實收"}</small><b>{wholeMoney(settlement)}</b></span></div>
+        <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-5 xl:min-w-[760px]"><span><small className="block text-slate-400">數量／單價</small>{row.transaction_type === "dividend" ? "—" : `${numberText(row.quantity)} × ${priceMoney(row.price)}`}</span><span><small className="block text-slate-400">成交價</small><b>{wholeMoney(gross)}</b></span><span><small className="block text-slate-400">手續費</small>{wholeMoney(row.fee)}</span><span><small className="block text-slate-400">交易稅</small>{wholeMoney(row.tax)}</span><span><small className="block text-slate-400">{row.transaction_type === "buy" ? "實付" : "實收"}</small><b className={row.transaction_type === "buy" ? "text-rose-600" : "text-emerald-600"}>{wholeMoney(settlement)}</b></span></div>
         <div className="flex flex-col gap-2 xl:items-end">{row.order_number && <span className="text-xs text-slate-400">委託單號 {row.order_number}</span>}<Actions onEdit={() => onEdit(row)} onDelete={() => onDelete(row)} /></div>
       </div>
     </article>;

@@ -30,6 +30,52 @@ describe("calculateInvestmentSnapshot", () => {
     const result = calculateInvestmentSnapshot([account], [security], [tx({ id: "1", transaction_type: "buy", trade_date: "2026-01-01", quantity: 1000, price: 10 })], [dividend()]);
     expect(result.summary).toMatchObject({ dividend_income: 650, realized_profit: 650 });
   });
+  it("calculates estimated sale value and both dividend views for an open position", () => {
+    const result = calculateInvestmentSnapshot(
+      [account],
+      [{ ...security, current_price: 20 }],
+      [tx({ id: "1", transaction_type: "buy", trade_date: "2026-01-01", quantity: 1000, price: 10, fee: 10 })],
+      [dividend()],
+    );
+    expect(result.holdings[0]).toMatchObject({
+      market_value: 20000,
+      estimated_sale_fee: 28,
+      estimated_sale_tax: 60,
+      estimated_sale_value: 19912,
+      cost_basis: 10010,
+      position_dividend_gross: 660,
+      dividend_adjusted_cost_basis: 9350,
+      unrealized_profit_after_sale_costs: 9902,
+      dividend_adjusted_profit: 10562,
+      unrealized_return: 98.92,
+      dividend_adjusted_return: 112.96,
+    });
+  });
+  it("allocates accumulated ex-dividend amounts proportionally after a partial sale", () => {
+    const result = calculateInvestmentSnapshot(
+      [account],
+      [security],
+      [
+        tx({ id: "1", transaction_type: "buy", trade_date: "2026-01-01", quantity: 1000, price: 10 }),
+        tx({ id: "2", transaction_type: "sell", trade_date: "2026-06-20", quantity: 400, price: 10 }),
+      ],
+      [dividend({ dividend_per_share: 1, expected_amount: 1000, received_amount: 990 })],
+    );
+    expect(result.holdings[0]).toMatchObject({ quantity: 600, cost_basis: 6000, position_dividend_gross: 600, dividend_adjusted_cost_basis: 5400 });
+  });
+  it("does not carry dividends into a new position after the prior position is closed", () => {
+    const result = calculateInvestmentSnapshot(
+      [account],
+      [security],
+      [
+        tx({ id: "1", transaction_type: "buy", trade_date: "2026-01-01", quantity: 1000, price: 10 }),
+        tx({ id: "2", transaction_type: "sell", trade_date: "2026-06-20", quantity: 1000, price: 10 }),
+        tx({ id: "3", transaction_type: "buy", trade_date: "2026-07-01", quantity: 100, price: 12 }),
+      ],
+      [dividend({ dividend_per_share: 1, expected_amount: 1000, received_amount: 990 })],
+    );
+    expect(result.holdings[0]).toMatchObject({ quantity: 100, cost_basis: 1200, position_dividend_gross: 0, dividend_adjusted_cost_basis: 1200 });
+  });
   it("adds received stock dividends to shares without increasing cost", () => {
     const stockDividends = [
       dividend({ id: "s1", dividend_type: "stock", ex_dividend_date: "2022-08-12", eligible_quantity: 1000, dividend_per_share: 0, stock_dividend_rate: 0.3, payment_date: null, received_amount: null, shares_received: 30, deduction_type: null, expected_amount: 0, expected_shares: 30, deduction_amount: 0 }),

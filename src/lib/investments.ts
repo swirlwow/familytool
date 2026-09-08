@@ -47,7 +47,11 @@ export type InvestmentHolding = {
   key: string; account_id: string; security_id: string; account_name: string; broker: string | null;
   symbol: string; security_name: string; market: string; currency: string; quantity: number;
   average_cost: number; cost_basis: number; current_price: number | null; current_price_date: string | null;
-  market_value: number | null; realized_trade_profit: number; dividend_income: number;
+  market_value: number | null; estimated_sale_fee: number | null; estimated_sale_tax: number | null;
+  estimated_sale_value: number | null; position_dividend_gross: number;
+  dividend_adjusted_cost_basis: number; unrealized_profit_after_sale_costs: number | null;
+  dividend_adjusted_profit: number | null; unrealized_return: number | null;
+  dividend_adjusted_return: number | null; realized_trade_profit: number; dividend_income: number;
   realized_profit: number; unrealized_profit: number | null;
 };
 
@@ -62,9 +66,10 @@ export type InvestmentSnapshot = {
   holdings: InvestmentHolding[]; summary: InvestmentSummary;
 };
 
-type Position = { quantity: number; cost: number; realizedTrade: number; dividends: number };
+type Position = { quantity: number; cost: number; realizedTrade: number; dividends: number; positionDividendGross: number };
 type InvestmentEvent =
   | { kind: "transaction"; date: string; created_at: string; id: string; row: InvestmentTransaction }
+  | { kind: "cash_dividend"; date: string; created_at: string; id: string; row: InvestmentDividend }
   | { kind: "stock_dividend"; date: string; created_at: string; id: string; row: InvestmentDividend }
   | { kind: "corporate_action"; date: string; created_at: string; id: string; row: InvestmentCorporateAction };
 const money = (value: number) => Math.round((value + Number.EPSILON) * 100) / 100;
@@ -145,6 +150,8 @@ export function calculateInvestmentSnapshot(
   const positions = new Map<string, Position>();
   const events: InvestmentEvent[] = [
     ...transactions.map((row) => ({ kind: "transaction" as const, date: row.trade_date, created_at: row.created_at, id: row.id, row })),
+    ...dividends.filter((row) => row.dividend_type === "cash" && row.ex_dividend_date <= taipeiToday())
+      .map((row) => ({ kind: "cash_dividend" as const, date: row.ex_dividend_date, created_at: row.created_at, id: row.id, row })),
     ...dividends.filter((row) => row.dividend_type === "stock" && row.status === "received" && row.shares_received !== null)
       .map((row) => ({ kind: "stock_dividend" as const, date: row.payment_date ?? row.ex_dividend_date, created_at: row.created_at, id: row.id, row })),
     ...corporateActions.map((row) => ({ kind: "corporate_action" as const, date: row.event_date, created_at: row.created_at, id: row.id, row })),
@@ -152,9 +159,13 @@ export function calculateInvestmentSnapshot(
 
   for (const event of events) {
     const key = `${event.row.account_id}:${event.row.security_id}`;
-    const state = positions.get(key) ?? { quantity: 0, cost: 0, realizedTrade: 0, dividends: 0 };
+    const state = positions.get(key) ?? { quantity: 0, cost: 0, realizedTrade: 0, dividends: 0, positionDividendGross: 0 };
     if (event.kind === "stock_dividend") {
       state.quantity = quantity(state.quantity + Number(event.row.shares_received));
+    } else if (event.kind === "cash_dividend") {
+      if (state.quantity > 0) {
+        state.positionDividendGross = money(state.positionDividendGross + Math.round(Number(event.row.eligible_quantity) * Number(event.row.dividend_per_share)));
+      }
     } else if (event.kind === "corporate_action") {
       const row = event.row;
       if (Math.abs(state.quantity - Number(row.quantity_before)) > 0.000001) {
@@ -173,12 +184,14 @@ export function calculateInvestmentSnapshot(
       } else if (row.transaction_type === "sell") {
       const sold = Number(row.quantity);
       if (sold > state.quantity + 0.000001) throw new Error(`${row.trade_date} 賣出股數超過當時持有股數`);
-      const average = state.quantity > 0 ? state.cost / state.quantity : 0;
+      const quantityBefore = state.quantity;
+      const average = quantityBefore > 0 ? state.cost / quantityBefore : 0;
       const soldCost = average * sold;
       const proceeds = sold * Number(row.price) - Number(row.fee) - Number(row.tax);
       state.realizedTrade = money(state.realizedTrade + proceeds - soldCost);
-      state.quantity = quantity(state.quantity - sold);
+      state.quantity = quantity(quantityBefore - sold);
       state.cost = state.quantity <= 0 ? 0 : money(state.cost - soldCost);
+      state.positionDividendGross = state.quantity <= 0 ? 0 : money(state.positionDividendGross * state.quantity / quantityBefore);
       } else {
         state.dividends = money(state.dividends + Number(row.cash_amount) - Number(row.fee) - Number(row.tax));
       }
@@ -189,7 +202,7 @@ export function calculateInvestmentSnapshot(
   for (const row of dividends) {
     if (row.dividend_type !== "cash" || row.status !== "received" || row.received_amount === null) continue;
     const key = `${row.account_id}:${row.security_id}`;
-    const state = positions.get(key) ?? { quantity: 0, cost: 0, realizedTrade: 0, dividends: 0 };
+    const state = positions.get(key) ?? { quantity: 0, cost: 0, realizedTrade: 0, dividends: 0, positionDividendGross: 0 };
     state.dividends = money(state.dividends + Number(row.received_amount));
     positions.set(key, state);
   }
@@ -201,12 +214,23 @@ export function calculateInvestmentSnapshot(
     const security = securityMap.get(securityId);
     if (!account || !security) continue;
     const marketValue = security.current_price === null ? null : money(state.quantity * Number(security.current_price));
+    const estimatedSaleCosts = marketValue === null ? null : estimateTradingCosts({ gross: marketValue, transactionType: "sell", symbol: security.symbol, market: security.market });
+    const estimatedSaleValue = marketValue === null || estimatedSaleCosts === null ? null : money(marketValue - estimatedSaleCosts.fee - estimatedSaleCosts.tax);
+    const adjustedCostBasis = money(state.cost - state.positionDividendGross);
+    const unrealizedAfterSaleCosts = estimatedSaleValue === null ? null : money(estimatedSaleValue - state.cost);
+    const dividendAdjustedProfit = estimatedSaleValue === null ? null : money(estimatedSaleValue - adjustedCostBasis);
     holdings.push({
       key, account_id: accountId, security_id: securityId, account_name: account.name, broker: account.broker,
       symbol: security.symbol, security_name: security.name, market: security.market, currency: security.currency,
       quantity: state.quantity, average_cost: state.quantity > 0 ? money(state.cost / state.quantity) : 0,
       cost_basis: money(state.cost), current_price: security.current_price, current_price_date: security.current_price_date,
-      market_value: marketValue, realized_trade_profit: money(state.realizedTrade), dividend_income: money(state.dividends),
+      market_value: marketValue, estimated_sale_fee: estimatedSaleCosts?.fee ?? null, estimated_sale_tax: estimatedSaleCosts?.tax ?? null,
+      estimated_sale_value: estimatedSaleValue, position_dividend_gross: money(state.positionDividendGross),
+      dividend_adjusted_cost_basis: adjustedCostBasis, unrealized_profit_after_sale_costs: unrealizedAfterSaleCosts,
+      dividend_adjusted_profit: dividendAdjustedProfit,
+      unrealized_return: state.cost > 0 && unrealizedAfterSaleCosts !== null ? money(unrealizedAfterSaleCosts / state.cost * 100) : null,
+      dividend_adjusted_return: adjustedCostBasis > 0 && dividendAdjustedProfit !== null ? money(dividendAdjustedProfit / adjustedCostBasis * 100) : null,
+      realized_trade_profit: money(state.realizedTrade), dividend_income: money(state.dividends),
       realized_profit: money(state.realizedTrade + state.dividends),
       unrealized_profit: marketValue === null ? null : money(marketValue - state.cost),
     });
