@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server";
 import { assertWorkspaceAccess, WorkspaceAccessError } from "@/lib/api/workspaceAccess";
-import { getInvestmentSnapshot, type InvestmentTransactionType } from "@/lib/investments";
-
-const csvCell = (value: unknown) => `"${String(value ?? "").replace(/"/g, '""')}"`;
-const typeLabel: Record<InvestmentTransactionType, string> = { buy: "買進", sell: "賣出", dividend: "股利" };
+import { getInvestmentSnapshot } from "@/lib/investments";
+import { buildInvestmentCsv, investmentCsvFilename, parseInvestmentCsvScope } from "@/lib/investmentCsv";
 
 export async function GET(request: Request) {
   try {
@@ -17,14 +15,15 @@ export async function GET(request: Request) {
         headers: { "Content-Type": "application/json; charset=utf-8", "Content-Disposition": `attachment; filename="familytool_investments_${date}.json"`, "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff" },
       });
     }
-    const accountMap = new Map(snapshot.accounts.map((row) => [row.id, row]));
-    const securityMap = new Map(snapshot.securities.map((row) => [row.id, row]));
-    const headers = ["日期", "類型", "券商帳戶", "市場", "股票代號", "股票名稱", "股數", "成交價", "手續費", "交易稅", "股利金額", "實付實收金額", "委託單號", "幣別", "資料來源", "備註"];
-    const rows = snapshot.transactions.map((row) => {
-      const account = accountMap.get(row.account_id); const security = securityMap.get(row.security_id);
-      return [row.trade_date, typeLabel[row.transaction_type], account?.name, security?.market, security?.symbol, security?.name, row.quantity || "", row.price || "", row.fee || "", row.tax || "", row.cash_amount || "", row.settlement_amount ?? "", row.order_number ?? "", row.currency, row.source, row.note].map(csvCell).join(",");
+    const scope = parseInvestmentCsvScope(searchParams.get("scope"));
+    const csv = buildInvestmentCsv(snapshot, {
+      scope,
+      accountId: searchParams.get("account_id"),
+      securityId: searchParams.get("security_id"),
+      transactionType: searchParams.get("transaction_type"),
+      query: searchParams.get("query"),
     });
-    return new NextResponse(`\ufeff${[headers.map(csvCell).join(","), ...rows].join("\r\n")}`, { headers: { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": `attachment; filename="familytool_investments_${date}.csv"`, "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff" } });
+    return new NextResponse(`\ufeff${csv}`, { headers: { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": `attachment; filename="${investmentCsvFilename(scope, date)}"`, "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff" } });
   } catch (error) {
     if (error instanceof WorkspaceAccessError) return NextResponse.json({ error: error.message }, { status: error.status });
     console.error("Investment export failed", error); return NextResponse.json({ error: "匯出股票資料失敗" }, { status: 500 });
