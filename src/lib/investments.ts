@@ -66,7 +66,8 @@ export type InvestmentSnapshot = {
   holdings: InvestmentHolding[]; summary: InvestmentSummary;
 };
 
-type Position = { quantity: number; cost: number; realizedTrade: number; dividends: number; positionDividendGross: number };
+type PositionLot = { quantity: number; dividendGross: number };
+type Position = { quantity: number; cost: number; realizedTrade: number; dividends: number; positionDividendGross: number; lots: PositionLot[] };
 type InvestmentEvent =
   | { kind: "transaction"; date: string; created_at: string; id: string; row: InvestmentTransaction }
   | { kind: "cash_dividend"; date: string; created_at: string; id: string; row: InvestmentDividend }
@@ -155,16 +156,29 @@ export function calculateInvestmentSnapshot(
     ...dividends.filter((row) => row.dividend_type === "stock" && row.status === "received" && row.shares_received !== null)
       .map((row) => ({ kind: "stock_dividend" as const, date: row.payment_date ?? row.ex_dividend_date, created_at: row.created_at, id: row.id, row })),
     ...corporateActions.map((row) => ({ kind: "corporate_action" as const, date: row.event_date, created_at: row.created_at, id: row.id, row })),
-  ].sort((a, b) => a.date.localeCompare(b.date) || a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id));
+  ].sort((a, b) => a.date.localeCompare(b.date)
+    || (a.kind === "cash_dividend" ? 0 : 1) - (b.kind === "cash_dividend" ? 0 : 1)
+    || a.created_at.localeCompare(b.created_at)
+    || a.id.localeCompare(b.id));
 
   for (const event of events) {
     const key = `${event.row.account_id}:${event.row.security_id}`;
-    const state = positions.get(key) ?? { quantity: 0, cost: 0, realizedTrade: 0, dividends: 0, positionDividendGross: 0 };
+    const state = positions.get(key) ?? { quantity: 0, cost: 0, realizedTrade: 0, dividends: 0, positionDividendGross: 0, lots: [] };
     if (event.kind === "stock_dividend") {
-      state.quantity = quantity(state.quantity + Number(event.row.shares_received));
+      const received = Number(event.row.shares_received);
+      state.quantity = quantity(state.quantity + received);
+      if (received > 0) state.lots.push({ quantity: received, dividendGross: 0 });
     } else if (event.kind === "cash_dividend") {
       if (state.quantity > 0) {
-        state.positionDividendGross = money(state.positionDividendGross + Math.round(Number(event.row.eligible_quantity) * Number(event.row.dividend_per_share)));
+        let eligibleRemaining = Math.min(state.quantity, Number(event.row.eligible_quantity));
+        const dividendPerShare = Number(event.row.dividend_per_share);
+        for (const lot of state.lots) {
+          if (eligibleRemaining <= 0) break;
+          const eligibleInLot = Math.min(lot.quantity, eligibleRemaining);
+          lot.dividendGross = money(lot.dividendGross + eligibleInLot * dividendPerShare);
+          eligibleRemaining = quantity(eligibleRemaining - eligibleInLot);
+        }
+        state.positionDividendGross = money(state.lots.reduce((sum, lot) => sum + lot.dividendGross, 0));
       }
     } else if (event.kind === "corporate_action") {
       const row = event.row;
@@ -175,12 +189,21 @@ export function calculateInvestmentSnapshot(
         throw new Error(`${row.event_date} 成本調整金額超過當時持有成本`);
       }
       state.quantity = quantity(Number(row.quantity_after));
+      if (Number(row.quantity_before) > 0) {
+        const ratio = Number(row.quantity_after) / Number(row.quantity_before);
+        state.lots = state.lots
+          .map((lot) => ({ quantity: quantity(lot.quantity * ratio), dividendGross: money(lot.dividendGross * ratio) }))
+          .filter((lot) => lot.quantity > 0);
+        state.positionDividendGross = money(state.lots.reduce((sum, lot) => sum + lot.dividendGross, 0));
+      }
       if (row.action_type === "capital_reduction") state.cost = money(state.cost - Number(row.cost_adjustment));
     } else {
       const row = event.row;
       if (row.transaction_type === "buy") {
-      state.quantity = quantity(state.quantity + Number(row.quantity));
-      state.cost = money(state.cost + Number(row.quantity) * Number(row.price) + Number(row.fee) + Number(row.tax));
+      const bought = Number(row.quantity);
+      state.quantity = quantity(state.quantity + bought);
+      state.cost = money(state.cost + bought * Number(row.price) + Number(row.fee) + Number(row.tax));
+      if (bought > 0) state.lots.push({ quantity: bought, dividendGross: 0 });
       } else if (row.transaction_type === "sell") {
       const sold = Number(row.quantity);
       if (sold > state.quantity + 0.000001) throw new Error(`${row.trade_date} 賣出股數超過當時持有股數`);
@@ -191,7 +214,17 @@ export function calculateInvestmentSnapshot(
       state.realizedTrade = money(state.realizedTrade + proceeds - soldCost);
       state.quantity = quantity(quantityBefore - sold);
       state.cost = state.quantity <= 0 ? 0 : money(state.cost - soldCost);
-      state.positionDividendGross = state.quantity <= 0 ? 0 : money(state.positionDividendGross * state.quantity / quantityBefore);
+      let sellRemaining = sold;
+      while (sellRemaining > 0 && state.lots.length > 0) {
+        const lot = state.lots[0];
+        const soldFromLot = Math.min(lot.quantity, sellRemaining);
+        const remainingRatio = lot.quantity > 0 ? (lot.quantity - soldFromLot) / lot.quantity : 0;
+        lot.quantity = quantity(lot.quantity - soldFromLot);
+        lot.dividendGross = money(lot.dividendGross * remainingRatio);
+        sellRemaining = quantity(sellRemaining - soldFromLot);
+        if (lot.quantity <= 0) state.lots.shift();
+      }
+      state.positionDividendGross = money(state.lots.reduce((sum, lot) => sum + lot.dividendGross, 0));
       } else {
         state.dividends = money(state.dividends + Number(row.cash_amount) - Number(row.fee) - Number(row.tax));
       }
@@ -202,7 +235,7 @@ export function calculateInvestmentSnapshot(
   for (const row of dividends) {
     if (row.dividend_type !== "cash" || row.status !== "received" || row.received_amount === null) continue;
     const key = `${row.account_id}:${row.security_id}`;
-    const state = positions.get(key) ?? { quantity: 0, cost: 0, realizedTrade: 0, dividends: 0, positionDividendGross: 0 };
+    const state = positions.get(key) ?? { quantity: 0, cost: 0, realizedTrade: 0, dividends: 0, positionDividendGross: 0, lots: [] };
     state.dividends = money(state.dividends + Number(row.received_amount));
     positions.set(key, state);
   }

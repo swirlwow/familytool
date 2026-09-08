@@ -63,6 +63,34 @@ describe("calculateInvestmentSnapshot", () => {
     );
     expect(result.holdings[0]).toMatchObject({ quantity: 600, cost_basis: 6000, position_dividend_gross: 600, dividend_adjusted_cost_basis: 5400 });
   });
+  it("removes the oldest lot and its dividends first when selling", () => {
+    const result = calculateInvestmentSnapshot(
+      [account],
+      [security],
+      [
+        tx({ id: "1", transaction_type: "buy", trade_date: "2021-05-25", quantity: 1000, price: 45.5 }),
+        tx({ id: "2", transaction_type: "buy", trade_date: "2022-03-24", quantity: 1000, price: 48 }),
+        tx({ id: "3", transaction_type: "sell", trade_date: "2022-03-25", quantity: 1000, price: 48.5 }),
+      ],
+      [
+        dividend({ id: "d1", ex_dividend_date: "2021-08-26", dividend_per_share: 0.3, expected_amount: 300, received_amount: 290 }),
+        dividend({ id: "d2", ex_dividend_date: "2022-07-26", dividend_per_share: 2.8, expected_amount: 2800, received_amount: 2790 }),
+        dividend({ id: "d3", ex_dividend_date: "2023-07-26", dividend_per_share: 0.35, expected_amount: 350, received_amount: 340 }),
+        dividend({ id: "d4", ex_dividend_date: "2024-07-25", dividend_per_share: 0.1, expected_amount: 100, received_amount: 90 }),
+      ],
+    );
+    expect(result.holdings[0]).toMatchObject({ quantity: 1000, position_dividend_gross: 3250 });
+    expect(result.summary.dividend_income).toBe(3510);
+  });
+  it("attributes an ex-dividend date sale to the shares held before that sale", () => {
+    const result = calculateInvestmentSnapshot(
+      [account],
+      [security],
+      [tx({ id: "1", transaction_type: "buy", trade_date: "2026-01-01", quantity: 1000, price: 10 }), tx({ id: "2", transaction_type: "sell", trade_date: "2026-05-19", quantity: 500, price: 12 })],
+      [dividend({ dividend_per_share: 1, expected_amount: 1000, received_amount: 990 })],
+    );
+    expect(result.holdings[0]).toMatchObject({ quantity: 500, position_dividend_gross: 500 });
+  });
   it("does not carry dividends into a new position after the prior position is closed", () => {
     const result = calculateInvestmentSnapshot(
       [account],
