@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { safeReturnPath } from "@/lib/auth-return-path";
 import { supabase } from "@/lib/supabaseClient";
 import { useToast } from "@/hooks/use-toast";
 import { Lock, Mail, LogIn, Sparkles } from "lucide-react";
@@ -20,7 +21,7 @@ export default function LoginPage() {
 
   function getRedirectPath() {
     const redirect = new URLSearchParams(window.location.search).get("redirect");
-    return redirect?.startsWith("/") && !redirect.startsWith("//") ? redirect : "/";
+    return safeReturnPath(redirect);
   }
 
   useEffect(() => {

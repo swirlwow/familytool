@@ -1,3 +1,4 @@
+import { safeReturnPath } from "@/lib/auth-return-path";
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
@@ -40,13 +41,19 @@ export async function proxy(request: NextRequest) {
 
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/login";
-    return NextResponse.redirect(loginUrl);
+    loginUrl.search = "";
+    loginUrl.searchParams.set("redirect", safeReturnPath(request.nextUrl.pathname + request.nextUrl.search));
+    const response = NextResponse.redirect(loginUrl);
+    supabaseResponse.cookies.getAll().forEach((cookie) => response.cookies.set(cookie));
+    return response;
   }
 
   if (user && isLoginPage) {
-    const homeUrl = request.nextUrl.clone();
-    homeUrl.pathname = "/";
-    return NextResponse.redirect(homeUrl);
+    const homeUrl = new URL(safeReturnPath(request.nextUrl.searchParams.get("redirect")), request.url);
+    if (homeUrl.pathname === "/login") { homeUrl.pathname = "/"; homeUrl.search = ""; }
+    const response = NextResponse.redirect(homeUrl);
+    supabaseResponse.cookies.getAll().forEach((cookie) => response.cookies.set(cookie));
+    return response;
   }
 
   return supabaseResponse;

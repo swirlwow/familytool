@@ -1,4 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
+import ConsentActions from "./ConsentActions";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
@@ -51,11 +52,7 @@ export default async function OAuthConsentPage({
             {scopes.map((scope) => <li key={scope}>✓ {scopeLabels[scope] ?? scope}</li>)}
           </ul>
         </div>
-        <form action="/api/oauth/decision" method="post" className="mt-6 grid grid-cols-2 gap-3">
-          <input type="hidden" name="authorization_id" value={authorizationId} />
-          <button type="submit" name="decision" value="deny" className="rounded-xl border border-slate-300 px-4 py-3 font-bold text-slate-700">取消</button>
-          <button type="submit" name="decision" value="approve" className="rounded-xl bg-rose-500 px-4 py-3 font-bold text-white">允許並繼續</button>
-        </form>
+        <ConsentActions authorizationId={authorizationId} />
       </section>
     </main>
   );

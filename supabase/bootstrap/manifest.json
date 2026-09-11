@@ -1,0 +1,132 @@
+{
+  "createdAt": "2026-09-10T15:06:16.205Z",
+  "source": "Phase1 frozen schema; not reconstructed early history",
+  "schemaSha256": "b7a8bf583ee076b10b480fcfc56f82013443399a885716cfbbfba4e304353b25",
+  "tables": 30,
+  "dataRows": 0,
+  "coveredMigrationFiles": [
+    {
+      "name": "20260716091526_harden_workspace_rls.sql",
+      "sha256": "292fd13c4c60f85295e005b46b392e93df75748e9480b35126865f1eaa467ff1",
+      "textSha256": "399f2bc0faf18e0198a01d1adad2171251a53445fe13e767672eaffecf413b84"
+    },
+    {
+      "name": "20260730101556_bill_template_autogeneration.sql",
+      "sha256": "055de597310b4d41668f77c791a7be375a0511209f3a9520aad4ff06e80bdb28",
+      "textSha256": "1eea45490d186ef10c9127f84d1ad64f124779cc6ebdb9ec03193c6a2d309b54"
+    },
+    {
+      "name": "20260730102158_index_bill_instances_template_id.sql",
+      "sha256": "4bf6655d3ea48ca987142d441d26ddfc6e4ab2a65f011033b02adb08205f2340",
+      "textSha256": "14ec88ce70a28dc21d04c962c3a5ae569b247d568fd302b7337037441c6c8d38"
+    },
+    {
+      "name": "20260803133423_sync_notes_schema.sql",
+      "sha256": "e090395099a9f51d24da04c56c13f1bbcd69c5e8ee87c5f9b5b337a01f5c905a",
+      "textSha256": "19f000cb402088fafd6c7d6fb0846e4d96f5aeca8f63608e640780e661fac854"
+    },
+    {
+      "name": "20260803183206_sync_finance_schema.sql",
+      "sha256": "deca8ace7f928dd5c58c6e18741c0c4a5fca9337d50a8def4fbe2eae46224eb8",
+      "textSha256": "113aea53eb961a456b67637272ddf68617f5f45cd4e841179c322bf291aef43e"
+    },
+    {
+      "name": "20260803183627_atomic_finance_operations.sql",
+      "sha256": "ab8c24c4bb1f3bed6c32c4bacb4be0c8dd88ee8d32344d769774889dae02820a",
+      "textSha256": "4d1d13087320cc8272cf84b8635357b316c63aa025545a8a72b03a07eaac6035"
+    },
+    {
+      "name": "20260804010205_prevent_duplicate_ledger_splits.sql",
+      "sha256": "5abbdc20da64294e4d3152493f2428c3911c7a18b132e3e60490b7c8b2bc8e82",
+      "textSha256": "c6bfdc5d918ec8973819e2c604ee93f8c615b3c661e8dbecd7c8012759dae4b2"
+    },
+    {
+      "name": "20260804010506_index_sticky_items_parent.sql",
+      "sha256": "6530b2de2f3a751d7a4698cac20414eb399278e0ad9d4e72e93d1f4cf9b9ac13",
+      "textSha256": "701db0a288b3f4d6ec7d56cbd1d4611b7f0950719af70765f7b38351ee356ae9"
+    },
+    {
+      "name": "20260806160629_remove_redundant_ledger_split_fk.sql",
+      "sha256": "e86093670304e026d56731079a9de6926d293f6eb90903b4ef9c4ab984e9571e",
+      "textSha256": "ff44e7d533357f295b451361ecae18e15639279b9d71ecc29a2f23ef8466f092"
+    },
+    {
+      "name": "20260807165317_remove_redundant_settlement_item_fks.sql",
+      "sha256": "3ffbf9629f7e9b49d325cc8089cab1a57f80806e390ef07f071132fad804c383",
+      "textSha256": "3c3352c296d178d87e3534ca3a639a8463093b2b8febabd23e7779cd7a38d332"
+    },
+    {
+      "name": "20260831073253_ledger_merchant_content.sql",
+      "sha256": "ae5a1ab0cea4385af9c0b9ecc5a4e4dd735c0be17205f6643aa340f2df2510b9",
+      "textSha256": "a2e7dcb850e7baf5f2482625a2fa77ee3057e3026d39cf4f8b4d084f7d81c0ca"
+    },
+    {
+      "name": "20260901013240_move_bill_payment_label_to_consumption_content.sql",
+      "sha256": "236696779986388524e997b8b86592a6d7f833aaaaa9e7d178599f613ce66666",
+      "textSha256": "dd6a6af37361466ef7d3d323843bde43fcf61c205860bfad463b6af88253bf03"
+    },
+    {
+      "name": "20260901021915_split_legacy_merchant_content.sql",
+      "sha256": "fd71840f8b76b5985ce19402d458953e39329786b7c13ccd85a2f55229f92689",
+      "textSha256": "2e77e511fbcc9e66da3fc4a0f00385d6a1eeb657efca30bdb49fb16a5bcd7a8c"
+    },
+    {
+      "name": "20260901023322_allow_settled_ledger_metadata_edits.sql",
+      "sha256": "f17129830c424720d01b4c009742dc7f3dd1329929159ef8e1221d3809bb40ae",
+      "textSha256": "3fa28201fb8814717ea185bbc5e7f87ab5b20683b648ab51dbe955392f84176e"
+    },
+    {
+      "name": "20260901033016_add_merchant_sort_order.sql",
+      "sha256": "d85fd93b7c15c2b9038d0f75b05ac20c0e799c4ce264ebfda517f959e906509e",
+      "textSha256": "19162594e39947a6cebf67a340774a2b48db293cfc67baecdd412f3f77a3bae0"
+    },
+    {
+      "name": "20260902143000_create_shopping_items.sql",
+      "sha256": "e27a09b299de31f91f33ceca7edc59e0aff338e4a95574831013eeed3a20d237",
+      "textSha256": "bef7d037cc007f00125dc0986303c0481464215a05dd62d0beb678ac9bdede56"
+    },
+    {
+      "name": "20260903021238_create_investment_tracking.sql",
+      "sha256": "9cf03b0da20b98c499f6c10416963e3eb81b5192b5a40e7096f82e93dc0c7c39",
+      "textSha256": "9df71f5ead05bdde9006c0c11a9abcd0e559344effb4ede0260501e772360009"
+    },
+    {
+      "name": "20260903024811_create_shopping_item_sources.sql",
+      "sha256": "1a3d5fd2a07d97b83dd31b9056f2c11cc7a0de73c57fe4bb7337d2243aca951d",
+      "textSha256": "821436a2c9e7986fc3b5a44f2eff71d7e84abb9b2fc38b635a4e877a2f6b5218"
+    },
+    {
+      "name": "20260903033733_remove_shopping_legacy_fields.sql",
+      "sha256": "bccf8aa73d6aaae4b56630b15568eb10096bd85b5f848c94d8d6268c1c3798b5",
+      "textSha256": "71c8c88ca855b8f998f738cbe56ef9b6f827e5cf62f98f7e25885739de7d0810"
+    },
+    {
+      "name": "20260903082634_extend_investment_events.sql",
+      "sha256": "37db910c6c7baf8e7fd8cbd548a0b4c4d4aa67e4e4ae2d60cca7f8fcfc33ad65",
+      "textSha256": "e9ebb3094806b8654e767f34bc1241e8e9e1b696a7a28e7b833a0887c62195f4"
+    },
+    {
+      "name": "20260903083226_index_investment_event_securities.sql",
+      "sha256": "8edae783f4663bd572ea1b157b61c889ed276e4bd3b689f56a1d74fa7eccc702",
+      "textSha256": "302b06586d997ab5256d84b67ed6e153f42d15651c81ff96fecafff745360944"
+    },
+    {
+      "name": "20260903101221_add_stock_dividends.sql",
+      "sha256": "e97dfc053b6056ad7b515e156e3fe23d5603b6bdcefc9aaecd8f0ee3811c6beb",
+      "textSha256": "e97dfc053b6056ad7b515e156e3fe23d5603b6bdcefc9aaecd8f0ee3811c6beb"
+    },
+    {
+      "name": "20260903222606_unique_investment_order_number.sql",
+      "sha256": "915f43c2f62a46612abcb84ab99e623fef5d75847d599dae723b4e013af1ed98",
+      "textSha256": "2fdc9ffc57de5d95226500f1224cef1380003a8c7867bc47c35aeaae2d0d3f0c"
+    },
+    {
+      "name": "20260904015322_scope_investment_order_number_by_account_date.sql",
+      "sha256": "8043e1d43f370e27ac383e4966949016f3f8090ae603ce67015e316c34f2a704",
+      "textSha256": "8043e1d43f370e27ac383e4966949016f3f8090ae603ce67015e316c34f2a704"
+    }
+  ],
+  "notForExistingDatabases": true,
+  "sourceSchemaSha256": "834b88eb6484131a6a49883b2d5284c6624f7d5b447ed3d5b605dcfedc279a62",
+  "schemaTextSha256": "b7a8bf583ee076b10b480fcfc56f82013443399a885716cfbbfba4e304353b25"
+}
