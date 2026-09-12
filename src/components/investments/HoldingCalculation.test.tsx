@@ -21,7 +21,9 @@ describe("holding calculation layout", () => {
     const detail = renderToStaticMarkup(<HoldingCalculation row={row} />);
     expect(detail).not.toContain("成本採移動加權平均；");
     expect(detail).not.toContain("費稅沿用一般台股試算");
-    expect(detail).toContain("lg:grid-cols-3");
+    expect(detail).toContain("lg:grid-cols-[minmax(0,0.84fr)_minmax(0,1.16fr)_minmax(0,1fr)]");
+    expect(html).not.toContain("min-w-[1280px]");
+    expect(html).toContain("flex-col items-end");
     expect(detail).toContain("grid-cols-1");
     expect(detail).toContain("券商對帳（僅試算、不儲存）");
     expect(detail).toContain("測試差異提醒");

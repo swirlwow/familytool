@@ -33,7 +33,7 @@ export function HoldingsList({ rows, onPrice, onManage }: { rows: InvestmentHold
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
   const toggle = (key: string) => setExpandedKey((current) => current === key ? null : key);
   if (!rows.length) return <div className="app-empty"><BriefcaseBusiness className="mx-auto mb-2 h-8 w-8 text-slate-300" /><p>尚無現有持股</p><p className="mt-1 text-xs">先建立券商帳戶與股票，再新增買進紀錄。</p></div>;
-  return <><CalculationHelp /><div className="hidden overflow-x-auto md:block"><table className="table w-full min-w-[1280px] table-fixed">
+  return <><CalculationHelp /><div className="hidden w-full min-w-0 max-w-full overflow-x-auto md:block"><table className="table w-full min-w-0 table-fixed [&_th]:px-2 [&_td]:px-2">
     <colgroup>{[9, 14, 7, 10, 11, 10, 10, 11, 18].map((width, index) => <col key={index} style={{ width: `${width}%` }} />)}</colgroup>
     <thead><tr><th>券商帳戶</th><th>股票</th><th className="text-right">持有股數</th><th className="text-right">目前股價</th><th className="text-right">市值</th><th className="text-right">持有成本</th><th className="text-right">未實現損益</th><th className="text-right">含股利總損益</th><th /></tr></thead>
     <tbody>{rows.map((row) => <Fragment key={row.key}><tr>
@@ -45,7 +45,7 @@ export function HoldingsList({ rows, onPrice, onManage }: { rows: InvestmentHold
       <td className="text-right"><b>{wholeMoney(row.cost_basis)}</b><div className="text-[11px] text-slate-400">除息後 {wholeMoney(row.dividend_adjusted_cost_basis)}</div>{row.position_dividend_gross > 0 && <div className="text-[10px] text-emerald-600">累計除息 {wholeMoney(row.position_dividend_gross)}</div>}</td>
       <td className={`text-right font-black ${profitTone(row.unrealized_profit_after_sale_costs)}`}>{signedWholeMoney(row.unrealized_profit_after_sale_costs)}<div className="text-[11px] font-semibold">{signedPercent(row.unrealized_return)}</div></td>
       <td className={`text-right font-black ${profitTone(row.dividend_adjusted_profit)}`}>{signedWholeMoney(row.dividend_adjusted_profit)}<div className="text-[11px] font-semibold">{signedPercent(row.dividend_adjusted_return)}</div></td>
-      <td><div className="flex flex-wrap justify-end gap-1"><button type="button" className="btn btn-ghost btn-xs w-32 shrink-0 whitespace-nowrap text-indigo-700" aria-expanded={expandedKey === row.key} onClick={() => toggle(row.key)}>{expandedKey === row.key ? "收合明細" : "計算明細／對帳"}</button><button className="btn btn-ghost btn-xs whitespace-nowrap" onClick={() => onPrice(row.security_id)}>更新股價</button><button className="btn btn-ghost btn-xs whitespace-nowrap" onClick={() => onManage(row)}><Pencil className="h-3.5 w-3.5" />修改／刪除</button></div></td>
+      <td><div className="flex min-w-0 flex-col items-end gap-1"><button type="button" className="btn btn-ghost btn-xs w-32 shrink-0 whitespace-nowrap text-indigo-700" aria-expanded={expandedKey === row.key} onClick={() => toggle(row.key)}>{expandedKey === row.key ? "收合明細" : "計算明細／對帳"}</button><button className="btn btn-ghost btn-xs whitespace-nowrap" onClick={() => onPrice(row.security_id)}>更新股價</button><button className="btn btn-ghost btn-xs whitespace-nowrap" onClick={() => onManage(row)}><Pencil className="h-3.5 w-3.5" />修改／刪除</button></div></td>
     </tr>{expandedKey === row.key && <tr><td colSpan={9} className="!pt-0"><HoldingCalculation row={row} /></td></tr>}</Fragment>)}</tbody>
   </table></div>
   <div className="divide-y divide-slate-100 md:hidden">{rows.map((row) => <article key={row.key} className="p-4">
