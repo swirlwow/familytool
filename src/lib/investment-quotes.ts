@@ -1,3 +1,4 @@
+import { taipeiDate, validQuoteDate } from "./investment-provenance";
 import type { InvestmentSecurity } from "@/lib/investments";
 
 type QuoteMarket = "TWSE" | "TPEx";
@@ -40,13 +41,15 @@ const rocDateToIso = (value: unknown) => {
   const year = Number(digits.slice(0, 3)) + 1911;
   const month = digits.slice(3, 5);
   const day = digits.slice(5, 7);
-  return `${year}-${month}-${day}`;
+  const date = `${year}-${month}-${day}`;
+  return validQuoteDate(date) && date <= taipeiDate() ? date : null;
 };
 
 const gregorianDateToIso = (value: unknown) => {
   const digits = String(value ?? "").replace(/\D/g, "");
   if (digits.length !== 8) return null;
-  return `${digits.slice(0, 4)}-${digits.slice(4, 6)}-${digits.slice(6, 8)}`;
+  const date = `${digits.slice(0, 4)}-${digits.slice(4, 6)}-${digits.slice(6, 8)}`;
+  return validQuoteDate(date) && date <= taipeiDate() ? date : null;
 };
 
 const positiveNumber = (value: unknown) => {
@@ -148,19 +151,19 @@ export async function getOfficialClosingQuotes(securities: InvestmentSecurity[])
 }
 
 export async function getOfficialLatestQuotes(securities: InvestmentSecurity[]) {
+  const closingPromise = getOfficialClosingQuotes(securities);
   const realtimeQuotes = await fetchRealtimeQuotes(securities);
   const missingPrimary = securities.filter((security) => !realtimeQuotes.has(security.symbol.trim().toUpperCase()));
   const alternateQuotes = await fetchRealtimeQuotes(missingPrimary, true);
   for (const [symbol, quote] of alternateQuotes) realtimeQuotes.set(symbol, quote);
-  const missing = securities.filter((security) => !realtimeQuotes.has(security.symbol.trim().toUpperCase()));
-  const closing = await getOfficialClosingQuotes(missing);
+  const closing = await closingPromise;
   const closingBySecurityId = new Map(closing.quotes.map((quote) => [quote.securityId, quote]));
   const quotes = securities.flatMap((security) => {
     const configuredMarket = quoteMarket(security.market);
     if (!configuredMarket) return [];
     const realtime = realtimeQuotes.get(security.symbol.trim().toUpperCase());
-    if (realtime) return [{ securityId: security.id, symbol: security.symbol, ...realtime }];
     const fallback = closingBySecurityId.get(security.id);
+    if (realtime && (!fallback || realtime.date >= fallback.date)) return [{ securityId: security.id, symbol: security.symbol, ...realtime }];
     return fallback ? [fallback] : [];
   });
   return { quotes, failedMarkets: closing.failedMarkets };

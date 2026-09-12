@@ -142,18 +142,18 @@ export default function InvestmentsPage() {
       if (!response.ok) throw new Error(json.error || "更新持股股價失敗");
       await load();
       const result = json.data ?? {};
-      const skipped = Number(result.unavailable ?? 0) + Number(result.unsupported ?? 0) + Number(result.failed ?? 0);
+      const skipped = Number(result.retained ?? 0) + Number(result.unavailable ?? 0) + Number(result.unsupported ?? 0) + Number(result.failed ?? 0);
       const tradeCount = Number(result.realtime_trade ?? 0);
       const bidCount = Number(result.realtime_bid ?? 0);
       const closingCount = Number(result.closing ?? 0);
       const quoteTime = String(result.latest_realtime_time ?? "").slice(0, 5);
       const details = [
-        tradeCount > 0 ? `即時成交 ${tradeCount} 檔` : "",
-        bidCount > 0 ? `即時最佳買價 ${bidCount} 檔` : "",
+        tradeCount > 0 ? `最近成交 ${tradeCount} 檔` : "",
+        bidCount > 0 ? `買一參考（非成交）${bidCount} 檔` : "",
         closingCount > 0 ? `最近收盤 ${closingCount} 檔` : "",
-        skipped > 0 ? `無可用報價 ${skipped} 檔` : "",
+        skipped > 0 ? `保留原股價 ${skipped} 檔` : "",
       ].filter(Boolean).join("、");
-      toast({ title: `已更新 ${Number(result.updated ?? 0)} 檔持股股價`, description: `${quoteTime ? `截至 ${quoteTime}；` : ""}${details || "暫無可更新報價"}` });
+      toast({ title: Number(result.updated ?? 0) > 0 ? `已更新 ${Number(result.updated ?? 0)} 檔持股股價` : "沒有可更新的新報價", description: `${quoteTime ? `來源時間 ${quoteTime}；` : ""}${details || "暫無可更新報價"}。各檔日期／來源請見持股明細，非串流即時行情。` });
     } catch (error) {
       toast({ variant: "destructive", title: "更新持股股價失敗", description: error instanceof Error ? error.message : "請稍後再試" });
     } finally { setUpdatingPrices(false); }

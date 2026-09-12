@@ -17,6 +17,7 @@ export type InvestmentAccount = {
 
 export type InvestmentSecurity = {
   id: string; workspace_id: string; symbol: string; name: string; market: string; currency: string;
+  current_price_source?: string | null; current_price_time?: string | null; quote_fetched_at?: string | null;
   current_price: number | null; current_price_date: string | null; sort_order: number; is_active: boolean;
   note: string | null; created_at: string; updated_at: string;
 };
@@ -54,6 +55,8 @@ export type InvestmentHolding = {
   dividend_adjusted_profit: number | null; unrealized_return: number | null;
   dividend_adjusted_return: number | null; realized_trade_profit: number; dividend_income: number;
   realized_profit: number; unrealized_profit: number | null;
+  current_price_source?: string | null; current_price_time?: string | null; quote_fetched_at?: string | null;
+  dividend_lots?: PositionLot[]; calculation_warnings?: string[];
 };
 
 export type InvestmentSummary = {
@@ -67,8 +70,12 @@ export type InvestmentSnapshot = {
   holdings: InvestmentHolding[]; summary: InvestmentSummary;
 };
 
-type PositionLot = { quantity: number; dividendGross: number };
-type Position = { quantity: number; cost: number; realizedTrade: number; dividends: number; positionDividendGross: number; lots: PositionLot[] };
+export type PositionLot = {
+  quantity: number; dividendGross: number; origin_id: string; acquired_date: string;
+  origin: "buy" | "stock_dividend";
+  allocations: { dividend_id: string; ex_date: string; eligible_quantity: number; per_share: number; gross: number; remaining_gross: number }[];
+};
+type Position = { quantity: number; cost: number; realizedTrade: number; dividends: number; positionDividendGross: number; lots: PositionLot[]; warnings: string[] };
 type InvestmentEvent =
   | { kind: "transaction"; date: string; created_at: string; id: string; row: InvestmentTransaction }
   | { kind: "cash_dividend"; date: string; created_at: string; id: string; row: InvestmentDividend }
@@ -84,7 +91,8 @@ export function estimateTradingCosts({ gross, transactionType, symbol, market }:
   market: string;
 }) {
   if (!Number.isFinite(gross) || gross <= 0 || transactionType === "dividend") return { fee: 0, tax: 0 };
-  const isTaiwanMarket = market === "TWSE" || market === "TPEx";
+  const normalizedMarket = market.trim().toUpperCase();
+  const isTaiwanMarket = normalizedMarket === "TWSE" || normalizedMarket === "TPEX";
   if (!isTaiwanMarket) return { fee: 0, tax: 0 };
   const fee = Math.floor(gross * 0.001425 + Number.EPSILON);
   const isEtf = /^00\d/.test(symbol.trim());
@@ -164,11 +172,11 @@ export function calculateInvestmentSnapshot(
 
   for (const event of events) {
     const key = `${event.row.account_id}:${event.row.security_id}`;
-    const state = positions.get(key) ?? { quantity: 0, cost: 0, realizedTrade: 0, dividends: 0, positionDividendGross: 0, lots: [] };
+    const state: Position = positions.get(key) ?? { quantity: 0, cost: 0, realizedTrade: 0, dividends: 0, positionDividendGross: 0, lots: [], warnings: [] };
     if (event.kind === "stock_dividend") {
       const received = Number(event.row.shares_received);
       state.quantity = quantity(state.quantity + received);
-      if (received > 0) state.lots.push({ quantity: received, dividendGross: 0 });
+      if (received > 0) state.lots.push({ quantity: received, dividendGross: 0, origin_id: event.id, acquired_date: event.date, origin: "stock_dividend", allocations: [] });
     } else if (event.kind === "cash_dividend") {
       if (state.quantity > 0) {
         let eligibleRemaining = Math.min(state.quantity, Number(event.row.eligible_quantity));
@@ -176,6 +184,8 @@ export function calculateInvestmentSnapshot(
         for (const lot of state.lots) {
           if (eligibleRemaining <= 0) break;
           const eligibleInLot = Math.min(lot.quantity, eligibleRemaining);
+          const attributedGross = money(lot.dividendGross + eligibleInLot * dividendPerShare) - lot.dividendGross;
+          lot.allocations.push({ dividend_id: event.id, ex_date: event.date, eligible_quantity: eligibleInLot, per_share: dividendPerShare, gross: money(attributedGross), remaining_gross: money(attributedGross) });
           lot.dividendGross = money(lot.dividendGross + eligibleInLot * dividendPerShare);
           eligibleRemaining = quantity(eligibleRemaining - eligibleInLot);
         }
@@ -189,22 +199,27 @@ export function calculateInvestmentSnapshot(
       if (row.action_type === "capital_reduction" && Number(row.cost_adjustment) > state.cost + 0.01) {
         throw new Error(`${row.event_date} 成本調整金額超過當時持有成本`);
       }
+      state.warnings.push(`${row.event_date} 減資：${row.quantity_before} → ${row.quantity_after} 股；退還 ${row.cash_return}，指定成本調整 ${row.cost_adjustment}。退還金額不自動視為成本調整或股利。`);
       state.quantity = quantity(Number(row.quantity_after));
       if (Number(row.quantity_before) > 0) {
         const ratio = Number(row.quantity_after) / Number(row.quantity_before);
         state.lots = state.lots
-          .map((lot) => ({ quantity: quantity(lot.quantity * ratio), dividendGross: money(lot.dividendGross * ratio) }))
+          .map((lot) => ({ ...lot, quantity: quantity(lot.quantity * ratio), dividendGross: lot.dividendGross, allocations: lot.allocations }))
           .filter((lot) => lot.quantity > 0);
         state.positionDividendGross = money(state.lots.reduce((sum, lot) => sum + lot.dividendGross, 0));
       }
       if (row.action_type === "capital_reduction") state.cost = money(state.cost - Number(row.cost_adjustment));
     } else {
       const row = event.row;
+      if (row.transaction_type !== "dividend" && row.settlement_amount !== null) {
+        const expected = money(Number(row.quantity) * Number(row.price) + (row.transaction_type === "buy" ? 1 : -1) * (Number(row.fee) + Number(row.tax)));
+        if (Math.abs(Number(row.settlement_amount) - expected) >= 0.01) state.warnings.push(`${row.trade_date} ${row.transaction_type === "buy" ? "買進" : "賣出"}：紀錄實付／實收 ${row.settlement_amount}，成交金額加減費稅 ${expected}，差額 ${money(Number(row.settlement_amount) - expected)}；成本與損益目前採後者，原始紀錄未修改。`);
+      }
       if (row.transaction_type === "buy") {
       const bought = Number(row.quantity);
       state.quantity = quantity(state.quantity + bought);
       state.cost = money(state.cost + bought * Number(row.price) + Number(row.fee) + Number(row.tax));
-      if (bought > 0) state.lots.push({ quantity: bought, dividendGross: 0 });
+      if (bought > 0) state.lots.push({ quantity: bought, dividendGross: 0, origin_id: event.id, acquired_date: event.date, origin: "buy", allocations: [] });
       } else if (row.transaction_type === "sell") {
       const sold = Number(row.quantity);
       if (sold > state.quantity + 0.000001) throw new Error(`${row.trade_date} 賣出股數超過當時持有股數`);
@@ -222,6 +237,7 @@ export function calculateInvestmentSnapshot(
         const remainingRatio = lot.quantity > 0 ? (lot.quantity - soldFromLot) / lot.quantity : 0;
         lot.quantity = quantity(lot.quantity - soldFromLot);
         lot.dividendGross = money(lot.dividendGross * remainingRatio);
+        lot.allocations = lot.allocations.map((part) => ({ ...part, remaining_gross: part.remaining_gross * remainingRatio }));
         sellRemaining = quantity(sellRemaining - soldFromLot);
         if (lot.quantity <= 0) state.lots.shift();
       }
@@ -236,7 +252,7 @@ export function calculateInvestmentSnapshot(
   for (const row of dividends) {
     if (row.dividend_type !== "cash" || row.status !== "received" || row.received_amount === null) continue;
     const key = `${row.account_id}:${row.security_id}`;
-    const state = positions.get(key) ?? { quantity: 0, cost: 0, realizedTrade: 0, dividends: 0, positionDividendGross: 0, lots: [] };
+    const state: Position = positions.get(key) ?? { quantity: 0, cost: 0, realizedTrade: 0, dividends: 0, positionDividendGross: 0, lots: [], warnings: [] };
     state.dividends = money(state.dividends + Number(row.received_amount));
     positions.set(key, state);
   }
@@ -247,6 +263,7 @@ export function calculateInvestmentSnapshot(
     const account = accountMap.get(accountId);
     const security = securityMap.get(securityId);
     if (!account || !security) continue;
+    if (!["TWSE", "TPEX"].includes(security.market.trim().toUpperCase())) state.warnings.push("此市場尚未支援賣出費稅估算，顯示 0 不代表實際免手續費或免稅。");
     const marketValue = security.current_price === null ? null : money(state.quantity * Number(security.current_price));
     const estimatedSaleCosts = marketValue === null ? null : estimateTradingCosts({ gross: marketValue, transactionType: "sell", symbol: security.symbol, market: security.market });
     const estimatedSaleValue = marketValue === null || estimatedSaleCosts === null ? null : money(marketValue - estimatedSaleCosts.fee - estimatedSaleCosts.tax);
@@ -265,6 +282,8 @@ export function calculateInvestmentSnapshot(
       unrealized_return: state.cost > 0 && unrealizedAfterSaleCosts !== null ? money(unrealizedAfterSaleCosts / state.cost * 100) : null,
       dividend_adjusted_return: adjustedCostBasis > 0 && dividendAdjustedProfit !== null ? money(dividendAdjustedProfit / adjustedCostBasis * 100) : null,
       realized_trade_profit: money(state.realizedTrade), dividend_income: money(state.dividends),
+      current_price_source: security.current_price_source, current_price_time: security.current_price_time, quote_fetched_at: security.quote_fetched_at,
+      dividend_lots: state.lots, calculation_warnings: state.warnings,
       realized_profit: money(state.realizedTrade + state.dividends),
       unrealized_profit: marketValue === null ? null : money(marketValue - state.cost),
     });
@@ -283,7 +302,7 @@ export function calculateInvestmentSnapshot(
 }
 
 const ACCOUNT_COLUMNS = "id,workspace_id,name,broker,currency,sort_order,is_active,note,created_at,updated_at";
-const SECURITY_COLUMNS = "id,workspace_id,symbol,name,market,currency,current_price,current_price_date,sort_order,is_active,note,created_at,updated_at";
+const SECURITY_COLUMNS = "id,workspace_id,symbol,name,market,currency,current_price,current_price_date,current_price_source,current_price_time,quote_fetched_at,sort_order,is_active,note,created_at,updated_at";
 const TRANSACTION_COLUMNS = "id,workspace_id,account_id,security_id,transaction_type,trade_date,quantity,price,fee,tax,cash_amount,settlement_amount,order_number,currency,source,note,created_at,updated_at";
 const DIVIDEND_COLUMNS = "id,workspace_id,account_id,security_id,dividend_type,ex_dividend_date,eligible_quantity,dividend_per_share,stock_dividend_rate,payment_date,received_amount,shares_received,deduction_type,status,source,note,created_at,updated_at";
 const CORPORATE_ACTION_COLUMNS = "id,workspace_id,account_id,security_id,action_type,event_date,quantity_before,reduction_ratio,quantity_after,cash_return,cost_adjustment,source,note,created_at,updated_at";
@@ -407,6 +426,9 @@ export async function updateInvestmentRecord(workspaceId: string, resource: stri
     const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
     if ("symbol" in input) patch.symbol = requiredText(input.symbol, "股票代號", 30).toUpperCase(); if ("name" in input) patch.name = requiredText(input.name, "股票名稱");
     if ("market" in input) patch.market = requiredText(input.market, "市場", 30).toUpperCase(); if ("currency" in input) patch.currency = currencyCode(input.currency);
+    if ("current_price" in input || "current_price_date" in input) {
+      patch.current_price_source = "manual"; patch.current_price_time = null; patch.quote_fetched_at = null;
+    }
     if ("current_price" in input) patch.current_price = input.current_price === "" || input.current_price == null ? null : numberValue(input.current_price, "目前股價");
     if ("current_price_date" in input) patch.current_price_date = optionalText(input.current_price_date, 10); if ("is_active" in input) patch.is_active = Boolean(input.is_active); if ("note" in input) patch.note = optionalText(input.note, 1000);
     const { data, error } = await supabase.from("investment_securities").update(patch).eq("workspace_id", workspaceId).eq("id", id).select(SECURITY_COLUMNS).maybeSingle();
