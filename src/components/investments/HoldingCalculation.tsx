@@ -18,8 +18,7 @@ export function HoldingCalculation({ row }: { row: InvestmentHolding }) {
     { key: "cost" as const, label: "券商成本（未扣除息）", actual: row.cost_basis },
     { key: "net" as const, label: "券商現值（已扣預估費稅）", actual: row.estimated_sale_value },
   ];
-  return <details className="mt-2 w-full whitespace-normal rounded-lg border border-slate-200 bg-white p-4 text-left text-sm font-normal text-slate-700">
-    <summary className="cursor-pointer font-bold text-indigo-700 focus-visible:outline focus-visible:outline-2">計算明細／對帳</summary>
+  return <div className="mt-2 w-full whitespace-normal rounded-lg border border-slate-200 bg-white p-4 text-left text-sm font-normal text-slate-700">
     <div className="mt-3 space-y-3">
       <p className="font-bold">{row.account_name}・{row.symbol} {row.security_name}</p>
       <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-3">
@@ -37,8 +36,7 @@ export function HoldingCalculation({ row }: { row: InvestmentHolding }) {
         <dt>含股利損益＝預估淨值 − 除息後成本</dt><dd>{amount(row.dividend_adjusted_profit)}</dd>
         <dt>歷年實收現金股利（含已售批次）</dt><dd>{amount(row.dividend_income)}</dd>
       </dl>
-      <p>成本採移動加權平均；只有除息批次採先買先賣。含股利損益不是歷年全部收益。報酬率分母分別為持有成本／除息後成本；分母不大於 0 時不顯示。</p>
-      <p>費稅沿用一般台股試算：手續費 0.1425%，一般股票賣出稅 0.3%、代號 00 開頭 ETF 0.1%，各自無條件捨去至元。未包含券商折扣、最低費用、當沖及特殊商品／免稅規則，請以券商為準；不回寫實際交易費稅。</p>
+
       </section>
       <section className="min-w-0 space-y-2 border-t border-slate-100 pt-3 lg:border-l lg:border-t-0 lg:pl-5 lg:pt-0">
         <h3 className="font-bold">目前持股的除息來源</h3>
@@ -67,5 +65,13 @@ export function HoldingCalculation({ row }: { row: InvestmentHolding }) {
       </div>
       {row.calculation_warnings?.map((message, index) => <p key={index} className="rounded bg-amber-50 p-2 text-amber-900">{message}</p>)}
     </div>
-  </details>;
+  </div>;
+}
+
+
+export function CalculationHelp() {
+  return <details className="px-4 py-2 text-sm text-slate-600"><summary className="w-fit cursor-pointer font-bold text-indigo-700 focus-visible:outline focus-visible:outline-2">ⓘ 計算說明</summary><div className="mt-2 max-w-4xl space-y-2 rounded-lg border border-slate-200 bg-white p-4">
+      <p>成本採移動加權平均；只有除息批次採先買先賣。含股利損益不是歷年全部收益。報酬率分母分別為持有成本／除息後成本；分母不大於 0 時不顯示。</p>
+      <p>費稅沿用一般台股試算：手續費 0.1425%，一般股票賣出稅 0.3%、代號 00 開頭 ETF 0.1%，各自無條件捨去至元。未包含券商折扣、最低費用、當沖及特殊商品／免稅規則，請以券商為準；不回寫實際交易費稅。</p>
+  </div></details>;
 }
