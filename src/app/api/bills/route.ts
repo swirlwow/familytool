@@ -1,3 +1,4 @@
+import { readAllPages } from '@/lib/read-all-pages';
 // src/app/api/bills/route.ts
 import { NextResponse } from "next/server";
 import { apiError, apiInternalError, apiOperationError, parseJson } from "@/lib/api/http";
@@ -88,18 +89,21 @@ export async function GET(req: Request) {
     }
     if (!from || !to) return apiError("缺少 ym 或 from/to");
 
+    const createQuery = () => {
     let query = supabase
       .from("bill_instances")
-      .select(billSelect)
+      .select(billSelect,{count:'exact'})
       .eq("workspace_id", workspace_id);
 
     query = ym
       ? query.eq("period", ym)
       : query.gte("due_date", from).lte("due_date", to);
 
-    const { data, error } = await query
+    return query;
+    };
+    const { data, error } = await readAllPages((start,end)=>createQuery()
       .order("due_date", { ascending: true, nullsFirst: false })
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false }).order("id").range(start,end),row=>String(row.id)).then(data=>({data,error:null}));
 
     if (error) return apiInternalError(error, { context: "Load bills", data: [] });
 

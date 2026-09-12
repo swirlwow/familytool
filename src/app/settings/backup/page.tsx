@@ -40,7 +40,7 @@ export default function BackupPage() {
   return (
     <main className="app-page relative">
       <div className="app-page-inner max-w-4xl">
-        
+
         {/* Header */}
         <div className="app-header justify-start">
             <div className="bg-indigo-50 text-indigo-600 p-2 rounded-xl border border-indigo-100">
@@ -52,6 +52,7 @@ export default function BackupPage() {
             </div>
         </div>
 
+        <p className="text-sm text-slate-600">下載前自動驗證資料表筆數與校驗碼。不含登入密碼、平台金鑰及外部附件；檔案含私人資料，請妥善保存。還原請先在隔離環境驗證。</p>
         {/* 備份說明卡片 */}
         <div className="card bg-white shadow-sm border border-slate-200 rounded-3xl overflow-hidden">
           <div className="p-6 md:p-8 space-y-6">
@@ -60,7 +61,7 @@ export default function BackupPage() {
                 <ShieldCheck className="w-8 h-8" />
               </div>
               <div className="space-y-2">
-                <h2 className="text-lg font-black text-slate-800">完整資料備份</h2>
+                <h2 className="text-lg font-black text-slate-800">完整業務資料備份</h2>
                 <p className="text-sm text-slate-500 leading-relaxed">
                   下載內容包含記帳、拆帳、帳單、行事曆、記事與便條紙，檔案格式為 JSON。
                 </p>
@@ -68,8 +69,8 @@ export default function BackupPage() {
             </div>
 
             <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="text-sm font-bold text-slate-600">備份目前家庭空間</div>
-              
+              <div className="text-sm font-bold text-slate-600">備份目前家庭空間（含待購比價、股票交易、股利與股權異動）</div>
+
               <button
                 onClick={handleDownload}
                 disabled={downloading}

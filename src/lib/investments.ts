@@ -1,3 +1,4 @@
+import { readAllPages } from './read-all-pages';
 import { supabase } from "@/lib/supabaseClient";
 
 export const INVESTMENT_TRANSACTION_TYPES = ["buy", "sell", "dividend"] as const;
@@ -289,17 +290,12 @@ const CORPORATE_ACTION_COLUMNS = "id,workspace_id,account_id,security_id,action_
 
 export async function getInvestmentSnapshot(workspaceId: string): Promise<InvestmentSnapshot> {
   const [accountsResult, securitiesResult, transactionsResult, dividendsResult, corporateActionsResult] = await Promise.all([
-    supabase.from("investment_accounts").select(ACCOUNT_COLUMNS).eq("workspace_id", workspaceId).order("sort_order").order("name"),
-    supabase.from("investment_securities").select(SECURITY_COLUMNS).eq("workspace_id", workspaceId).order("sort_order").order("market").order("symbol"),
-    supabase.from("investment_transactions").select(TRANSACTION_COLUMNS).eq("workspace_id", workspaceId).order("trade_date", { ascending: false }).order("created_at", { ascending: false }).limit(5000),
-    supabase.from("investment_dividends").select(DIVIDEND_COLUMNS).eq("workspace_id", workspaceId).order("ex_dividend_date", { ascending: false }).order("created_at", { ascending: false }).limit(5000),
-    supabase.from("investment_corporate_actions").select(CORPORATE_ACTION_COLUMNS).eq("workspace_id", workspaceId).order("event_date", { ascending: false }).order("created_at", { ascending: false }).limit(5000),
+    readAllPages((from,to)=>supabase.from("investment_accounts").select(ACCOUNT_COLUMNS,{count:'exact'}).eq("workspace_id", workspaceId).order("sort_order").order("name").order("id").range(from,to),row=>String(row.id)).then(data=>({data,error:null})),
+    readAllPages((from,to)=>supabase.from("investment_securities").select(SECURITY_COLUMNS,{count:'exact'}).eq("workspace_id", workspaceId).order("sort_order").order("market").order("symbol").order("id").range(from,to),row=>String(row.id)).then(data=>({data,error:null})),
+    readAllPages((from,to)=>supabase.from("investment_transactions").select(TRANSACTION_COLUMNS,{count:'exact'}).eq("workspace_id", workspaceId).order("trade_date", { ascending: false }).order("created_at", { ascending: false }).order("id").range(from,to),row=>String(row.id)).then(data=>({data,error:null})),
+    readAllPages((from,to)=>supabase.from("investment_dividends").select(DIVIDEND_COLUMNS,{count:'exact'}).eq("workspace_id", workspaceId).order("ex_dividend_date", { ascending: false }).order("created_at", { ascending: false }).order("id").range(from,to),row=>String(row.id)).then(data=>({data,error:null})),
+    readAllPages((from,to)=>supabase.from("investment_corporate_actions").select(CORPORATE_ACTION_COLUMNS,{count:'exact'}).eq("workspace_id", workspaceId).order("event_date", { ascending: false }).order("created_at", { ascending: false }).order("id").range(from,to),row=>String(row.id)).then(data=>({data,error:null})),
   ]);
-  if (accountsResult.error) throw new Error(accountsResult.error.message);
-  if (securitiesResult.error) throw new Error(securitiesResult.error.message);
-  if (transactionsResult.error) throw new Error(transactionsResult.error.message);
-  if (dividendsResult.error) throw new Error(dividendsResult.error.message);
-  if (corporateActionsResult.error) throw new Error(corporateActionsResult.error.message);
   const accounts = (accountsResult.data ?? []) as InvestmentAccount[];
   const securities = (securitiesResult.data ?? []) as InvestmentSecurity[];
   const transactions = (transactionsResult.data ?? []) as InvestmentTransaction[];

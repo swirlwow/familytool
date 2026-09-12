@@ -1,0 +1,46 @@
+-- Single STABLE invocation: all tables use the caller's statement snapshot and RLS.
+-- Numeric fields are stored as decimal strings to avoid JavaScript precision loss.
+create function public.export_family_backup(p_workspace_id uuid) returns jsonb
+language plpgsql stable security invoker set search_path = '' as $$
+declare result jsonb;
+begin
+  if auth.uid() is null then raise exception 'AUTH_REQUIRED' using errcode='28000'; end if;
+  if not exists (select 1 from public.user_workspaces where workspace_id=p_workspace_id and user_id=auth.uid()) then raise exception 'WORKSPACE_FORBIDDEN' using errcode='42501'; end if;
+  select jsonb_build_object(
+    'workspaces',(select coalesce(jsonb_agg((select jsonb_object_agg(k,case when jsonb_typeof(v)='number' then to_jsonb(v::text) else v end) from jsonb_each(to_jsonb(t)) e(k,v)) order by t.id),'[]'::jsonb) from public.workspaces t where t.id=p_workspace_id),
+    'user_workspaces',(select coalesce(jsonb_agg((select jsonb_object_agg(k,case when jsonb_typeof(v)='number' then to_jsonb(v::text) else v end) from jsonb_each(to_jsonb(t)) e(k,v)) order by t.id),'[]'::jsonb) from public.user_workspaces t where t.workspace_id=p_workspace_id),
+    'members',(select coalesce(jsonb_agg((select jsonb_object_agg(k,case when jsonb_typeof(v)='number' then to_jsonb(v::text) else v end) from jsonb_each(to_jsonb(t)) e(k,v)) order by t.id),'[]'::jsonb) from public.members t where t.workspace_id=p_workspace_id),
+    'accounts',(select coalesce(jsonb_agg((select jsonb_object_agg(k,case when jsonb_typeof(v)='number' then to_jsonb(v::text) else v end) from jsonb_each(to_jsonb(t)) e(k,v)) order by t.id),'[]'::jsonb) from public.accounts t where t.workspace_id=p_workspace_id),
+    'account_records',(select coalesce(jsonb_agg((select jsonb_object_agg(k,case when jsonb_typeof(v)='number' then to_jsonb(v::text) else v end) from jsonb_each(to_jsonb(t)) e(k,v)) order by t.id),'[]'::jsonb) from public.account_records t where t.workspace_id=p_workspace_id),
+    'bill_templates',(select coalesce(jsonb_agg((select jsonb_object_agg(k,case when jsonb_typeof(v)='number' then to_jsonb(v::text) else v end) from jsonb_each(to_jsonb(t)) e(k,v)) order by t.id),'[]'::jsonb) from public.bill_templates t where t.workspace_id=p_workspace_id),
+    'bill_instances',(select coalesce(jsonb_agg((select jsonb_object_agg(k,case when jsonb_typeof(v)='number' then to_jsonb(v::text) else v end) from jsonb_each(to_jsonb(t)) e(k,v)) order by t.id),'[]'::jsonb) from public.bill_instances t where t.workspace_id=p_workspace_id),
+    'calendar_events',(select coalesce(jsonb_agg((select jsonb_object_agg(k,case when jsonb_typeof(v)='number' then to_jsonb(v::text) else v end) from jsonb_each(to_jsonb(t)) e(k,v)) order by t.id),'[]'::jsonb) from public.calendar_events t where t.workspace_id=p_workspace_id),
+    'categories',(select coalesce(jsonb_agg((select jsonb_object_agg(k,case when jsonb_typeof(v)='number' then to_jsonb(v::text) else v end) from jsonb_each(to_jsonb(t)) e(k,v)) order by t.id),'[]'::jsonb) from public.categories t where t.workspace_id=p_workspace_id),
+    'category_groups',(select coalesce(jsonb_agg((select jsonb_object_agg(k,case when jsonb_typeof(v)='number' then to_jsonb(v::text) else v end) from jsonb_each(to_jsonb(t)) e(k,v)) order by t.id),'[]'::jsonb) from public.category_groups t where t.workspace_id=p_workspace_id),
+    'ledger_categories',(select coalesce(jsonb_agg((select jsonb_object_agg(k,case when jsonb_typeof(v)='number' then to_jsonb(v::text) else v end) from jsonb_each(to_jsonb(t)) e(k,v)) order by t.id),'[]'::jsonb) from public.ledger_categories t where t.workspace_id=p_workspace_id),
+    'ledger_entries',(select coalesce(jsonb_agg((select jsonb_object_agg(k,case when jsonb_typeof(v)='number' then to_jsonb(v::text) else v end) from jsonb_each(to_jsonb(t)) e(k,v)) order by t.id),'[]'::jsonb) from public.ledger_entries t where t.workspace_id=p_workspace_id),
+    'ledger_merchants',(select coalesce(jsonb_agg((select jsonb_object_agg(k,case when jsonb_typeof(v)='number' then to_jsonb(v::text) else v end) from jsonb_each(to_jsonb(t)) e(k,v)) order by t.id),'[]'::jsonb) from public.ledger_merchants t where t.workspace_id=p_workspace_id),
+    'ledger_splits',(select coalesce(jsonb_agg((select jsonb_object_agg(k,case when jsonb_typeof(v)='number' then to_jsonb(v::text) else v end) from jsonb_each(to_jsonb(t)) e(k,v)) order by t.id),'[]'::jsonb) from public.ledger_splits t where t.workspace_id=p_workspace_id),
+    'notes',(select coalesce(jsonb_agg((select jsonb_object_agg(k,case when jsonb_typeof(v)='number' then to_jsonb(v::text) else v end) from jsonb_each(to_jsonb(t)) e(k,v)) order by t.id),'[]'::jsonb) from public.notes t where t.workspace_id=p_workspace_id),
+    'payers',(select coalesce(jsonb_agg((select jsonb_object_agg(k,case when jsonb_typeof(v)='number' then to_jsonb(v::text) else v end) from jsonb_each(to_jsonb(t)) e(k,v)) order by t.id),'[]'::jsonb) from public.payers t where t.workspace_id=p_workspace_id),
+    'payment_methods',(select coalesce(jsonb_agg((select jsonb_object_agg(k,case when jsonb_typeof(v)='number' then to_jsonb(v::text) else v end) from jsonb_each(to_jsonb(t)) e(k,v)) order by t.id),'[]'::jsonb) from public.payment_methods t where t.workspace_id=p_workspace_id),
+    'payments',(select coalesce(jsonb_agg((select jsonb_object_agg(k,case when jsonb_typeof(v)='number' then to_jsonb(v::text) else v end) from jsonb_each(to_jsonb(t)) e(k,v)) order by t.id),'[]'::jsonb) from public.payments t where t.workspace_id=p_workspace_id),
+    'settlements',(select coalesce(jsonb_agg((select jsonb_object_agg(k,case when jsonb_typeof(v)='number' then to_jsonb(v::text) else v end) from jsonb_each(to_jsonb(t)) e(k,v)) order by t.id),'[]'::jsonb) from public.settlements t where t.workspace_id=p_workspace_id),
+    'settlement_items',(select coalesce(jsonb_agg((select jsonb_object_agg(k,case when jsonb_typeof(v)='number' then to_jsonb(v::text) else v end) from jsonb_each(to_jsonb(t)) e(k,v)) order by t.id),'[]'::jsonb) from public.settlement_items t where t.workspace_id=p_workspace_id),
+    'settlement_split_links',(select coalesce(jsonb_agg((select jsonb_object_agg(k,case when jsonb_typeof(v)='number' then to_jsonb(v::text) else v end) from jsonb_each(to_jsonb(t)) e(k,v)) order by t.id),'[]'::jsonb) from public.settlement_split_links t where t.workspace_id=p_workspace_id),
+    'stickies',(select coalesce(jsonb_agg((select jsonb_object_agg(k,case when jsonb_typeof(v)='number' then to_jsonb(v::text) else v end) from jsonb_each(to_jsonb(t)) e(k,v)) order by t.id),'[]'::jsonb) from public.stickies t where t.workspace_id=p_workspace_id),
+    'sticky_items',(select coalesce(jsonb_agg((select jsonb_object_agg(k,case when jsonb_typeof(v)='number' then to_jsonb(v::text) else v end) from jsonb_each(to_jsonb(t)) e(k,v)) order by t.id),'[]'::jsonb) from public.sticky_items t where t.sticky_id in (select id from public.stickies where workspace_id=p_workspace_id)),
+    'shopping_items',(select coalesce(jsonb_agg((select jsonb_object_agg(k,case when jsonb_typeof(v)='number' then to_jsonb(v::text) else v end) from jsonb_each(to_jsonb(t)) e(k,v)) order by t.id),'[]'::jsonb) from public.shopping_items t where t.workspace_id=p_workspace_id),
+    'shopping_item_sources',(select coalesce(jsonb_agg((select jsonb_object_agg(k,case when jsonb_typeof(v)='number' then to_jsonb(v::text) else v end) from jsonb_each(to_jsonb(t)) e(k,v)) order by t.id),'[]'::jsonb) from public.shopping_item_sources t where t.workspace_id=p_workspace_id),
+    'investment_accounts',(select coalesce(jsonb_agg((select jsonb_object_agg(k,case when jsonb_typeof(v)='number' then to_jsonb(v::text) else v end) from jsonb_each(to_jsonb(t)) e(k,v)) order by t.id),'[]'::jsonb) from public.investment_accounts t where t.workspace_id=p_workspace_id),
+    'investment_securities',(select coalesce(jsonb_agg((select jsonb_object_agg(k,case when jsonb_typeof(v)='number' then to_jsonb(v::text) else v end) from jsonb_each(to_jsonb(t)) e(k,v)) order by t.id),'[]'::jsonb) from public.investment_securities t where t.workspace_id=p_workspace_id),
+    'investment_transactions',(select coalesce(jsonb_agg((select jsonb_object_agg(k,case when jsonb_typeof(v)='number' then to_jsonb(v::text) else v end) from jsonb_each(to_jsonb(t)) e(k,v)) order by t.id),'[]'::jsonb) from public.investment_transactions t where t.workspace_id=p_workspace_id),
+    'investment_dividends',(select coalesce(jsonb_agg((select jsonb_object_agg(k,case when jsonb_typeof(v)='number' then to_jsonb(v::text) else v end) from jsonb_each(to_jsonb(t)) e(k,v)) order by t.id),'[]'::jsonb) from public.investment_dividends t where t.workspace_id=p_workspace_id),
+    'investment_corporate_actions',(select coalesce(jsonb_agg((select jsonb_object_agg(k,case when jsonb_typeof(v)='number' then to_jsonb(v::text) else v end) from jsonb_each(to_jsonb(t)) e(k,v)) order by t.id),'[]'::jsonb) from public.investment_corporate_actions t where t.workspace_id=p_workspace_id)
+  ) into result;
+  if octet_length(result::text)>20971520 then raise exception 'BACKUP_TOO_LARGE'; end if;
+  return result;
+end;
+$$;
+revoke all on function public.export_family_backup(uuid) from public,anon;
+grant execute on function public.export_family_backup(uuid) to authenticated;

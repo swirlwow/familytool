@@ -1,3 +1,4 @@
+import { readAllPages } from '@/lib/read-all-pages';
 import { NextResponse } from "next/server";
 import { apiError, apiInternalError, apiOperationError } from "@/lib/api/http";
 import { validateSplits } from "@/lib/ledger/splits";
@@ -16,7 +17,7 @@ export async function GET(req: Request) {
     if (!workspace_id) return apiError("缺少 workspace_id");
     if (!from || !to) return apiError("缺少 from/to");
 
-    const { data, error } = await supabase
+    const { data, error } = await readAllPages((start,end)=>supabase
       .from("ledger_entries")
       .select(`
   id,
@@ -36,13 +37,11 @@ export async function GET(req: Request) {
     payer_id,
     amount
   )
-`)
-
-      .eq("workspace_id", workspace_id)
+`,{count:'exact'}).eq("workspace_id", workspace_id)
       .gte("entry_date", from)
       .lte("entry_date", to)
       .order("entry_date", { ascending: false })
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false }).order("id").range(start,end),row=>String(row.id)).then(data=>({data,error:null}));
 
     if (error) return apiInternalError(error, { context: "Load ledger", data: [] });
 
@@ -60,11 +59,10 @@ export async function GET(req: Request) {
 
     const allocatedBySplit = new Map<string, number>();
     if (splitIds.length > 0) {
-      const { data: items, error: itemError } = await supabase
+      const { data: items, error: itemError } = await readAllPages((start,end)=>supabase
         .from("settlement_items")
-        .select("split_id, amount")
-        .eq("workspace_id", workspace_id)
-        .in("split_id", splitIds);
+        .select("id, split_id, amount",{count:'exact'}).eq("workspace_id", workspace_id)
+        .order("id").range(start,end),row=>String(row.id)).then(data=>({data,error:null}));
 
       if (itemError) {
         return apiInternalError(itemError, { context: "Load settlement allocations", data: [] });

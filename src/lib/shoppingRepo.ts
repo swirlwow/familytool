@@ -1,3 +1,4 @@
+import { readAllPages } from './read-all-pages';
 import { supabase } from "@/lib/supabaseClient";
 
 export const SHOPPING_STATUSES = ["pending", "planned", "waiting_sale", "purchased", "skipped"] as const;
@@ -110,11 +111,11 @@ function assertPriority(value: unknown): ShoppingPriority {
 
 async function listSources(workspaceId: string, itemIds: string[]) {
   if (!itemIds.length) return [] as ShoppingSource[];
-  const { data, error } = await supabase.from("shopping_item_sources").select(SOURCE_COLUMNS)
-    .eq("workspace_id", workspaceId).in("shopping_item_id", itemIds)
-    .order("sort_order", { ascending: true }).order("created_at", { ascending: true });
+  const { data, error } = await readAllPages((from,to)=>supabase.from("shopping_item_sources").select(SOURCE_COLUMNS,{count:'exact'})
+    .eq("workspace_id", workspaceId)
+    .order("sort_order", { ascending: true }).order("created_at", { ascending: true }).order('id').range(from,to),row=>String(row.id)).then(data=>({data,error:null as {message:string}|null}));
   if (error) throw new Error(error.message);
-  return (data ?? []) as ShoppingSource[];
+  return (data ?? []).filter(row=>itemIds.includes(row.shopping_item_id)) as ShoppingSource[];
 }
 
 async function replaceSources(workspaceId: string, itemId: string, sources: ShoppingSourceInput[]) {
@@ -130,9 +131,9 @@ async function replaceSources(workspaceId: string, itemId: string, sources: Shop
 }
 
 export async function listShoppingItems(workspaceId: string) {
-  const { data, error } = await supabase.from("shopping_items").select(COLUMNS)
+  const { data, error } = await readAllPages((from,to)=>supabase.from("shopping_items").select(COLUMNS,{count:'exact'})
     .eq("workspace_id", workspaceId).is("deleted_at", null)
-    .order("sort_order", { ascending: true }).order("created_at", { ascending: false }).limit(500);
+    .order("sort_order", { ascending: true }).order("created_at", { ascending: false }).order('id').range(from,to),row=>String(row.id)).then(data=>({data,error:null as {message:string}|null}));
   if (error) throw new Error(error.message);
   const items = (data ?? []) as Omit<ShoppingItem, "sources">[];
   const sources = await listSources(workspaceId, items.map((item) => item.id));

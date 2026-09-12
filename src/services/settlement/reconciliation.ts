@@ -1,3 +1,4 @@
+import { readAllPages } from '@/lib/read-all-pages';
 import { supabase } from "@/lib/supabaseClient";
 import {
   settlementStatus,
@@ -21,18 +22,21 @@ export async function getSettlementReconciliation(params: {
 }) {
   const { workspace_id, from, to, settlement_id } = params;
 
+  const createSettlementQuery = () => {
   let settlementQuery = supabase
     .from("settlements")
     .select(
       "id, debtor_id, creditor_id, amount, note, settled_date, created_at, from_date, to_date"
-    )
-    .eq("workspace_id", workspace_id)
+    ,{count:'exact'}).eq("workspace_id", workspace_id)
     .order("settled_date", { ascending: false })
     .order("created_at", { ascending: false });
 
   if (from) settlementQuery = settlementQuery.gte("settled_date", from);
   if (to) settlementQuery = settlementQuery.lte("settled_date", to);
   if (settlement_id) settlementQuery = settlementQuery.eq("id", settlement_id);
+
+  return settlementQuery;
+  };
 
   const [
     settlementResult,
@@ -42,12 +46,11 @@ export async function getSettlementReconciliation(params: {
     categoryResult,
     paymentMethodResult,
   ] = await Promise.all([
-    settlementQuery,
-    supabase
+    readAllPages((from,to)=>createSettlementQuery().order('id').range(from,to),row=>String(row.id)).then(data=>({data,error:null as {message:string}|null})),
+    readAllPages((from,to)=>supabase
       .from("settlement_items")
-      .select("id, settlement_id, split_id, amount, created_at")
-      .eq("workspace_id", workspace_id),
-    supabase
+      .select("id, settlement_id, split_id, amount, created_at",{count:'exact'}).eq("workspace_id", workspace_id).order('id').range(from,to),row=>String(row.id)).then(data=>({data,error:null as {message:string}|null})),
+    readAllPages((from,to)=>supabase
       .from("ledger_splits")
       .select(
         `id, payer_id, amount, entry_id,
@@ -55,17 +58,14 @@ export async function getSettlementReconciliation(params: {
            id, entry_date, type, amount, payer_id, merchant, note,
            category_id, pay_method, workspace_id
          )`
-      )
-      .eq("workspace_id", workspace_id),
-    supabase.from("payers").select("id, name").eq("workspace_id", workspace_id),
-    supabase
+      ,{count:'exact'}).eq("workspace_id", workspace_id).order('id').range(from,to),row=>String(row.id)).then(data=>({data,error:null as {message:string}|null})),
+    readAllPages((from,to)=>supabase.from("payers").select("id, name",{count:'exact'}).eq("workspace_id", workspace_id).order('id').range(from,to),row=>String(row.id)).then(data=>({data,error:null as {message:string}|null})),
+    readAllPages((from,to)=>supabase
       .from("ledger_categories")
-      .select("id, name")
-      .eq("workspace_id", workspace_id),
-    supabase
+      .select("id, name",{count:'exact'}).eq("workspace_id", workspace_id).order('id').range(from,to),row=>String(row.id)).then(data=>({data,error:null as {message:string}|null})),
+    readAllPages((from,to)=>supabase
       .from("payment_methods")
-      .select("id, name")
-      .eq("workspace_id", workspace_id),
+      .select("id, name",{count:'exact'}).eq("workspace_id", workspace_id).order('id').range(from,to),row=>String(row.id)).then(data=>({data,error:null as {message:string}|null})),
   ]);
 
   for (const result of [

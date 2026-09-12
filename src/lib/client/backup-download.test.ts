@@ -1,9 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { BACKUP_TABLES,makeBackup } from "../backup-format";
 import { fetchBackupFile } from "./backup-download";
 afterEach(() => vi.unstubAllGlobals());
 describe("backup download feedback", () => {
   it("preserves a valid backup file", async () => {
-    const payload = { format: "familytool-backup", tables: { ledger: [] } };
+    const payload = await makeBackup("family","workspace",Object.fromEntries(BACKUP_TABLES.family.map(t=>[t,[]])));
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json(payload)));
     expect(JSON.parse(await (await fetchBackupFile("/api/export")).text())).toEqual(payload);
   });
