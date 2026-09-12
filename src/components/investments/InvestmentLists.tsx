@@ -1,5 +1,6 @@
 "use client";
 
+import { Fragment } from "react";
 import { HoldingCalculation, QuoteProvenance } from "./HoldingCalculation";
 import { BriefcaseBusiness, Building2, Landmark, Pencil, RefreshCw, Trash2 } from "lucide-react";
 import type {
@@ -32,7 +33,7 @@ export function HoldingsList({ rows, onPrice, onManage }: { rows: InvestmentHold
   if (!rows.length) return <div className="app-empty"><BriefcaseBusiness className="mx-auto mb-2 h-8 w-8 text-slate-300" /><p>尚無現有持股</p><p className="mt-1 text-xs">先建立券商帳戶與股票，再新增買進紀錄。</p></div>;
   return <><div className="hidden overflow-x-auto md:block"><table className="table">
     <thead><tr><th>券商帳戶</th><th>股票</th><th className="text-right">持有股數</th><th className="text-right">目前股價</th><th className="text-right">市值</th><th className="text-right">持有成本</th><th className="text-right">未實現損益</th><th className="text-right">含股利總損益</th><th /></tr></thead>
-    <tbody>{rows.map((row) => <tr key={row.key}>
+    <tbody>{rows.map((row) => <Fragment key={row.key}><tr>
       <td>{row.account_name}<div className="text-xs text-slate-400">{row.broker}</div></td>
       <td><strong>{row.symbol} {row.security_name}</strong><div className="text-xs text-slate-400">{row.market}</div></td>
       <td className="text-right font-mono">{numberText(row.quantity)}</td>
@@ -41,8 +42,8 @@ export function HoldingsList({ rows, onPrice, onManage }: { rows: InvestmentHold
       <td className="text-right"><b>{wholeMoney(row.cost_basis)}</b><div className="text-[11px] text-slate-400">除息後 {wholeMoney(row.dividend_adjusted_cost_basis)}</div>{row.position_dividend_gross > 0 && <div className="text-[10px] text-emerald-600">累計除息 {wholeMoney(row.position_dividend_gross)}</div>}</td>
       <td className={`text-right font-black ${profitTone(row.unrealized_profit_after_sale_costs)}`}>{signedWholeMoney(row.unrealized_profit_after_sale_costs)}<div className="text-[11px] font-semibold">{signedPercent(row.unrealized_return)}</div></td>
       <td className={`text-right font-black ${profitTone(row.dividend_adjusted_profit)}`}>{signedWholeMoney(row.dividend_adjusted_profit)}<div className="text-[11px] font-semibold">{signedPercent(row.dividend_adjusted_return)}</div></td>
-      <td><div className="flex justify-end gap-1"><button className="btn btn-ghost btn-xs whitespace-nowrap" onClick={() => onPrice(row.security_id)}>更新股價</button><button className="btn btn-ghost btn-xs whitespace-nowrap" onClick={() => onManage(row)}><Pencil className="h-3.5 w-3.5" />修改／刪除</button></div><HoldingCalculation row={row} /></td>
-    </tr>)}</tbody>
+      <td><div className="flex justify-end gap-1"><button className="btn btn-ghost btn-xs whitespace-nowrap" onClick={() => onPrice(row.security_id)}>更新股價</button><button className="btn btn-ghost btn-xs whitespace-nowrap" onClick={() => onManage(row)}><Pencil className="h-3.5 w-3.5" />修改／刪除</button></div></td>
+    </tr><tr><td colSpan={9} className="!pt-0"><HoldingCalculation row={row} /></td></tr></Fragment>)}</tbody>
   </table></div>
   <div className="divide-y divide-slate-100 md:hidden">{rows.map((row) => <article key={row.key} className="p-4">
     <div className="flex justify-between gap-3"><div><p className="text-xs font-bold text-slate-500">{row.account_name}</p><strong>{row.symbol} {row.security_name}</strong><p className="text-xs text-slate-400">{row.market}</p></div><div className="flex items-start gap-1"><button className="btn btn-ghost btn-xs" onClick={() => onPrice(row.security_id)}>股價</button><button className="btn btn-ghost btn-xs" onClick={() => onManage(row)}>修改／刪除</button></div></div>
