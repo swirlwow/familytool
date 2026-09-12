@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabaseClient";
 export async function getSplitsInRange(params: { workspace_id: string; from: string; to: string }) {
   const { workspace_id, from, to } = params;
 
-  const { data, error } = await readAllPages((from,to)=>supabase
+  const { data, error } = await readAllPages((pageFrom,pageTo)=>supabase
     .from("ledger_splits")
     .select(
       `
@@ -23,7 +23,7 @@ export async function getSplitsInRange(params: { workspace_id: string; from: str
     `
     ,{count:'exact'}).eq("workspace_id", workspace_id)
     .gte("ledger_entries.entry_date", from)
-    .lte("ledger_entries.entry_date", to).order("id").range(from,to),row=>String(row.id)).then(data=>({data,error:null as {message:string}|null}));
+    .lte("ledger_entries.entry_date", to).order("id").range(pageFrom,pageTo),row=>String(row.id)).then(data=>({data,error:null as {message:string}|null}));
 
   if (error) throw new Error(error.message);
   return data ?? [];
@@ -32,7 +32,7 @@ export async function getSplitsInRange(params: { workspace_id: string; from: str
 export async function getSettledItemsForUI(params: { workspace_id: string; to: string }) {
   const { workspace_id, to } = params;
 
-  const { data, error } = await readAllPages((from,to)=>supabase
+  const { data, error } = await readAllPages((pageFrom,pageTo)=>supabase
     .from("settlement_items")
     .select(
       `
@@ -54,7 +54,7 @@ export async function getSettledItemsForUI(params: { workspace_id: string; to: s
     `
     ,{count:'exact'}).eq("workspace_id", workspace_id)
     .lte("settlements.settled_date", to)
-    .order("created_at", { ascending: false }).order("id").range(from,to),row=>String(row.id)).then(data=>({data,error:null as {message:string}|null}));
+    .order("created_at", { ascending: false }).order("id").range(pageFrom,pageTo),row=>String(row.id)).then(data=>({data,error:null as {message:string}|null}));
 
   if (error) throw new Error(error.message);
   return data ?? [];
@@ -77,12 +77,12 @@ export async function getRecentSettlementHeaders(params: { workspace_id: string;
 export async function getSettlementHeadersThroughDate(params: { workspace_id: string; to: string }) {
   const { workspace_id, to } = params;
 
-  const { data, error } = await readAllPages((from,to)=>supabase
+  const { data, error } = await readAllPages((pageFrom,pageTo)=>supabase
     .from("settlements")
     .select("id, debtor_id, creditor_id, amount, note, created_at, settled_date",{count:'exact'}).eq("workspace_id", workspace_id)
     .lte("settled_date", to)
     .order("settled_date", { ascending: true })
-    .order("created_at", { ascending: true }).order("id").range(from,to),row=>String(row.id)).then(data=>({data,error:null as {message:string}|null}));
+    .order("created_at", { ascending: true }).order("id").range(pageFrom,pageTo),row=>String(row.id)).then(data=>({data,error:null as {message:string}|null}));
 
   if (error) throw new Error(error.message);
   return (data ?? []).filter((row: any) => !String(row.note || "").startsWith("[DRAFT]"));
