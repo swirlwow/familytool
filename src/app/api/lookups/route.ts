@@ -52,7 +52,6 @@ export async function GET(req: Request) {
     .from("payment_methods")
     .select("id,name,sort_order,is_active")
     .eq("workspace_id", workspace_id)
-    .eq("is_active", true)
     .order("sort_order", { ascending: true })
     .order("name", { ascending: true });
 
@@ -91,8 +90,7 @@ export async function GET(req: Request) {
     .from("ledger_categories")
     .select("id,workspace_id,name,type,group_name,sort_order,is_active,created_at")
     .eq("workspace_id", workspace_id)
-    .eq("type", "expense")
-    .eq("is_active", true);
+    .eq("type", "expense");
 
   if (cExpErr) return apiError(cExpErr.message, { status: 500 });
 
@@ -100,8 +98,7 @@ export async function GET(req: Request) {
     .from("ledger_categories")
     .select("id,workspace_id,name,type,group_name,sort_order,is_active,created_at")
     .eq("workspace_id", workspace_id)
-    .eq("type", "income")
-    .eq("is_active", true);
+    .eq("type", "income");
 
   if (cIncErr) return apiError(cIncErr.message, { status: 500 });
 
@@ -111,11 +108,14 @@ export async function GET(req: Request) {
   return NextResponse.json({
     data: {
       payers: payers ?? [],
-      payment_methods: (payment_methods ?? []).map((x: any) => ({ id: x.id, name: x.name })),
+      payment_methods: (payment_methods ?? []).filter((x: any) => x.is_active === true).map((x: any) => ({ id: x.id, name: x.name })),
       groups_expense,
       groups_income,
-      categories_expense,
-      categories_income,
+      categories_expense: categories_expense.filter((x: any) => x.is_active === true),
+      categories_income: categories_income.filter((x: any) => x.is_active === true),
+      historical_categories_expense: categories_expense,
+      historical_categories_income: categories_income,
+      historical_payment_methods: payment_methods ?? [],
     },
   });
 }

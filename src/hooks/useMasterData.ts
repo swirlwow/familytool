@@ -12,18 +12,21 @@ import { WORKSPACE_ID } from "@/lib/appConfig";
  * - 強制 fetch 使用 cache: "no-store"
  */
 
-type Cat = { id: string; name: string; group_name: string | null };
-type PayMethod = { id: string; name: string };
+type Cat = { id: string; name: string; group_name: string | null; is_active?: boolean };
+type PayMethod = { id: string; name: string; is_active?: boolean };
 type Payer = { id: string; name: string };
 
 type MasterData = {
+  historicalCatsExpense: Cat[];
+  historicalCatsIncome: Cat[];
+  historicalPayMethods: PayMethod[];
   catsExpense: Cat[];
   catsIncome: Cat[];
   payMethods: PayMethod[];
   payers: Payer[];
 };
 
-const cacheKey = (workspaceId: string) => `masterData:${workspaceId}`;
+const cacheKey = (workspaceId: string) => `masterData:v2:${workspaceId}`;
 
 function safeArray<T>(v: unknown): T[] {
   return Array.isArray(v) ? (v as T[]) : [];
@@ -51,6 +54,9 @@ function unwrapData<T>(json: unknown): T[] {
 
 function normalize(d: Partial<MasterData> | null | undefined): MasterData {
   return {
+    historicalCatsExpense: safeArray<Cat>(d?.historicalCatsExpense),
+    historicalCatsIncome: safeArray<Cat>(d?.historicalCatsIncome),
+    historicalPayMethods: safeArray<PayMethod>(d?.historicalPayMethods),
     catsExpense: safeArray<Cat>(d?.catsExpense),
     catsIncome: safeArray<Cat>(d?.catsIncome),
     payMethods: safeArray<PayMethod>(d?.payMethods),
@@ -91,7 +97,13 @@ async function fetchViaLookups(workspaceId: string): Promise<MasterData> {
   if (!r.ok) throw new Error(apiErrorMessage(j, "lookups 讀取失敗"));
 
   const d = asRecord(asRecord(j).data);
+  if (!Array.isArray(d.historical_categories_expense) || !Array.isArray(d.historical_categories_income) || !Array.isArray(d.historical_payment_methods)) {
+    throw new Error("lookups 歷史資料尚未提供");
+  }
   return normalize({
+    historicalCatsExpense: safeArray<Cat>(d.historical_categories_expense),
+    historicalCatsIncome: safeArray<Cat>(d.historical_categories_income),
+    historicalPayMethods: safeArray<PayMethod>(d.historical_payment_methods),
     catsExpense: safeArray<Cat>(d.categories_expense),
     catsIncome: safeArray<Cat>(d.categories_income),
     payMethods: safeArray<PayMethod>(d.payment_methods),
@@ -105,9 +117,9 @@ async function fetchViaLegacyApis(workspaceId: string): Promise<MasterData> {
   const opts = { cache: "no-store" as RequestCache };
 
   const [rCatsEx, rCatsIn, rPayMethods, rPayers] = await Promise.all([
-    fetch(`/api/categories?type=expense&${qs.toString()}`, opts),
-    fetch(`/api/categories?type=income&${qs.toString()}`, opts),
-    fetch(`/api/payment-methods?${qs.toString()}`, opts),
+    fetch(`/api/categories?type=expense&include_inactive=1&${qs.toString()}`, opts),
+    fetch(`/api/categories?type=income&include_inactive=1&${qs.toString()}`, opts),
+    fetch(`/api/payment-methods?include_inactive=1&${qs.toString()}`, opts),
     fetch(`/api/payers?${qs.toString()}`, opts),
   ]);
 
@@ -124,9 +136,12 @@ async function fetchViaLegacyApis(workspaceId: string): Promise<MasterData> {
   if (!rPayers.ok) throw new Error(apiErrorMessage(jPayers, "payers 讀取失敗"));
 
   return normalize({
-    catsExpense: unwrapData<Cat>(jCatsEx),
-    catsIncome: unwrapData<Cat>(jCatsIn),
-    payMethods: unwrapData<PayMethod>(jPayMethods),
+    historicalCatsExpense: unwrapData<Cat>(jCatsEx),
+    historicalCatsIncome: unwrapData<Cat>(jCatsIn),
+    historicalPayMethods: unwrapData<PayMethod>(jPayMethods),
+    catsExpense: unwrapData<Cat>(jCatsEx).filter(x => x.is_active === true),
+    catsIncome: unwrapData<Cat>(jCatsIn).filter(x => x.is_active === true),
+    payMethods: unwrapData<PayMethod>(jPayMethods).filter(x => x.is_active === true),
     payers: unwrapData<Payer>(jPayers),
   });
 }
@@ -160,6 +175,9 @@ async function fetchMasterData(workspaceId: string): Promise<MasterData> {
 export function useMasterData() {
   const workspaceId = WORKSPACE_ID;
 
+  const [historicalCatsExpense, setHistoricalCatsExpense] = useState<Cat[]>([]);
+  const [historicalCatsIncome, setHistoricalCatsIncome] = useState<Cat[]>([]);
+  const [historicalPayMethods, setHistoricalPayMethods] = useState<PayMethod[]>([]);
   const [catsExpense, setCatsExpense] = useState<Cat[]>([]);
   const [catsIncome, setCatsIncome] = useState<Cat[]>([]);
   const [payMethods, setPayMethods] = useState<PayMethod[]>([]);
@@ -177,6 +195,9 @@ export function useMasterData() {
 
   const applyData = useCallback((d: MasterData) => {
     if (!aliveRef.current) return;
+    setHistoricalCatsExpense(d.historicalCatsExpense);
+    setHistoricalCatsIncome(d.historicalCatsIncome);
+    setHistoricalPayMethods(d.historicalPayMethods);
     setCatsExpense(d.catsExpense);
     setCatsIncome(d.catsIncome);
     setPayMethods(d.payMethods);
@@ -235,6 +256,9 @@ export function useMasterData() {
   }, [load]);
 
   return {
+    historicalCatsExpense,
+    historicalCatsIncome,
+    historicalPayMethods,
     catsExpense,
     catsIncome,
     payMethods,

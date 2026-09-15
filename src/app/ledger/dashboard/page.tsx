@@ -102,9 +102,9 @@ function rangeThisYear() {
 
 export default function LedgerDashboardPage() {
   const {
-    catsExpense,
-    catsIncome,
-    payMethods,
+    historicalCatsExpense: catsExpense,
+    historicalCatsIncome: catsIncome,
+    historicalPayMethods: payMethods,
     payers,
     loading: masterLoading,
     error: masterError,

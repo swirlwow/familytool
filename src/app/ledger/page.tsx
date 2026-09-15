@@ -283,8 +283,12 @@ export default function LedgerPage() {
     return payerNames.get(id) ?? "未知付款人";
   }
 
+  function paymentName(value: string) {
+    return master.historicalPayMethods.find(m => m.id === value)?.name ?? value;
+  }
+
   function catName(id?: string | null) {
-    const all = [...catsExpense, ...catsIncome];
+    const all = [...master.historicalCatsExpense, ...master.historicalCatsIncome];
     const c = all.find((x) => x.id === id);
     if (!c) return "";
     const g = (c.group_name || "").trim();
@@ -393,7 +397,7 @@ export default function LedgerPage() {
 
   function openEdit(r: LedgerRow) {
     setEditing(r);
-    const all = [...catsExpense, ...catsIncome];
+    const all = [...master.historicalCatsExpense, ...master.historicalCatsIncome];
     const c = all.find((x) => x.id === (r.category_id || ""));
     const sp = Array.isArray(r.ledger_splits) ? r.ledger_splits : [];
 
@@ -449,7 +453,12 @@ export default function LedgerPage() {
     toast({ title: "記帳已更新" });
   }
 
-  const editCats: Cat[] = editForm.type === "expense" ? catsExpense : catsIncome;
+  const editCats: Cat[] = (editForm.type === "expense" ? master.historicalCatsExpense : master.historicalCatsIncome)
+    .filter(c => c.is_active === true || c.id === editing?.category_id);
+  const editPaymentOptions = payMethods.map(m => ({ value: m.name, label: m.name }));
+  if (editing?.pay_method && !editPaymentOptions.some(m => m.value === editing.pay_method)) {
+    editPaymentOptions.push({ value: editing.pay_method, label: paymentName(editing.pay_method) });
+  }
 
   const editGroups = useMemo(() => {
     const map = new Map<string, number>();
@@ -878,7 +887,7 @@ export default function LedgerPage() {
                             {r.pay_method && (
                               <span className="flex items-center gap-0.5 md:gap-1 bg-slate-100 px-1.5 py-0.5 rounded-md text-[10px] md:text-xs text-slate-500 border border-slate-200/50 whitespace-nowrap">
                                 <CreditCard className="w-2.5 h-2.5 md:w-3 md:h-3" />
-                                {r.pay_method}
+                                {paymentName(r.pay_method)}
                               </span>
                             )}
 
@@ -1025,7 +1034,7 @@ export default function LedgerPage() {
                   <label className="label py-0 mb-1">
                     <span className="label-text font-bold text-[10px] text-slate-400 uppercase">付款方式</span>
                   </label>
-                  <ChoiceChips label="付款方式" value={editForm.pay_method} options={payMethods.map(m => ({ value: m.name, label: m.name }))}
+                  <ChoiceChips label="付款方式" value={editForm.pay_method} options={editPaymentOptions}
                     onChange={value => setEditForm({ ...editForm, pay_method: value })} />
                 </div>
 
