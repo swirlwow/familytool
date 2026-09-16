@@ -15,6 +15,7 @@ import {
   UserRound,
   X,
 } from "lucide-react";
+import { PurchaseRecords } from "@/components/shopping/PurchaseRecords";
 import { useToast } from "@/hooks/use-toast";
 import type { ShoppingItem, ShoppingPriority, ShoppingStatus } from "@/lib/shoppingRepo";
 import { bestShoppingPrice, draftSources, emptyShoppingSource, SourceComparisonEditor, SourceComparisonList, type ShoppingSourceDraft } from "@/components/shopping/SourceComparisonEditor";
@@ -103,6 +104,8 @@ function toDraft(item: ShoppingItem): Draft {
 
 export default function ShoppingPage() {
   const { toast } = useToast();
+  const [tab, setTab] = useState<"wishlist" | "purchases">("wishlist");
+  const [purchaseSource, setPurchaseSource] = useState<ShoppingItem | null>(null);
   const [items, setItems] = useState<ShoppingItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -113,9 +116,9 @@ export default function ShoppingPage() {
   const [sortMode, setSortMode] = useState<"priority" | "date" | "newest">("priority");
   const [draft, setDraft] = useState<Draft | null>(null);
 
-  async function loadItems() {
+  async function loadItems(background = false) {
     if (!WORKSPACE_ID) return;
-    setLoading(true);
+    if (!background) setLoading(true);
     try {
       const response = await fetch(`/api/shopping?workspace_id=${encodeURIComponent(WORKSPACE_ID)}`, { cache: "no-store" });
       const json = await response.json().catch(() => ({}));
@@ -198,10 +201,13 @@ export default function ShoppingPage() {
     setSaving(true);
     try {
       const sources = draft.sources.map((source) => ({ ...source, price: source.price || null }));
-      const item = await saveItem({ ...draft, sources }, draft.id);
+      const completePurchase = draft.status === "purchased" && (!draft.id || items.find(x => x.id === draft.id)?.status !== "purchased");
+      const previousStatus = items.find(x => x.id === draft.id)?.status ?? "pending";
+      const item = await saveItem({ ...draft, sources, status: completePurchase ? previousStatus : draft.status }, draft.id);
       if (!item) return;
       setItems((current) => draft.id ? current.map((row) => row.id === item.id ? item : row) : [item, ...current]);
       setDraft(null);
+      if (completePurchase) setPurchaseSource(item);
       toast({ title: draft.id ? "待購資料已更新" : "已新增待購項目" });
     } catch (error) {
       toast({ variant: "destructive", title: "儲存失敗", description: error instanceof Error ? error.message : "請稍後再試" });
@@ -211,6 +217,7 @@ export default function ShoppingPage() {
   }
 
   async function changeStatus(item: ShoppingItem, status: ShoppingStatus) {
+    if (status === "purchased") { setPurchaseSource(item); return; }
     try {
       const updated = await saveItem({ status }, item.id);
       if (updated) setItems((current) => current.map((row) => row.id === item.id ? updated : row));
@@ -220,7 +227,7 @@ export default function ShoppingPage() {
   }
 
   async function removeItem(item: ShoppingItem) {
-    if (!window.confirm(`確定移除「${item.name}」？`)) return;
+    if (!window.confirm(`確定移除「${item.name}」及其比價來源？已成立的購買紀錄仍保留。`)) return;
     try {
       const response = await fetch(`/api/shopping/${encodeURIComponent(item.id)}?workspace_id=${encodeURIComponent(WORKSPACE_ID)}`, { method: "DELETE" });
       const json = await response.json().catch(() => ({}));
@@ -234,6 +241,8 @@ export default function ShoppingPage() {
 
   return (
     <main style={SHOPPING_THEME} className="app-page mx-auto w-full max-w-7xl space-y-5">
+      <div className="flex gap-2" role="group" aria-label="採買頁面"><button className={`btn rounded-xl ${tab === "wishlist" ? "bg-violet-700 text-white" : ""}`} aria-pressed={tab === "wishlist"} onClick={() => setTab("wishlist")}>待購清單</button><button className={`btn rounded-xl ${tab === "purchases" ? "bg-violet-700 text-white" : ""}`} aria-pressed={tab === "purchases"} onClick={() => setTab("purchases")}>購買紀錄</button></div>
+      <div hidden={tab !== "wishlist"} className="space-y-5">
       <section className="overflow-hidden rounded-[26px] border border-[var(--ft-line)] bg-[var(--ft-paper)] shadow-[var(--ft-shadow)]">
         <div className="grid gap-5 p-5 lg:grid-cols-[minmax(0,1fr)_minmax(420px,0.78fr)] lg:p-7">
           <div className="flex items-start gap-4">
@@ -344,6 +353,9 @@ export default function ShoppingPage() {
           ))}
         </section>
       )}
+
+      </div>
+      <PurchaseRecords workspaceId={WORKSPACE_ID} visible={tab === "purchases"} source={purchaseSource} onSourceClose={() => setPurchaseSource(null)} onChanged={() => void loadItems(true)} onShowWishlist={() => { setTab("wishlist"); setStatusFilter("all"); setQuery(""); }} />
 
       {draft && (
         <div className="fixed inset-0 z-[80] flex items-end justify-center bg-[#2e1838]/35 p-0 backdrop-blur-sm sm:items-center sm:p-5" role="dialog" aria-modal="true" aria-labelledby="shopping-dialog-title">
