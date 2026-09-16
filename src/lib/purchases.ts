@@ -1,9 +1,29 @@
+export type PurchaseWishlistSource = { platform: string | null; url: string | null; price: number | null; note: string | null; sort_order: number };
+export type PurchaseWishlistSnapshot = {
+  requested_by: string | null; purchase_for: string | null; priority: "low" | "normal" | "high";
+  planned_date: string | null; note: string | null; sources: PurchaseWishlistSource[];
+};
 export type Purchase = {
   id: string; workspace_id: string; shopping_item_id: string | null; request_key: string;
   name: string; purchase_date: string | null; quantity: number; total_amount: number | null;
   store: string | null; url: string | null; specification: string | null; note: string | null;
+  wishlist_snapshot: PurchaseWishlistSnapshot | Record<string, never>;
   legacy: boolean; created_at: string; updated_at: string;
 };
+export function purchaseWishlistSnapshot(value: unknown): PurchaseWishlistSnapshot | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const row=value as Record<string,unknown>;
+  if (!Array.isArray(row.sources)) return null;
+  const sources=row.sources.filter(source=>source&&typeof source==="object"&&!Array.isArray(source)).map((source,index)=>{
+    const item=source as Record<string,unknown>;
+    return {platform:typeof item.platform==="string"?item.platform:null,url:typeof item.url==="string"?item.url:null,
+      price:typeof item.price==="number"?item.price:item.price==null?null:Number(item.price),note:typeof item.note==="string"?item.note:null,
+      sort_order:Number.isInteger(Number(item.sort_order))?Number(item.sort_order):index};
+  }).filter(source=>source.platform||source.url||source.price!==null||source.note);
+  const priority=["low","normal","high"].includes(String(row.priority)) ? row.priority as PurchaseWishlistSnapshot["priority"] : "normal";
+  return {requested_by:typeof row.requested_by==="string"?row.requested_by:null,purchase_for:typeof row.purchase_for==="string"?row.purchase_for:null,
+    priority,planned_date:typeof row.planned_date==="string"?row.planned_date:null,note:typeof row.note==="string"?row.note:null,sources};
+}
 export function purchaseDate(value: unknown, optional = false): string | null {
   if ((value === "" || value == null) && optional) return null;
   if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value) ||
