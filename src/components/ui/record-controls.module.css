@@ -1,0 +1,28 @@
+/* Opt-in controls: do not change buttons on other application pages. */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.5rem;
+  height: auto;
+  padding: 0.5rem 0.875rem;
+  border: 1px solid #d8cbdc;
+  border-radius: 0.625rem;
+  background: #fff;
+  color: #4c3656;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+  box-shadow: 0 1px 2px rgb(52 28 64 / 4%);
+  cursor: pointer;
+}
+.button:hover:not(:disabled) { background: #f6f1fa; border-color: #ad92be; }
+.button:focus-visible, .tab:focus-visible { outline: 2px solid #7750a2; outline-offset: 3px; }
+.button:disabled { opacity: 0.45; cursor: not-allowed; }
+.button svg { flex-shrink: 0; }
+.tabs { display: flex; gap: 0.25rem; width: fit-content; max-width: 100%; padding: 0.25rem; border: 1px solid #e6dce9; border-radius: 0.75rem; background: #fff; }
+.tab { min-height: 2.5rem; padding: 0.5rem 1rem; border-radius: 0.5rem; border: 1px solid transparent; font-size: 0.875rem; font-weight: 600; color: #715e78; white-space: nowrap; }
+.tab[aria-pressed="true"] { background: #f1eaf8; color: #613599; border-color: #d9c6eb; }
+.tab:hover { background: #f6f1fa; }

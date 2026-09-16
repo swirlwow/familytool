@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
+import controls from "@/components/ui/record-controls.module.css";
 import { useToast } from "@/hooks/use-toast";
 import { filterPurchases, normalizePurchase, type Purchase } from "@/lib/purchases";
 import type { ShoppingItem } from "@/lib/shoppingRepo";
@@ -21,7 +22,7 @@ function Modal({title,children,onClose,busy=false}:{title:string;children:ReactN
   return <Dialog.Root open onOpenChange={open=>{if(!open&&!busy)onClose();}}><Dialog.Portal>
     <Dialog.Overlay className="fixed inset-0 z-[90] bg-slate-900/40" />
     <Dialog.Content aria-describedby={undefined} className="fixed left-1/2 top-1/2 z-[91] flex max-h-[90dvh] w-[calc(100%-1.5rem)] max-w-2xl -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl border bg-white shadow-xl">
-      <div className="flex items-center justify-between border-b p-4"><Dialog.Title className="text-xl font-bold">{title}</Dialog.Title><button type="button" aria-label="關閉購買表單" disabled={busy} className="btn btn-ghost btn-sm" onClick={onClose}>✕</button></div>
+      <div className="flex items-center justify-between border-b p-4"><Dialog.Title className="text-xl font-bold">{title}</Dialog.Title><button type="button" aria-label="關閉購買表單" disabled={busy} className={controls.button} onClick={onClose}>✕</button></div>
       <div className="overflow-y-auto p-4 pb-6">{children}</div>
     </Dialog.Content>
   </Dialog.Portal></Dialog.Root>;
@@ -78,9 +79,9 @@ export function PurchaseRecords({workspaceId,visible,source,onSourceClose,onChan
   const total=filtered.reduce((n,r)=>n+(r.total_amount==null?0:Number(r.total_amount)),0);
   const missing=filtered.filter(r=>r.total_amount==null).length;
   return <>
-    {error && (visible||source) && <div role="alert" className="alert alert-error"><span>購買紀錄讀取失敗：{error}</span><button className="btn btn-sm" onClick={()=>void load()}>重試</button>{source&&<button className="btn btn-sm" onClick={onSourceClose}>取消</button>}</div>}
+    {error && (visible||source) && <div role="alert" className="alert alert-error"><span>購買紀錄讀取失敗：{error}</span><button className={controls.button} onClick={()=>void load()}>重試</button>{source&&<button className={controls.button} onClick={onSourceClose}>取消</button>}</div>}
     <section hidden={!visible} className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-xl font-bold">購買紀錄</h2><p className="text-sm text-slate-500">留下實際買到的物品與價格，不自動連動記帳。</p></div><button disabled={busy||loading||!!error} className="btn border-0 bg-violet-700 text-white" onClick={()=>{setDraft(makeDraft());setFormError("");}}>新增購買</button></div>
+      <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-xl font-bold">購買紀錄</h2><p className="text-sm text-slate-500">留下實際買到的物品與價格，不自動連動記帳。</p></div><button disabled={busy||loading||!!error} className={controls.button} onClick={()=>{setDraft(makeDraft());setFormError("");}}>新增購買</button></div>
       <div className="grid gap-3 rounded-2xl border bg-white p-4 sm:grid-cols-2 lg:grid-cols-4">
         <label className="text-sm">搜尋<input className={inputClass} placeholder="品名、型號、店家、備註" value={query} onChange={e=>setQuery(e.target.value)}/></label>
         <label className="text-sm">購買起日<input type="date" className={inputClass} value={from} onChange={e=>setFrom(e.target.value)}/></label>
@@ -94,7 +95,7 @@ export function PurchaseRecords({workspaceId,visible,source,onSourceClose,onChan
           <div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="text-xs text-slate-500">{row.purchase_date || "日期待補"}{row.legacy&&" · 舊待購資料"}</p><h3 className="break-words text-lg font-bold">{row.name}</h3><p className="break-words text-sm text-slate-500">{row.specification || "規格未填"}</p></div><strong className="shrink-0 tabular-nums">{row.total_amount==null?"金額未填":money(Number(row.total_amount))}</strong></div>
           <p className="mt-3 break-words text-sm">{row.store||"店家未填"} · 數量 {Number(row.quantity)}</p>
           {(row.url||row.note)&&<details className="mt-3 text-sm"><summary className="cursor-pointer text-violet-700">購買詳情</summary>{row.url&&/^https?:\/\//i.test(row.url)&&<a className="mt-2 block break-all underline" href={row.url} target="_blank" rel="noopener noreferrer">商品連結</a>}{row.note&&<p className="mt-2 whitespace-pre-wrap break-words">{row.note}</p>}</details>}
-          <div className="mt-4 flex flex-wrap gap-2 border-t pt-3"><button disabled={busy} className="btn btn-sm" onClick={()=>{setDraft(makeDraft(row));setFormError("");}}>修改</button><button disabled={busy} className="btn btn-sm text-rose-700" onClick={()=>{setDeleting(row);setRestore(false);setFormError("");}}>刪除</button><button disabled={busy} className="btn btn-sm ml-auto" onClick={()=>void rebuy(row)}>再次加入待購</button></div>
+          <div className="mt-4 flex flex-wrap gap-2 border-t pt-3"><button disabled={busy} className={controls.button} onClick={()=>{setDraft(makeDraft(row));setFormError("");}}>修改</button><button disabled={busy} className={controls.button} onClick={()=>{setDeleting(row);setRestore(false);setFormError("");}}>刪除</button><button disabled={busy} className={`${controls.button} ml-auto`} onClick={()=>void rebuy(row)}>再次加入待購</button></div>
         </article>)}</div>}
     </section>
     {draft&&<Modal title={draft.id?"修改購買紀錄":"記錄這次購買"} onClose={close} busy={busy}>
@@ -111,14 +112,14 @@ export function PurchaseRecords({workspaceId,visible,source,onSourceClose,onChan
           <label className="sm:col-span-2">備註<textarea maxLength={1000} className="textarea textarea-bordered w-full rounded-xl" value={draft.note} onChange={e=>setDraft({...draft,note:e.target.value})}/></label>
         </div>
         {formError&&<p role="alert" className="text-red-600">{formError}</p>}
-        <div className="sticky bottom-0 flex justify-end gap-2 border-t bg-white py-3"><button type="button" disabled={busy} className="btn" onClick={close}>取消</button><button disabled={busy} className="btn border-0 bg-rose-600 text-white">{busy?"儲存中…":"儲存購買紀錄"}</button></div>
+        <div className="sticky bottom-0 flex justify-end gap-2 border-t bg-white py-3"><button type="button" disabled={busy} className={controls.button} onClick={close}>取消</button><button disabled={busy} className={controls.button}>{busy?"儲存中…":"儲存購買紀錄"}</button></div>
       </form>
     </Modal>}
     {deleting&&<Modal title="刪除購買紀錄" busy={busy} onClose={()=>setDeleting(null)}>
       <p>確定刪除「{deleting.name}」這次購買？其他購買紀錄不受影響。</p>
       {deleting.shopping_item_id&&<label className="my-4 flex items-center gap-2"><input type="checkbox" className="checkbox" checked={restore} onChange={e=>setRestore(e.target.checked)}/>同時將原項目恢復為待購（保留比價來源）</label>}
       {formError&&<p role="alert" className="text-red-600">{formError}</p>}
-      <div className="mt-4 flex justify-end gap-2"><button disabled={busy} className="btn" onClick={()=>setDeleting(null)}>取消</button><button disabled={busy} className="btn btn-error" onClick={()=>void remove()}>確認刪除</button></div>
+      <div className="mt-4 flex justify-end gap-2"><button disabled={busy} className={controls.button} onClick={()=>setDeleting(null)}>取消</button><button disabled={busy} className={controls.button} onClick={()=>void remove()}>確認刪除</button></div>
     </Modal>}
   </>;
 }

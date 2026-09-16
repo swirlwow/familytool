@@ -15,6 +15,8 @@ import {
   UserRound,
   X,
 } from "lucide-react";
+import controls from "@/components/ui/record-controls.module.css";
+import { isWishlistItem } from "@/lib/shopping-view";
 import { PurchaseRecords } from "@/components/shopping/PurchaseRecords";
 import { useToast } from "@/hooks/use-toast";
 import type { ShoppingItem, ShoppingPriority, ShoppingStatus } from "@/lib/shoppingRepo";
@@ -38,7 +40,6 @@ const STATUS_OPTIONS: Array<{ value: ShoppingStatus | "all"; label: string }> = 
   { value: "pending", label: "待確認" },
   { value: "planned", label: "預計購買" },
   { value: "waiting_sale", label: "等待優惠" },
-  { value: "purchased", label: "已購買" },
   { value: "skipped", label: "不購買" },
 ];
 
@@ -140,6 +141,7 @@ export default function ShoppingPage() {
     const keyword = query.trim().toLowerCase();
     const priorityWeight: Record<ShoppingPriority, number> = { high: 3, normal: 2, low: 1 };
     const filtered = items.filter((item) => {
+      if (!isWishlistItem(item)) return false;
       if (statusFilter !== "all" && item.status !== statusFilter) return false;
       if (!keyword) return true;
       const sourceValues = item.sources.flatMap((source) => [source.platform, source.url, source.note, source.price]);
@@ -240,8 +242,8 @@ export default function ShoppingPage() {
   }
 
   return (
-    <main style={SHOPPING_THEME} className="app-page mx-auto w-full max-w-7xl space-y-5">
-      <div className="flex gap-2" role="group" aria-label="採買頁面"><button className={`btn rounded-xl ${tab === "wishlist" ? "bg-violet-700 text-white" : ""}`} aria-pressed={tab === "wishlist"} onClick={() => setTab("wishlist")}>待購清單</button><button className={`btn rounded-xl ${tab === "purchases" ? "bg-violet-700 text-white" : ""}`} aria-pressed={tab === "purchases"} onClick={() => setTab("purchases")}>購買紀錄</button></div>
+    <main style={SHOPPING_THEME} className="app-page"><div className="app-page-inner max-w-[1500px]">
+      <div className={controls.tabs} role="group" aria-label="採買頁面"><button className={controls.tab} aria-pressed={tab === "wishlist"} onClick={() => setTab("wishlist")}>待購清單</button><button className={controls.tab} aria-pressed={tab === "purchases"} onClick={() => setTab("purchases")}>購買紀錄</button></div>
       <div hidden={tab !== "wishlist"} className="space-y-5">
       <section className="overflow-hidden rounded-[26px] border border-[var(--ft-line)] bg-[var(--ft-paper)] shadow-[var(--ft-shadow)]">
         <div className="grid gap-5 p-5 lg:grid-cols-[minmax(0,1fr)_minmax(420px,0.78fr)] lg:p-7">
@@ -252,7 +254,7 @@ export default function ShoppingPage() {
             <div>
               <p className="mb-1 text-xs font-bold tracking-[0.18em] text-[var(--ft-peach)]">生活採買</p>
               <h1 className="text-2xl font-black text-[var(--ft-plum)] sm:text-3xl">待購清單</h1>
-              <p className="mt-2 max-w-xl text-sm leading-6 text-[var(--ft-plum-soft)]">先把連結留下來，再決定何時買。待確認、等優惠和已購買都集中在這裡。</p>
+              <p className="mt-2 max-w-xl text-sm leading-6 text-[var(--ft-plum-soft)]">先把連結留下來，再決定何時買。管理待確認與等優惠的物品；已購買請到購買紀錄查看。</p>
             </div>
           </div>
 
@@ -262,7 +264,7 @@ export default function ShoppingPage() {
             </label>
             <div className="flex flex-col gap-2 sm:flex-row">
               <input id="quick-shopping" className="input input-bordered h-11 min-h-0 flex-1 rounded-xl border-[var(--ft-line)] bg-white text-[var(--ft-plum)]" placeholder="貼上商品連結，或直接輸入品名" value={quickValue} onChange={(event) => setQuickValue(event.target.value)} onKeyDown={(event) => event.key === "Enter" && void quickAdd()} />
-              <button className="btn h-11 min-h-0 rounded-xl border-0 bg-[var(--ft-peach)] px-5 text-white hover:bg-[#dc5621]" disabled={!quickValue.trim() || quickSaving} onClick={() => void quickAdd()}>
+              <button className={controls.button} disabled={!quickValue.trim() || quickSaving} onClick={() => void quickAdd()}>
                 {quickSaving ? <span className="loading loading-spinner loading-sm" /> : <Plus className="h-4 w-4" />}加入
               </button>
             </div>
@@ -303,7 +305,7 @@ export default function ShoppingPage() {
                 <option value="priority">優先順序</option><option value="date">預計日期</option><option value="newest">最新加入</option>
               </select>
             </label>
-            <button className="btn h-10 min-h-0 rounded-xl border-0 bg-[var(--ft-wine)] px-4 text-white hover:bg-[var(--ft-plum)]" onClick={() => setDraft({ ...EMPTY_DRAFT })}><Plus className="h-4 w-4" />完整新增</button>
+            <button className={controls.button} onClick={() => setDraft({ ...EMPTY_DRAFT })}><Plus className="h-4 w-4" />完整新增</button>
           </div>
         </div>
       </section>
@@ -348,6 +350,7 @@ export default function ShoppingPage() {
                 <select className={`select select-bordered h-9 min-h-0 flex-1 rounded-xl text-sm font-bold ${STATUS_STYLE[item.status]}`} value={item.status} onChange={(event) => void changeStatus(item, event.target.value as ShoppingStatus)} aria-label={`${item.name} 狀態`}>
                   {STATUS_OPTIONS.filter((option) => option.value !== "all").map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                 </select>
+                <button type="button" className={controls.button} onClick={() => void changeStatus(item, "purchased")}><PackageCheck className="h-4 w-4" />完成購買</button>
               </div>
             </article>
           ))}
@@ -377,10 +380,10 @@ export default function ShoppingPage() {
               <label className="sm:col-span-2"><span className="mb-1.5 block text-sm font-bold text-[var(--ft-plum)]">備註</span><textarea className="textarea textarea-bordered min-h-24 w-full rounded-xl border-[var(--ft-line)] bg-white" placeholder="尺寸、顏色、優惠條件等" value={draft.note} onChange={(event) => setDraft({ ...draft, note: event.target.value })} /></label>
             </div>
 
-            <div className="sticky bottom-0 flex justify-end gap-2 border-t border-[var(--ft-line)] bg-[var(--ft-paper)]/95 px-5 py-4 backdrop-blur"><button className="btn btn-ghost rounded-xl" onClick={() => setDraft(null)}>取消</button><button className="btn rounded-xl border-0 bg-[var(--ft-rose)] px-6 text-white hover:bg-[#c42750]" disabled={saving} onClick={() => void submitDraft()}>{saving && <span className="loading loading-spinner loading-sm" />}儲存</button></div>
+            <div className="sticky bottom-0 flex justify-end gap-2 border-t border-[var(--ft-line)] bg-[var(--ft-paper)]/95 px-5 py-4 backdrop-blur"><button className="btn btn-ghost rounded-xl" onClick={() => setDraft(null)}>取消</button><button className={controls.button} disabled={saving} onClick={() => void submitDraft()}>{saving && <span className="loading loading-spinner loading-sm" />}儲存</button></div>
           </div>
         </div>
       )}
-    </main>
+    </div></main>
   );
 }
