@@ -26,3 +26,13 @@
 .tab { min-height: 2.5rem; padding: 0.5rem 1rem; border-radius: 0.5rem; border: 1px solid transparent; font-size: 0.875rem; font-weight: 600; color: #715e78; white-space: nowrap; }
 .tab[aria-pressed="true"] { background: #f1eaf8; color: #613599; border-color: #d9c6eb; }
 .tab:hover { background: #f6f1fa; }
+
+/* The investment action rail stays on one line; narrow viewports scroll it instead of wrapping. */
+:global(.app-panel > div:first-child > div:last-child:has(> .button)) {
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+  scrollbar-width: thin;
+}
