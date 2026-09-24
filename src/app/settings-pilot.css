@@ -1,0 +1,83 @@
+/* Additive settings-only pilot; preserve existing markup and all handlers. */
+main.app-page:has(.settings-navigation) {
+  --pilot-ink: #172554;
+  --pilot-line: #ddd6f0;
+  --pilot-purple: #7047c6;
+  --pilot-selected: #ede7fb;
+  --ft-plum: var(--pilot-ink);
+  --ft-plum-soft: #576180;
+  --ft-line: var(--pilot-line);
+  --ft-lavender: var(--pilot-selected);
+  --ft-paper: #fff;
+  color: var(--pilot-ink);
+  background: #fffaf5;
+}
+main.app-page:has(.settings-navigation) .settings-navigation { gap: 12px; }
+main.app-page:has(.settings-navigation) .ledger-settings-nav {
+  border-color: var(--pilot-line);
+  background: #fff;
+  box-shadow: 0 2px 6px #17255405;
+}
+main.app-page:has(.settings-navigation) .ledger-settings-nav a[aria-current="page"],
+main.app-page:has(.settings-navigation) [role="tab"][data-state="active"] {
+  color: var(--pilot-ink);
+  background: var(--pilot-selected);
+  box-shadow: none;
+}
+main.app-page:has(.settings-navigation) .settings-secondary-link {
+  color: var(--pilot-purple);
+  border-radius: 10px;
+  padding: 10px 12px;
+  text-underline-offset: 4px;
+}
+main.app-page:has(.settings-navigation) .settings-secondary-link[aria-current="page"] { background: var(--pilot-selected); }
+main.app-page:has(.settings-navigation) :is(input, select) {
+  min-width: 0;
+  border: 1px solid var(--pilot-line);
+  border-radius: 12px;
+  color: var(--pilot-ink);
+  background: #fff;
+  box-shadow: none;
+}
+main.app-page:has(.settings-navigation) :is(button, a, input, select):focus-visible {
+  outline: 2px solid var(--pilot-purple);
+  outline-offset: 3px;
+}
+main.app-page:has(.settings-navigation) input[aria-invalid="true"] {
+  border-color: #d43f63;
+}
+main.app-page:has(.settings-navigation) :is(.settings-compact-row, .merchant-card) {
+  border: 1px solid var(--pilot-line);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 2px 4px #17255406;
+}
+main.app-page:has(.settings-navigation) :is(.settings-row-actions button, .merchant-actions button) {
+  border: 1px solid currentColor;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: none;
+  white-space: nowrap;
+}
+main.app-page:has(.settings-navigation) .merchant-status {
+  padding: 2px 7px;
+  font-size: 11px;
+  line-height: 16px;
+  border: 0;
+  border-radius: 999px;
+  box-shadow: none;
+}
+main.app-page:has(.settings-navigation) .merchant-status[data-active="true"] { background: #e8f8f0; color: #16735a; }
+main.app-page:has(.settings-navigation) button:is(.bg-sky-600, .bg-blue-600, .bg-violet-600) {
+  background: var(--pilot-purple);
+  color: #fff;
+  border: 1px solid var(--pilot-purple);
+  border-radius: 12px;
+  box-shadow: none;
+}
+main.app-page:has(.settings-navigation) button:disabled { opacity: 0.5; cursor: not-allowed; }
+@media (max-width: 639px) {
+  main.app-page:has(.settings-navigation) .ledger-settings-nav { width: 100%; flex-wrap: wrap; }
+  main.app-page:has(.settings-navigation) .ledger-settings-nav a { min-height: 44px; flex: 1 1 auto; }
+  main.app-page:has(.settings-navigation) .settings-row-actions button { min-height: 44px; }
+}
