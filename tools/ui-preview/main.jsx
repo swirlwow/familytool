@@ -1,0 +1,15 @@
+import './fixtures.mjs';
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import '../../src/app/globals.css';
+import '../../src/app/family-theme.css';
+import '../../src/app/settings-pilot.css';
+import AppShell from '../../src/components/AppShell';
+import { Toaster } from '../../src/components/ui/toaster';
+import Categories from '../../src/app/settings/categories/page';
+import Payments from '../../src/app/settings/payment-methods/page';
+import Merchants from '../../src/app/settings/merchants/page';
+import Payers from '../../src/app/settings/payers/page';
+const pages = { '/settings/categories': Categories, '/settings/payment-methods': Payments, '/settings/merchants': Merchants, '/settings/payers': Payers };
+const Page = pages[location.pathname] || Categories;
+createRoot(document.getElementById('root')).render(<><div style={{ padding: '6px 12px', background: '#fff2cf', color: '#61450a', fontSize: 12 }}>隔離 UI 預覽｜全部為測試資料，重新整理即重置｜尚未部署</div><AppShell><Page/></AppShell><Toaster/></>);
