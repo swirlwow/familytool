@@ -76,6 +76,40 @@ main.app-page:has(.settings-navigation) button:is(.bg-sky-600, .bg-blue-600, .bg
   box-shadow: none;
 }
 main.app-page:has(.settings-navigation) button:disabled { opacity: 0.5; cursor: not-allowed; }
+/* Override only the old theme's important button colors on pilot settings pages. */
+.family-content main.app-page:has(.settings-navigation) button:is(.bg-sky-600, .bg-blue-600, .bg-violet-600, .bg-indigo-600) {
+  background: #7047c6 !important;
+  border-color: #7047c6 !important;
+  color: #fff !important;
+  border-radius: 12px;
+}
+.family-content main.app-page:has(.settings-navigation) button:is(.bg-sky-600, .bg-blue-600, .bg-violet-600, .bg-indigo-600):hover:not(:disabled) {
+  background: #5935a5 !important;
+  border-color: #5935a5 !important;
+}
+.family-content main.app-page:has(.settings-navigation) .btn:not(.join-item) { border-radius: 12px; }
+main.app-page:has(.settings-navigation) .merchant-actions button { color: #956008; border-color: #c79541; }
+main.app-page:has(.settings-navigation) .merchant-card:has(.merchant-status[data-active="false"]) .merchant-actions button { color: #16735a; border-color: #65a88d; }
+/* Shared navigation: same destinations, expansion state and keyboard handlers. */
+.family-sidebar { color: #172554; border-color: #ddd6f0; background: #fffaf5; }
+.family-sidebar .family-brand { justify-content: center; padding-block: 8px 20px; border-color: #e7e0ef; }
+.family-sidebar .family-brand strong { color: #172554; font-size: 21px; letter-spacing: .025em; }
+.family-sidebar .shift-shortcut { background: transparent; border-color: transparent; color: #172554; box-shadow: none; }
+.family-sidebar .shift-shortcut:hover { background: #f1ecfb; transform: none; }
+.family-sidebar .shift-shortcut > svg:first-child { color: #3155a0; background: transparent; border-radius: 0; padding: 3px; }
+.family-sidebar .shift-shortcut small { color: #576180; }
+.family-sidebar .family-nav-group { border-color: transparent; background: transparent; }
+.family-sidebar .family-nav-group-toggle { color: #172554; min-height: 44px; padding-inline: 8px; font-size: 15px; letter-spacing: 0; }
+.family-sidebar .family-nav-group-label { display: inline-flex; align-items: center; gap: 10px; }
+.family-sidebar .family-nav-group-toggle .family-nav-group-label svg { width: 23px; height: 23px; color: #3155a0; transform: none; }
+.family-sidebar .family-nav-group:first-child .family-nav-group-label svg { fill: #fff0b8; }
+.family-sidebar .family-nav-link { color: #576180; font-weight: 600; padding-left: 18px; }
+.family-sidebar .family-nav-link.active { color: #172554; background: #e9e1fc; }
+.family-sidebar .family-nav-link:hover,
+.family-sidebar .family-nav-group-toggle:hover { background: #f1ecfb; color: #172554; }
+.family-sidebar :is(a, button):focus-visible { outline: 2px solid #7047c6; outline-offset: 2px; }
+.family-sidebar .family-user { border-color: #e7e0ef; }
+.family-sidebar .family-user button { color: #172554; border-color: #ddd6f0; border-radius: 12px; background: #fff; }
 @media (max-width: 639px) {
   main.app-page:has(.settings-navigation) .ledger-settings-nav { width: 100%; flex-wrap: wrap; }
   main.app-page:has(.settings-navigation) .ledger-settings-nav a { min-height: 44px; flex: 1 1 auto; }

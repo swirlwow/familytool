@@ -11,13 +11,14 @@ import {
   CalendarDays,
   ChevronDown,
   DatabaseBackup,
-  HouseHeart,
+  House,
+  Wallet,
+  ChartNoAxesColumnIncreasing,
+  Settings,
   LayoutDashboard,
-  LogOut,
   Receipt,
   ShoppingBasket,
   StickyNote,
-  Sun,
   Tags,
   TrendingUp,
   User,
@@ -27,6 +28,7 @@ import BottomNav from "./BottomNav";
 const NAV_GROUPS = [
   {
     title: "帳務工具",
+    icon: Wallet,
     items: [
       { name: "記帳", href: "/ledger", icon: LayoutDashboard },
       { name: "拆帳管理", href: "/settlement", icon: Calculator },
@@ -37,12 +39,14 @@ const NAV_GROUPS = [
   },
   {
     title: "投資工具",
+    icon: ChartNoAxesColumnIncreasing,
     items: [
       { name: "股票管理", href: "/investments", icon: TrendingUp },
     ],
   },
   {
     title: "生活工具",
+    icon: CalendarDays,
     items: [
       { name: "行事曆", href: "/calendar", icon: CalendarDays },
       { name: "待購清單", href: "/shopping", icon: ShoppingBasket },
@@ -114,12 +118,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         <label htmlFor="app-drawer" className="drawer-overlay" aria-label="關閉導覽"></label>
         <aside id="family-navigation" className="family-sidebar flex min-h-full w-[220px] flex-col px-[18px] py-7" onKeyDown={event => { if (event.key === "Escape") setDrawerOpen(false); }}>
           <Link href="/" className="family-brand" aria-label="回到 FAMILYTOOL 首頁" onClick={() => setDrawerOpen(false)}>
-            <span className="family-brand-mark"><HouseHeart aria-hidden="true" /></span>
-            <span><strong>FAMILYTOOL</strong><small>家庭生活工具</small></span>
+            <span><strong>FAMILYTOOL</strong></span>
           </Link>
 
           <Link href="https://shift-leave-manager.vercel.app/" target="_blank" rel="noreferrer" className="shift-shortcut">
-            <Sun aria-hidden="true" />
+            <House aria-hidden="true" />
             <span><strong>值班休假</strong><small>開啟管理工具</small></span>
             <ArrowUpRight aria-hidden="true" />
           </Link>
@@ -127,10 +130,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           <nav className="family-nav flex-1" aria-label="主要導覽">
             {NAV_GROUPS.map((group) => {
               const expanded = expandedGroups.has(group.title);
+              const GroupIcon = group.icon;
               return (
                 <div key={group.title} className={`family-nav-group${expanded ? " expanded" : ""}`}>
                   <button type="button" className="family-nav-group-toggle" aria-expanded={expanded} aria-controls={`nav-${group.title}`} onClick={() => toggleGroup(group.title)}>
-                    <span>{group.title}</span><ChevronDown aria-hidden="true" />
+                    <span className="family-nav-group-label"><GroupIcon aria-hidden="true" /><span>{group.title}</span></span><ChevronDown aria-hidden="true" />
                   </button>
                   <div id={`nav-${group.title}`} className="family-nav-group-items" hidden={!expanded}>
                     {group.items.map(({ name, href, icon: Icon }) => (
@@ -147,7 +151,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           {user && (
             <div className="family-user">
               <div><User aria-hidden="true" /><span title={user.email}>{user.email}</span></div>
-              <button onClick={handleLogout}><LogOut aria-hidden="true" />登出</button>
+              <button onClick={handleLogout}><Settings aria-hidden="true" />登出</button>
             </div>
           )}
         </aside>
