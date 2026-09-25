@@ -1,0 +1,86 @@
+/* Opt-in visual layer only: never alter finance handlers or data. */
+.finance-pilot {
+  --ft-plum: #172554;
+  --ft-plum-soft: #576180;
+  --ft-line: #ddd6f0;
+  --ft-paper: #fff;
+  --ft-lavender: #ede7fb;
+}
+/* Keep the page heading accessible without reserving a title/banner row.
+   Configuration alerts remain visible. */
+.finance-pilot :is(.app-header, .bills-page-header) {
+  display: block !important;
+  position: static;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent !important;
+  box-shadow: none;
+}
+.finance-pilot :is(.app-header, .bills-page-header) > div:first-child {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.finance-pilot .app-page-inner > :is(.app-header, .bills-page-header) + * { margin-top: 0; }
+.finance-pilot :is(.app-panel, section.border, details.border, .ledger-settings-nav) {
+  border-color: #ddd6f0 !important;
+  border-radius: 16px;
+  box-shadow: 0 2px 6px #17255406;
+}
+.finance-pilot .ledger-settings-nav {
+  background: #fff;
+  padding: 6px;
+  gap: 6px;
+}
+.finance-pilot .ledger-settings-nav a { border-radius: 10px; }
+.finance-pilot .ledger-settings-nav a[aria-current="page"] {
+  background: #ede7fb;
+  color: #56339d;
+}
+.family-content .finance-pilot .btn:not(.join-item) {
+  border-radius: 10px;
+  box-shadow: none;
+}
+.family-content .finance-pilot .btn:is(.bg-violet-600, .bg-amber-500, .bg-sky-600) {
+  background: #7047c6 !important;
+  border: 1px solid #7047c6 !important;
+  color: #fff !important;
+}
+.family-content .finance-pilot .btn:is(.bg-violet-600, .bg-amber-500, .bg-sky-600):hover:not(:disabled) {
+  background: #5935a5 !important;
+}
+.finance-pilot :is(.input, .select, .textarea) {
+  min-width: 0;
+  max-width: 100%;
+  border: 1px solid #ddd6f0 !important;
+  border-radius: 10px !important;
+  background: #fff !important;
+  color: #172554 !important;
+  box-shadow: none;
+}
+.finance-pilot :is(button, a, input, select, textarea, summary):focus-visible {
+  outline: 2px solid #8b65cd !important;
+  outline-offset: 3px;
+}
+.finance-pilot :is(input, select, textarea)[aria-invalid="true"] {
+  border-color: #d43f63 !important;
+}
+.finance-pilot button:disabled { opacity: .5; cursor: not-allowed; }
+.finance-pilot table thead { background: #f4f0fb; }
+.finance-pilot table th { color: #576180; }
+.finance-pilot table :is(th, td) { border-color: #ede7f5; }
+body:has(.finance-pilot) :is([role="dialog"], [role="alertdialog"]) {
+  border-color: #ddd6f0;
+  border-radius: 20px;
+  color: #172554;
+}
+body:has(.finance-pilot) :is([role="dialog"], [role="alertdialog"]) button { border-radius: 10px; }
+@media (prefers-reduced-motion: reduce) {
+  .finance-pilot *, .finance-pilot *::before, .finance-pilot *::after {
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+  }
+}

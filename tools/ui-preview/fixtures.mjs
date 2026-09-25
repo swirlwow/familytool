@@ -1,6 +1,8 @@
 // No backend fallback: all app fetch calls terminate in this in-memory store.
 const make = (names, prefix) => names.map((name, i) => ({ id: `${prefix}-${i}`, name, is_active: true, sort_order: (i + 1) * 10, type: 'expense' }));
 const stores = {
+  '/api/bills': [{ id: 'bill-preview', period: '2026-09', due_date: '2026-09-30', name_snapshot: '測試水費', amount_due: 600, paid_total: 0, status: 'unpaid', source: 'manual', payment_mode: 'ledger' }],
+  '/api/settlement/history': [{ id: 'history-preview', debtor_id: 'payer-0', creditor_id: 'payer-1', amount: 300, from_date: '2026-09-01', to_date: '2026-09-26', created_at: '2026-09-26T08:00:00Z' }],
   '/api/stickies': ['家庭','雅惠','昱元','子逸','英茵'].map((owner, i) => ({ id: 'note-' + i, owner, title: '測試便條 ' + (i + 1), content: '隔離預覽範例，並非正式資料。\n可以測試編輯、搜尋與篩選。', updated_at: '2026-09-26T08:00:00Z' })),
   '/api/category-groups': make(['測試家庭','飲食','日用品','交通'], 'group'),
   '/api/categories': make(['早餐','午餐','晚餐','飲品','其他','交通費'], 'category').map(row => ({ ...row, group_name: '測試家庭' })),
@@ -13,6 +15,15 @@ window.fetch = async (input, options = {}) => {
   const url = new URL(typeof input === 'string' ? input : input.url, location.origin);
   const method = options.method || 'GET';
   window.__previewRequests.push({ path: url.pathname, method });
+  if (url.origin === location.origin && method === 'GET' && url.pathname === '/api/settlement') return Response.json({
+    net: [{ payer_id: 'payer-0', amount: -300 }, { payer_id: 'payer-1', amount: 300 }],
+    recent_settlements: [], settled_items: [],
+    suggestions: [{ debtor_id: 'payer-0', creditor_id: 'payer-1', amount: 300 }],
+    pre_settlement_suggestions: [],
+    splits: [{ split_id: 'split-preview', entry_id: 'entry-preview', entry_date: '2026-09-26', creditor_id: 'payer-1', debtor_id: 'payer-0', split_amount: 300, settled_amount: 0, remaining_amount: 300 }],
+    totals: { split_amount: 300, pre_settlement_amount: 0, settled_amount: 0, remaining_amount: 300 }
+  });
+  if (url.origin === location.origin && method === 'GET' && url.pathname === '/api/settlement/reconciliation') return Response.json({ rows: [] });
   const noteId = url.pathname.startsWith('/api/stickies/') ? decodeURIComponent(url.pathname.slice('/api/stickies/'.length)) : null;
   const rows = stores[noteId ? '/api/stickies' : url.pathname];
   if (url.origin !== location.origin || !rows) throw new Error('隔離預覽已阻擋非測試請求');

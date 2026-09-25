@@ -450,7 +450,7 @@ export default function BillsPage() {
   }
 
   return (
-    <main data-theme="light" className="app-page">
+    <main data-theme="light" className="app-page finance-pilot">
       <div className="app-page-inner">
 
         <div className="bills-page-header sticky top-0 z-40 rounded-lg border border-slate-200 bg-white/95 shadow-sm backdrop-blur-md">

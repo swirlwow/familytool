@@ -458,7 +458,7 @@ export default function SettlementPage() {
   const dialogBusy = !!(confirmState?.actionKey && busy[confirmState.actionKey]);
 
   return (
-    <main className="app-page">
+    <main className="app-page finance-pilot">
       <div className="app-page-inner">
         <div className="app-header">
           <div className="flex w-full flex-row items-center justify-between gap-3">

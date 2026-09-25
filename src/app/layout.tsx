@@ -1,6 +1,7 @@
 import "./globals.css";
 import "./family-theme.css";
 import "./settings-pilot.css";
+import "./finance-pilot.css";
 import AppShell from "@/components/AppShell";
 import { Toaster } from "@/components/ui/toaster";
 import { ViewportObserver } from "@/components/ViewportObserver";
