@@ -99,26 +99,47 @@
 }
 .settlement-redesign .summary-grid { gap: 8px; padding: 0; }
 @media (min-width: 1024px) {
-  .family-content .settlement-redesign .summary-grid > div:first-child {
+  .family-content .settlement-redesign .summary-grid > div {
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
     gap: 8px;
     white-space: nowrap;
+    min-height: 64px;
   }
-  .settlement-redesign .summary-grid > div:first-child > div { margin: 0; }
+  .settlement-redesign .summary-grid > div > div { margin: 0; }
 }
-@media (min-width: 1024px) and (max-width: 1279px) {
+@media (min-width: 1024px) and (max-width: 1799px) {
   .settlement-redesign .settlement-overview .summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 .family-content .settlement-redesign .summary-grid > div {
   min-height: 80px;
+  gap: 8px;
   padding: 10px 12px;
   border: 1px solid #e2e3ef;
   border-radius: 5px;
   background: #fff !important;
+}
+.settlement-redesign .summary-grid > div > div { margin: 0; }
+.settlement-redesign .summary-grid > div > div:first-child {
+  min-height: 20px;
+  flex-shrink: 0;
+}
+.settlement-redesign .summary-grid > div > div:first-child > span:last-child {
+  color: #536384 !important;
+  font-size: 12px;
+  font-weight: 700;
+}
+/* Decorative status badges must not change the shared label alignment. */
+.settlement-redesign .summary-grid > div > div:first-child > span:has(svg) { display: none; }
+.settlement-redesign .summary-grid > div > div:last-child {
+  color: #687795 !important;
+  font-size: 12px;
+  font-weight: 400;
+  white-space: normal;
+  overflow: visible;
 }
 .settlement-redesign .summary-grid > div:nth-child(2) .tabular-nums,
 .settlement-redesign .summary-grid > div:nth-child(4) .tabular-nums { color: #fa575f !important; }
