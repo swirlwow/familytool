@@ -2,7 +2,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import { StickyNote, Plus, Search, Trash2, Pencil, Save, X, Filter } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ConfirmActionDialog } from "@/components/ui/confirm-action-dialog";
@@ -35,7 +34,6 @@ function fmtDate(s: string) {
 }
 
 export default function StickiesPage() {
-  const router = useRouter();
   const { toast } = useToast();
 
   const [q, setQ] = useState("");
@@ -227,15 +225,6 @@ export default function StickiesPage() {
               <h1 className="text-lg font-black text-slate-800 md:text-xl">便條紙</h1>
             </div>
 
-            <div className="flex gap-2">
-              <button
-                className="btn btn-ghost btn-sm hidden h-9 min-h-0 rounded-lg font-bold text-slate-500 hover:bg-slate-100 sm:inline-flex"
-                onClick={() => router.push("/")}
-              >
-                回首頁
-              </button>
-
-            </div>
           </div>
 
           {!WORKSPACE_ID && (
