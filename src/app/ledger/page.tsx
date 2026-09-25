@@ -485,7 +485,7 @@ export default function LedgerPage() {
   }, [editCats, editForm.group_name]);
 
   return (
-    <main className="app-page">
+    <main className="app-page everyday-pilot ledger-pilot">
       <div className="app-page-inner max-w-6xl">
         
         {/* Sticky Header */}

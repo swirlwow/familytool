@@ -1,6 +1,9 @@
 // No backend fallback: all app fetch calls terminate in this in-memory store.
 const make = (names, prefix) => names.map((name, i) => ({ id: `${prefix}-${i}`, name, is_active: true, sort_order: (i + 1) * 10, type: 'expense' }));
 const stores = {
+  '/api/ledger': [{ id: 'ledger-preview', entry_date: '2026-09-26', type: 'expense', amount: 150, category_id: 'category-0', payer_id: 'payer-0', pay_method: '現金', merchant: '測試早餐店', consumption_content: '隔離資料早餐', note: '僅供預覽', ledger_splits: [] }],
+  '/api/shopping': [{ id: 'shopping-preview', name: '測試保溫杯', status: 'planned', priority: 'normal', requested_by: '測試使用者', purchase_for: '自己', planned_date: '2026-09-30', note: '保留兩個比價來源', created_at: '2026-09-26T08:00:00Z', sources: [{ id: 'source-1', platform: '測試商店甲', url: 'https://example.invalid/a', price: 600, note: '容量 500ml', sort_order: 0 }, { id: 'source-2', platform: '測試商店乙', url: 'https://example.invalid/b', price: 580, note: '運費另計', sort_order: 1 }] }],
+  '/api/purchases': [{ id: 'purchase-preview', name: '測試桌燈', purchase_date: '2026-09-20', quantity: 1, total_amount: 800, store: '測試商店甲', url: 'https://example.invalid/lamp', specification: '暖白光', note: '隔離預覽', wishlist_snapshot: { requested_by: '測試使用者', purchase_for: '家庭', priority: 'normal', planned_date: '2026-09-20', note: '原待購備註', sources: [{ platform: '測試商店甲', url: 'https://example.invalid/a', price: 800, note: '來源甲', sort_order: 0 }, { platform: '測試商店乙', url: 'https://example.invalid/b', price: 850, note: '來源乙', sort_order: 1 }] } }],
   '/api/bills': [{ id: 'bill-preview', period: '2026-09', due_date: '2026-09-30', name_snapshot: '測試水費', amount_due: 600, paid_total: 0, status: 'unpaid', source: 'manual', payment_mode: 'ledger' }],
   '/api/settlement/history': [{ id: 'history-preview', debtor_id: 'payer-0', creditor_id: 'payer-1', amount: 300, from_date: '2026-09-01', to_date: '2026-09-26', created_at: '2026-09-26T08:00:00Z' }],
   '/api/stickies': ['家庭','雅惠','昱元','子逸','英茵'].map((owner, i) => ({ id: 'note-' + i, owner, title: '測試便條 ' + (i + 1), content: '隔離預覽範例，並非正式資料。\n可以測試編輯、搜尋與篩選。', updated_at: '2026-09-26T08:00:00Z' })),
@@ -15,6 +18,11 @@ window.fetch = async (input, options = {}) => {
   const url = new URL(typeof input === 'string' ? input : input.url, location.origin);
   const method = options.method || 'GET';
   window.__previewRequests.push({ path: url.pathname, method });
+  if (url.origin === location.origin && method === 'GET' && url.pathname === '/api/lookups') return Response.json({ data: {
+    historical_categories_expense: stores['/api/categories'], historical_categories_income: [],
+    historical_payment_methods: stores['/api/payment-methods'], categories_expense: stores['/api/categories'],
+    categories_income: [], payment_methods: stores['/api/payment-methods'], payers: stores['/api/payers']
+  } });
   if (url.origin === location.origin && method === 'GET' && url.pathname === '/api/settlement') return Response.json({
     net: [{ payer_id: 'payer-0', amount: -300 }, { payer_id: 'payer-1', amount: 300 }],
     recent_settlements: [], settled_items: [],

@@ -1,0 +1,101 @@
+/* Opt-in appearance only. Existing controls, handlers and data remain intact. */
+.everyday-pilot {
+  --ft-plum: #172554 !important;
+  --ft-plum-soft: #576180 !important;
+  --ft-line: #ddd6f0 !important;
+  --ft-paper: #fff !important;
+  --ft-wine: #7047c6 !important;
+}
+.everyday-pilot :is(.app-panel, article, .choice-field) {
+  border-color: #ddd6f0 !important;
+  border-radius: 16px;
+  box-shadow: 0 2px 6px #17255406;
+}
+.everyday-pilot :is(.input, .select, .textarea) {
+  min-width: 0;
+  max-width: 100%;
+  border-color: #ddd6f0 !important;
+  border-radius: 10px !important;
+  background: #fff !important;
+  color: #172554 !important;
+}
+.family-content .everyday-pilot .btn:not(.join-item) {
+  border-radius: 10px;
+  box-shadow: none;
+}
+.family-content .everyday-pilot .btn.bg-sky-600 {
+  background: #7047c6 !important;
+  border: 1px solid #7047c6 !important;
+  color: #fff !important;
+}
+.family-content .everyday-pilot .btn.bg-sky-600:hover:not(:disabled) { background: #5935a5 !important; }
+.everyday-pilot :is(button, input, select, textarea, a, summary):focus-visible {
+  outline: 2px solid #8b65cd !important;
+  outline-offset: 3px;
+}
+.everyday-pilot button:disabled { opacity: .5; cursor: not-allowed; }
+.everyday-pilot [aria-invalid="true"] { border-color: #d43f63 !important; }
+.ledger-pilot .choice-pill { border-radius: 10px; }
+.ledger-pilot .choice-more { color: #7047c6; }
+/* Keep the dashboard link and accessible title, without a page-title panel. */
+.ledger-pilot .app-header {
+  display: block !important;
+  position: static;
+  min-height: 0;
+  padding: 0;
+  background: transparent !important;
+  border: 0;
+  box-shadow: none;
+}
+.ledger-pilot .app-header > div > div:first-child {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.ledger-pilot .app-header > div { justify-content: flex-end; }
+/* Replace the decorative shopping title area with the existing quick-add form.
+   Keep the explanation visible below it; no controls are removed. */
+.shopping-pilot .shopping-introduction > span,
+.shopping-pilot .shopping-introduction h1,
+.shopping-pilot .shopping-introduction p:first-child {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.shopping-pilot .shopping-introduction { order: 2; }
+.shopping-pilot .shopping-introduction p { margin-top: 0; }
+.shopping-pilot section:has(> div > .shopping-introduction) > div:first-child {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  padding: 16px;
+}
+.shopping-pilot section { border-radius: 16px; }
+.shopping-pilot section > div:first-child > div > h2 {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.shopping-pilot [aria-label="採買頁面"] { border-color: #ddd6f0; border-radius: 12px; }
+.shopping-pilot [aria-label="採買頁面"] button[aria-pressed="true"] {
+  background: #ede7fb;
+  color: #56339d;
+  border-color: #d8c9ef;
+}
+.shopping-pilot section > div > .overflow-x-auto { flex-wrap: wrap; overflow: visible; }
+.shopping-pilot article { box-shadow: 0 2px 6px #17255406; }
+body:has(.everyday-pilot) :is([role="dialog"], [role="alertdialog"]) {
+  border-color: #ddd6f0;
+  border-radius: 20px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .everyday-pilot *, .everyday-pilot *::before, .everyday-pilot *::after {
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+  }
+}

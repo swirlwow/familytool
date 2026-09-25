@@ -242,12 +242,12 @@ export default function ShoppingPage() {
   }
 
   return (
-    <main style={SHOPPING_THEME} className="app-page"><div className="app-page-inner max-w-[1500px]">
+    <main style={SHOPPING_THEME} className="app-page everyday-pilot shopping-pilot"><div className="app-page-inner max-w-[1500px]">
       <div className={controls.tabs} role="group" aria-label="採買頁面"><button className={controls.tab} aria-pressed={tab === "wishlist"} onClick={() => setTab("wishlist")}>待購清單</button><button className={controls.tab} aria-pressed={tab === "purchases"} onClick={() => setTab("purchases")}>購買紀錄</button></div>
       <div hidden={tab !== "wishlist"} className="space-y-5">
       <section className="overflow-hidden rounded-[26px] border border-[var(--ft-line)] bg-[var(--ft-paper)] shadow-[var(--ft-shadow)]">
         <div className="grid gap-5 p-5 lg:grid-cols-[minmax(0,1fr)_minmax(420px,0.78fr)] lg:p-7">
-          <div className="flex items-start gap-4">
+          <div className="shopping-introduction flex items-start gap-4">
             <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#fff0d8] text-[#c65b19]">
               <ShoppingBasket className="h-6 w-6" aria-hidden="true" />
             </span>
