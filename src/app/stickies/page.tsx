@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { StickyNote, Plus, Search, Trash2, Pencil, Save, X, Filter } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ConfirmActionDialog } from "@/components/ui/confirm-action-dialog";
+import "./stickies-pilot.css";
 
 const WORKSPACE_ID = process.env.NEXT_PUBLIC_WORKSPACE_ID || "";
 
@@ -212,7 +213,7 @@ export default function StickiesPage() {
 
   return (
     // ✅ 手機版 px-0 滿版，電腦版 md:p-6 lg:p-8
-    <main className="app-page">
+    <main className="app-page stickies-pilot">
       <div className="app-page-inner">
         
         {/* ✅ Header：手機滿版無外框，電腦版圓角外框 */}
@@ -288,6 +289,7 @@ export default function StickiesPage() {
                     return (
                       <button
                         key={o}
+                        aria-pressed={active}
                         className={[
                           "flex items-center gap-1.5 md:gap-2 px-2.5 py-1.5 md:px-3 md:py-1.5 rounded-lg text-xs md:text-sm font-bold transition-all whitespace-nowrap border",
                           active
@@ -327,6 +329,7 @@ export default function StickiesPage() {
               return (
                 <div
                   key={s.id}
+                  data-editing={isEditing}
                   className={`
                     sticky-card relative min-w-0 [overflow-wrap:anywhere] transition-all duration-300 group flex flex-col min-h-[200px] md:min-h-[220px]
                     ${rotationClass}
