@@ -168,25 +168,41 @@ body:has(main .settings-navigation) [role="alertdialog"] :is(input, button):focu
   outline-offset: 3px;
 }
 body:has(main .settings-navigation) [role="alertdialog"] button:disabled { opacity: .5; }
-.family-sidebar { color: #172554; border-color: #ddd6f0; background: #fffaf5; }
-.family-sidebar .family-brand { justify-content: center; padding-block: 8px 20px; border-color: #e7e0ef; }
+.family-sidebar { color: #172554; border-color: #eee9dc; background: #fffdf5; padding-top: 22px; padding-bottom: 0; }
+.family-sidebar .family-brand { justify-content: center; padding-block: 0 16px; border: 0; }
 .family-sidebar .family-brand strong { color: #172554; font-size: 21px; letter-spacing: .025em; }
 .family-sidebar .shift-shortcut { background: transparent; border-color: transparent; color: #172554; box-shadow: none; }
 .family-sidebar .shift-shortcut:hover { background: #f1ecfb; transform: none; }
-.family-sidebar .shift-shortcut > svg:first-child { color: #3155a0; background: transparent; border-radius: 0; padding: 3px; }
+.family-sidebar .shift-shortcut > svg:first-child { color: #1760c3; fill: #deefff; background: transparent; border-radius: 0; padding: 0; }
 .family-sidebar .shift-shortcut small { color: #576180; }
 .family-sidebar .family-nav-group { border-color: transparent; background: transparent; }
 .family-sidebar .family-nav-group-toggle { color: #172554; min-height: 44px; padding-inline: 8px; font-size: 15px; letter-spacing: 0; }
 .family-sidebar .family-nav-group-label { display: inline-flex; align-items: center; gap: 10px; }
-.family-sidebar .family-nav-group-toggle .family-nav-group-label svg { width: 23px; height: 23px; color: #3155a0; transform: none; }
-.family-sidebar .family-nav-group:first-child .family-nav-group-label svg { fill: #fff0b8; }
-.family-sidebar .family-nav-link { color: #576180; font-weight: 600; padding-left: 18px; }
+.family-sidebar .family-nav-group-toggle .family-nav-group-label svg { width: 30px; height: 30px; color: #1760c3; transform: none; }
+.family-sidebar .family-nav-group:first-child .family-nav-group-label svg { fill: #f7bf4b; color: #725027; }
+.family-sidebar .family-nav-group:nth-child(2) .family-nav-group-label svg { color: #42bfc6; }
+.family-sidebar .family-nav-group:nth-child(2) .family-nav-group-label svg path:nth-child(2) { stroke: #f2b638; }
+.family-sidebar .family-nav-group:nth-child(2) .family-nav-group-label svg path:nth-child(3) { stroke: #9c60cb; }
+.family-sidebar .family-nav-group:nth-child(3) .family-nav-group-label svg { fill: #e6efff; }
+.family-sidebar .family-nav-link { color: #576180; font-weight: 600; margin-left: 46px; padding: 6px 12px; min-height: 34px; border-radius: 7px; font-size: 14px; }
+.family-sidebar .family-nav-link > svg { display: none; }
+.family-sidebar .family-nav-group-label { gap: 22px; }
+.family-sidebar .family-nav-group-toggle > svg { width: 12px; opacity: .55; }
+.family-sidebar .shift-shortcut { grid-template-columns: 30px 1fr; gap: 22px; padding: 6px 8px; margin: 10px 0; }
+.family-sidebar .shift-shortcut > svg:last-child { display: none; }
+.family-sidebar .shift-shortcut strong { font-size: 15px; }
+.family-sidebar .shift-shortcut small { font-size: 12px; margin-top: 4px; }
+.family-sidebar .family-nav { overflow: visible; flex-shrink: 0; }
 .family-sidebar .family-nav-link.active { color: #172554; background: #e9e1fc; }
 .family-sidebar .family-nav-link:hover,
 .family-sidebar .family-nav-group-toggle:hover { background: #f1ecfb; color: #172554; }
 .family-sidebar :is(a, button):focus-visible { outline: 2px solid #7047c6; outline-offset: 2px; }
 .family-sidebar .family-user { border-color: #e7e0ef; }
-.family-sidebar .family-user button { color: #172554; border-color: #ddd6f0; border-radius: 12px; background: #fff; }
+.family-sidebar .family-user button { color: #576180; border: 0; border-radius: 7px; background: transparent; justify-content: flex-start; padding: 8px; gap: 22px; font-size: 14px; }
+.family-sidebar .family-user button svg { width: 30px; height: 30px; fill: #818aa1; color: #818aa1; }
+.family-sidebar .family-user button svg circle { fill: #fffdf5; }
+.family-sidebar .family-user > div { order: 2; padding-left: 8px; font-size: 10px; }
+.family-sidebar-garden { min-height: 225px; margin: 0 -18px; background: url('/images/sidebar-garden-cat.png') center bottom / cover no-repeat; }
 @media (max-width: 639px) {
   main.app-page:has(.settings-navigation) .ledger-settings-nav { width: 100%; flex-wrap: wrap; }
   main.app-page:has(.settings-navigation) .ledger-settings-nav a { min-height: 44px; flex: 1 1 auto; }

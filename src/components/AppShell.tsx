@@ -64,7 +64,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     if (item.href === "/settings/categories") return ["/settings/categories", "/settings/payment-methods", "/settings/merchants", "/settings/payers"].includes(pathname);
     return pathname === item.href || pathname.startsWith(`${item.href}/`);
   }))?.title ?? null, [pathname]);
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => new Set());
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => new Set(NAV_GROUPS.map(group => group.title)));
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => setUser(user));
@@ -116,7 +116,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
       <div className="drawer-side z-50">
         <label htmlFor="app-drawer" className="drawer-overlay" aria-label="關閉導覽"></label>
-        <aside id="family-navigation" className="family-sidebar flex min-h-full w-[220px] flex-col px-[18px] py-7" onKeyDown={event => { if (event.key === "Escape") setDrawerOpen(false); }}>
+        <aside id="family-navigation" className="family-sidebar flex min-h-full w-[236px] flex-col px-[18px] py-7" onKeyDown={event => { if (event.key === "Escape") setDrawerOpen(false); }}>
           <Link href="/" className="family-brand" aria-label="回到 FAMILYTOOL 首頁" onClick={() => setDrawerOpen(false)}>
             <span><strong>FAMILYTOOL</strong></span>
           </Link>
@@ -127,7 +127,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             <ArrowUpRight aria-hidden="true" />
           </Link>
 
-          <nav className="family-nav flex-1" aria-label="主要導覽">
+          <nav className="family-nav" aria-label="主要導覽">
             {NAV_GROUPS.map((group) => {
               const expanded = expandedGroups.has(group.title);
               const GroupIcon = group.icon;
@@ -154,6 +154,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               <button onClick={handleLogout}><Settings aria-hidden="true" />登出</button>
             </div>
           )}
+          <div className="family-sidebar-garden" aria-hidden="true" />
         </aside>
       </div>
     </div>

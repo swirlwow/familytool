@@ -109,10 +109,12 @@
   }
   .settlement-redesign .summary-grid > div > div { margin: 0; }
 }
-@media (min-width: 1024px) and (max-width: 1799px) {
+@media (min-width: 1024px) {
   .settlement-redesign .settlement-overview .summary-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
+  .family-content .settlement-redesign .summary-grid > div { padding-inline: 10px; gap: 6px; }
+  .settlement-redesign .summary-grid > div > div:last-child { min-width: 0; text-align: right; }
 }
 .family-content .settlement-redesign .summary-grid > div {
   min-height: 80px;
