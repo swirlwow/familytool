@@ -458,7 +458,7 @@ export default function SettlementPage() {
   const dialogBusy = !!(confirmState?.actionKey && busy[confirmState.actionKey]);
 
   return (
-    <main className="app-page finance-pilot">
+    <main className="app-page finance-pilot settlement-redesign">
       <div className="app-page-inner">
         <div className="app-header">
           <div className="flex w-full flex-row items-center justify-between gap-3">
@@ -490,7 +490,7 @@ export default function SettlementPage() {
             <Download className="h-4 w-4" aria-hidden="true" />匯出對帳
           </button>
         </div>
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-[280px_minmax(0,1fr)]">
+        <div className="settlement-overview grid grid-cols-1 gap-3 lg:grid-cols-[280px_minmax(0,1fr)]">
           {/* Control Panel */}
           <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
               <div className="flex items-center gap-2 mb-3">
@@ -602,7 +602,7 @@ export default function SettlementPage() {
         )}
 
         {/* Net Status */}
-        <div className="card bg-white shadow-sm border border-slate-200 rounded-3xl overflow-hidden">
+        <div className="settlement-net card bg-white shadow-sm border border-slate-200 rounded-3xl overflow-hidden">
           <div className="bg-slate-50/50 px-6 py-4 border-b border-slate-200 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-1.5 h-1.5 rounded-full bg-slate-800"></div>

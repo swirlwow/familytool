@@ -1,4 +1,112 @@
 /* Opt-in visual layer only: never alter finance handlers or data. */
+/* The settlement reference uses compact panels, not the earlier pill theme. */
+.family-content .settlement-redesign {
+  background: #fafaff !important;
+  padding-top: 12px;
+}
+.settlement-redesign .app-page-inner > * + * { margin-top: 10px; }
+.family-content .settlement-redesign :is(.card, .app-panel, .settlement-overview > div) {
+  border: 1px solid #d9d6ef !important;
+  border-radius: 7px !important;
+  background: #fff !important;
+  box-shadow: none !important;
+}
+.family-content .settlement-redesign .ledger-settings-nav {
+  padding: 0;
+  gap: 4px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.family-content .settlement-redesign .ledger-settings-nav a {
+  min-height: 36px;
+  padding: 8px 20px;
+  border: 1px solid #cec6ed;
+  border-radius: 6px 6px 0 0;
+  background: #fff;
+  font-weight: 700;
+}
+.family-content .settlement-redesign .ledger-settings-nav a[aria-current="page"] {
+  background: #8859d5;
+  border-color: #8859d5;
+  color: #fff;
+}
+.settlement-redesign .settlement-overview { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+.settlement-redesign .settlement-overview > div:first-child {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+}
+.settlement-redesign .settlement-overview > div:first-child > div { margin: 0; }
+.settlement-redesign .settlement-overview > div:first-child > div:last-child { gap: 16px; }
+.settlement-redesign .summary-grid { gap: 8px; padding: 8px; }
+.family-content .settlement-redesign .summary-grid > div {
+  min-height: 80px;
+  padding: 10px 12px;
+  border: 1px solid #e2e3ef;
+  border-radius: 5px;
+  background: #fff !important;
+}
+.settlement-redesign .summary-grid > div:nth-child(2) .tabular-nums,
+.settlement-redesign .summary-grid > div:nth-child(4) .tabular-nums { color: #fa575f !important; }
+.settlement-redesign .summary-grid > div:nth-child(3) .tabular-nums { color: #059b76 !important; }
+.settlement-redesign .card > div:first-child {
+  padding: 9px 12px;
+  background: #fff !important;
+}
+.settlement-redesign .card h3 { font-size: 14px; line-height: 20px; }
+.settlement-redesign .card > :is(.px-6, .p-6) { padding: 12px; }
+.settlement-redesign .settlement-net > div:nth-child(2) { padding: 10px; }
+.settlement-redesign .settlement-net .grid > .border {
+  border-radius: 5px;
+  background: #fff !important;
+  padding: 10px;
+}
+.settlement-redesign .settlement-net .grid .grid > div { padding: 7px; border-radius: 4px; }
+.family-content .settlement-redesign table thead tr { background: #edf0f7 !important; }
+.family-content .settlement-redesign table :is(th, td) {
+  padding: 8px 12px;
+  border-bottom: 1px solid #e7e8f2;
+  font-size: 13px;
+  line-height: 20px;
+}
+.family-content .settlement-redesign .btn {
+  min-height: 32px;
+  height: auto;
+  padding: 6px 12px;
+  border: 1px solid #9664e2 !important;
+  border-radius: 5px !important;
+  background: #fff !important;
+  color: #7942c8 !important;
+  box-shadow: none !important;
+}
+.family-content .settlement-redesign .btn:is(.bg-amber-500, .bg-violet-600) {
+  background: #8859d5 !important;
+  color: #fff !important;
+}
+.family-content .settlement-redesign .btn:has(.lucide-trash-2) {
+  background: #ff7078 !important;
+  border-color: #ff7078 !important;
+  color: #fff !important;
+}
+.family-content .settlement-redesign :is(.input, .select) {
+  min-height: 34px;
+  height: 34px;
+  border-radius: 5px !important;
+}
+.settlement-redesign .app-panel { padding: 12px; }
+@media (min-width: 768px) {
+  .settlement-redesign .summary-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .settlement-redesign .settlement-net { display: grid; grid-template-columns: 1fr 1fr; }
+  .settlement-redesign .settlement-net > div:first-child { grid-column: 1 / -1; }
+  .settlement-redesign .settlement-net > div:nth-child(2) { border-right: 1px solid #e2e3ef; border-bottom: 0; }
+  .settlement-redesign .settlement-net > div:nth-child(2) > .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 767px) {
+  .family-content .settlement-redesign .btn { min-height: 40px; }
+}
 .finance-pilot {
   --ft-plum: #172554;
   --ft-plum-soft: #576180;

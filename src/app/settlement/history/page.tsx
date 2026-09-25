@@ -167,7 +167,7 @@ export default function SettlementHistoryPage() {
   }
 
   return (
-    <main className="app-page finance-pilot">
+    <main className="app-page finance-pilot settlement-redesign">
       <div className="app-page-inner">
         
         {/* ✅ Header: Sticky & Compact - Violet Theme */}
