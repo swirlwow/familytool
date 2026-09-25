@@ -91,6 +91,83 @@ main.app-page:has(.settings-navigation) button:disabled { opacity: 0.5; cursor: 
 main.app-page:has(.settings-navigation) .merchant-actions button { color: #956008; border-color: #c79541; }
 main.app-page:has(.settings-navigation) .merchant-card:has(.merchant-status[data-active="false"]) .merchant-actions button { color: #16735a; border-color: #65a88d; }
 /* Shared navigation: same destinations, expansion state and keyboard handlers. */
+/* Compact utility row replaces the old title card; never hide its links/warnings. */
+main.app-page:has(.settings-navigation) .app-header {
+  display: flex !important;
+  position: static;
+  flex-wrap: wrap;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+main.app-page:has(.settings-navigation) .app-header h1 {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+main.app-page:has(.settings-navigation) .app-header div:has(> h1) > div:has(> svg) { display: none; }
+main.app-page:has(.settings-navigation) .app-header :is(a, button) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid #ddd6f0;
+  border-radius: 12px;
+  background: #fff;
+  color: #7047c6;
+}
+main.app-page:has(.settings-navigation) .app-header > div.hidden { display: flex; flex-wrap: wrap; }
+main.app-page:has(.settings-navigation) button:is(.border-sky-200, .btn-outline) {
+  border-color: #ddd6f0;
+  color: #7047c6;
+  background: #fff;
+}
+.family-content main.app-page:has(.settings-navigation) button.bg-sky-500 {
+  background: #7047c6 !important;
+  color: #fff !important;
+  border-color: #7047c6 !important;
+  box-shadow: none;
+}
+/* Radix portals live outside main; route-scoped body selector keeps other pages unchanged. */
+body:has(main .settings-navigation) [role="alertdialog"] {
+  color: #172554;
+  border: 1px solid #ddd6f0;
+  border-radius: 20px;
+  background: #fff;
+}
+body:has(main .settings-navigation) [role="alertdialog"] :is(h2, label span) { color: #172554; }
+body:has(main .settings-navigation) [role="alertdialog"] button {
+  min-height: 44px;
+  border: 1px solid #ddd6f0;
+  border-radius: 12px;
+  background: #fff;
+  color: #7047c6;
+}
+body:has(main .settings-navigation) [role="alertdialog"] button.bg-violet-700 {
+  background: #7047c6;
+  border-color: #7047c6;
+  color: #fff;
+}
+body:has(main .settings-navigation) [role="alertdialog"] button.bg-rose-600 {
+  background: #fff;
+  border-color: #e9657d;
+  color: #bf3451;
+}
+body:has(main .settings-navigation) [role="alertdialog"] :is(input, button):focus-visible {
+  outline: 2px solid #7047c6;
+  outline-offset: 3px;
+}
+body:has(main .settings-navigation) [role="alertdialog"] button:disabled { opacity: .5; }
 .family-sidebar { color: #172554; border-color: #ddd6f0; background: #fffaf5; }
 .family-sidebar .family-brand { justify-content: center; padding-block: 8px 20px; border-color: #e7e0ef; }
 .family-sidebar .family-brand strong { color: #172554; font-size: 21px; letter-spacing: .025em; }
