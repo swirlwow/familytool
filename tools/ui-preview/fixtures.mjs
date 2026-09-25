@@ -11,7 +11,7 @@ const stores = {
   '/api/categories': make(['早餐','午餐','晚餐','飲品','其他','交通費'], 'category').map(row => ({ ...row, group_name: '測試家庭' })),
   '/api/payment-methods': make(['現金','測試信用卡','測試銀行帳戶','手機付款'], 'payment'),
   '/api/ledger/merchants': make(['測試早餐店','測試超市','測試網路商店','測試交通公司'], 'merchant'),
-  '/api/payers': make(['測試付款人甲','測試付款人乙'], 'payer'),
+  '/api/payers': make(['大帥哥','大美女'], 'payer'),
 };
 window.__previewRequests = [];
 window.fetch = async (input, options = {}) => {

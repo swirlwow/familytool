@@ -17,6 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { downloadInternalFile } from "@/lib/client/download";
 import { TextInputDialog } from "@/components/ui/text-input-dialog";
 import { SettlementNav } from "@/components/settlement/SettlementNav";
+import { PayerAvatar } from "@/components/settlement/PayerAvatar";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -619,12 +620,13 @@ export default function SettlementPage() {
                 {netCards.map((x) => (
                   <div
                     key={x.payer_id}
-                    className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
+                    className="payer-profile rounded-2xl border border-slate-200 bg-slate-50 p-4"
                   >
-                    <div className="flex items-center justify-between">
+                    <PayerAvatar name={nameOf(x.payer_id)} />
+                    <div className="payer-profile-heading flex items-center justify-between">
                       <div className="font-black text-slate-800">{nameOf(x.payer_id)}</div>
                       <div
-                        className={`text-xs font-black px-2 py-1 rounded-lg ${
+                        className={`payer-profile-net text-xs font-black px-2 py-1 rounded-lg ${
                           x.net > 0
                             ? "bg-emerald-100 text-emerald-700"
                             : x.net < 0
@@ -637,7 +639,7 @@ export default function SettlementPage() {
                       </div>
                     </div>
 
-                    <div className="mt-3 grid grid-cols-2 gap-2">
+                    <div className="payer-profile-amounts mt-3 grid grid-cols-2 gap-2">
                       <div className="rounded-xl bg-white border border-slate-200 p-3">
                         <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                           應收
@@ -727,7 +729,7 @@ export default function SettlementPage() {
                 {suggestions.map((sug, idx) => (
                   <div
                     key={idx}
-                    className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-2xl border border-slate-100 bg-slate-50/50 hover:bg-slate-50 transition-colors gap-3"
+                    className="repayment-row flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-2xl border border-slate-100 bg-slate-50/50 hover:bg-slate-50 transition-colors gap-3"
                   >
                     <div className="flex items-center gap-3">
                       <div className="bg-rose-100 text-rose-700 font-bold px-3 py-1 rounded-xl text-sm">
