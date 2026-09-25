@@ -121,18 +121,6 @@ export default function PayersPage() {
           </div>
           <div className="hidden gap-2 sm:flex">
             <a
-              href="/bills"
-              className="rounded-lg border bg-white px-4 py-2 text-sm hover:bg-gray-50"
-            >
-              回帳單
-            </a>
-            <a
-              href="/ledger"
-              className="rounded-lg border bg-white px-4 py-2 text-sm hover:bg-gray-50"
-            >
-              回記帳
-            </a>
-            <a
               href="/settlement"
               className="rounded-lg border bg-white px-4 py-2 text-sm hover:bg-gray-50"
             >

@@ -2,9 +2,7 @@
 "use client";
 
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import {
-  ArrowLeft,
   History,
   RefreshCw,
   Trash2,
@@ -57,7 +55,6 @@ function defaultRange90Days() {
 }
 
 export default function SettlementHistoryPage() {
-  const router = useRouter();
 
   const init = useMemo(() => defaultRange90Days(), []);
   const [from, setFrom] = useState(init.from);
@@ -184,18 +181,6 @@ export default function SettlementHistoryPage() {
             </div>
 
             <div className="flex gap-2">
-              <button
-                className="btn btn-ghost btn-sm hidden h-9 min-h-0 rounded-lg font-bold text-slate-500 hover:bg-slate-100 sm:inline-flex"
-                onClick={() => router.push("/")}
-              >
-                回首頁
-              </button>
-              <button
-                className="btn btn-outline btn-sm h-9 min-h-0 rounded-lg border-slate-300 font-bold hover:bg-slate-100 hover:text-slate-700"
-                onClick={() => router.push("/settlement")}
-              >
-                <ArrowLeft className="w-4 h-4" /> 回建議結算
-              </button>
             </div>
           </div>
 

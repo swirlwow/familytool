@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import { WORKSPACE_ID } from "@/lib/appConfig";
 import { LedgerSettingsNav } from "@/components/settings/LedgerSettingsNav";
 
@@ -42,7 +41,7 @@ import {
   orderBySortName,
 } from "@/lib/api";
 
-import { CreditCard, GripVertical, Trash2, ArrowUpDown, ArrowLeft, Plus } from "lucide-react";
+import { CreditCard, GripVertical, Trash2, ArrowUpDown, Plus } from "lucide-react";
 
 function stopDrag(e: React.SyntheticEvent) {
   e.stopPropagation();
@@ -185,7 +184,6 @@ function SortablePayMethodCard({
 }
 
 export default function PaymentMethodsPage() {
-  const router = useRouter();
   const [rows, setRows] = useState<PayMethod[]>([]);
   const [loading, setLoading] = useState(false);
   const [newName, setNewName] = useState("");
@@ -334,18 +332,6 @@ export default function PaymentMethodsPage() {
             </div>
 
             <div className="flex gap-2">
-                <button
-                    className="btn btn-ghost btn-sm hidden h-9 min-h-0 rounded-lg font-bold text-slate-500 hover:bg-slate-100 sm:inline-flex"
-                    onClick={() => router.push("/")}
-                >
-                    回首頁
-                </button>
-                <button
-                    className="btn btn-outline btn-sm h-9 min-h-0 rounded-lg border-slate-300 font-bold hover:bg-slate-100 hover:text-slate-700"
-                    onClick={() => router.push("/ledger")}
-                >
-                    <ArrowLeft className="w-4 h-4" /> 記帳本
-                </button>
             </div>
           </div>
           {!WORKSPACE_ID && (

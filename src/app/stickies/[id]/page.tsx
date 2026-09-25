@@ -3,7 +3,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Plus, Save, Trash2, GripVertical } from "lucide-react";
+import { Plus, Save, Trash2, GripVertical } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ConfirmActionDialog } from "@/components/ui/confirm-action-dialog";
 
@@ -326,9 +326,6 @@ export default function StickyDetailPage() {
       <div className="app-page-inner max-w-4xl">
         <div className="app-actions" role="group" aria-label="便條紙操作">
             <div className="flex items-center gap-2">
-              <button className="btn btn-ghost btn-sm" onClick={() => router.push("/stickies")}>
-                <ArrowLeft className="w-4 h-4" /> 返回
-              </button>
             </div>
 
             <div className="flex gap-2">

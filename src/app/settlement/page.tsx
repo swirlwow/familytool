@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import {
   Calculator,
   RefreshCw,
@@ -9,7 +8,6 @@ import {
   History,
   CheckCircle2,
   Calendar,
-  ArrowLeft,
   Layers,
   Download,
   AlertTriangle,
@@ -79,7 +77,6 @@ function safeJsonParse(text: string) {
 }
 
 export default function SettlementPage() {
-  const router = useRouter();
   const { toast } = useToast();
 
   const from = "2000-01-01";
@@ -473,18 +470,6 @@ export default function SettlementPage() {
             </div>
 
             <div className="flex gap-2">
-              <button
-                className="btn btn-ghost btn-sm hidden h-9 min-h-0 rounded-lg font-bold text-slate-500 hover:bg-slate-100 sm:inline-flex"
-                onClick={() => router.push("/")}
-              >
-                回首頁
-              </button>
-              <button
-                className="btn btn-outline btn-sm hidden h-9 min-h-0 rounded-lg border-slate-300 font-bold hover:bg-slate-100 hover:text-slate-700 sm:inline-flex"
-                onClick={() => router.push("/ledger")}
-              >
-                <ArrowLeft className="w-4 h-4" /> 記帳本
-              </button>
             </div>
           </div>
 

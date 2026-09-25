@@ -1,8 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import Link from "next/link";
-import { ArrowLeft, GripVertical, Plus, Store } from "lucide-react";
+import { GripVertical, Plus, Store } from "lucide-react";
 import {
   DndContext,
   type DragEndEvent,
@@ -122,7 +121,6 @@ export default function MerchantsPage() {
       <div className="app-header">
         <div className="flex w-full items-center justify-between gap-3">
           <h1 className="flex items-center gap-3 text-lg font-black"><Store size={20} />記帳設定</h1>
-          <Link href="/ledger" className="btn btn-outline btn-sm"><ArrowLeft size={16} />記帳本</Link>
         </div>
       </div>
       <LedgerSettingsNav active="merchants" />

@@ -2,7 +2,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import { WORKSPACE_ID } from "@/lib/appConfig";
 import { BillTemplateManager } from "@/components/bills/BillTemplateManager";
 import { AppModal } from "@/components/ui/app-modal";
@@ -71,7 +70,6 @@ function statusLabel(status: string) {
 }
 
 export default function BillsPage() {
-  const router = useRouter();
   const merchants = useLedgerMerchants(WORKSPACE_ID || "");
   const [view, setView] = useState<"bills" | "templates">("bills");
 
@@ -464,7 +462,6 @@ export default function BillsPage() {
               <h1 className="text-base font-black text-slate-800 sm:text-lg">帳單管理</h1>
             </div>
 
-            <button className="btn btn-ghost btn-sm h-9 min-h-0 rounded-lg font-bold text-slate-500 hover:bg-slate-100" onClick={() => router.push("/")}>回首頁</button>
           </div>
           {!WORKSPACE_ID && (
             <div className="px-4 pb-3">

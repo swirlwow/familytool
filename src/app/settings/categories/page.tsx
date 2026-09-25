@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import { WORKSPACE_ID } from "@/lib/appConfig";
 import { LedgerSettingsNav } from "@/components/settings/LedgerSettingsNav";
 
@@ -34,7 +33,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 
 // Icons
-import { GripVertical, Tags, ArrowLeft, ArrowUpDown, Plus } from "lucide-react";
+import { GripVertical, Tags, ArrowUpDown, Plus } from "lucide-react";
 
 type Category = {
   id: string;
@@ -322,7 +321,6 @@ function SortableCategoryCard({
 }
 
 export default function CategoriesPage() {
-  const router = useRouter();
   const [type, setType] = useState<"expense" | "income">("expense");
 
   // 小分類
@@ -726,18 +724,6 @@ export default function CategoriesPage() {
             </div>
 
             <div className="flex gap-2">
-                <button
-                    className="btn btn-ghost btn-sm hidden h-9 min-h-0 rounded-lg font-bold text-slate-500 hover:bg-slate-100 sm:inline-flex"
-                    onClick={() => router.push("/")}
-                >
-                    回首頁
-                </button>
-                <button
-                    className="btn btn-outline btn-sm h-9 min-h-0 rounded-lg border-slate-300 font-bold hover:bg-slate-100 hover:text-slate-700"
-                    onClick={() => router.push("/ledger")}
-                >
-                    <ArrowLeft className="w-4 h-4" /> 記帳本
-                </button>
             </div>
           </div>
           {!WORKSPACE_ID && (

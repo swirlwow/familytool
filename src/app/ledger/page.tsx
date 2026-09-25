@@ -501,12 +501,6 @@ export default function LedgerPage() {
               <Link href="/ledger/dashboard" className="btn btn-outline btn-sm h-9 min-h-0 rounded-lg border-slate-300 px-3 text-xs font-bold text-slate-600 sm:px-4 sm:text-sm">
                 財務儀表板
               </Link>
-              <Link
-                href="/"
-                className="btn btn-ghost btn-sm hidden h-9 min-h-0 rounded-lg font-bold text-slate-500 hover:bg-slate-100 sm:inline-flex"
-              >
-                回首頁
-              </Link>
             </div>
           </div>
         </div>
