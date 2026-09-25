@@ -6,6 +6,7 @@ import '../../src/app/family-theme.css';
 import '../../src/app/settings-pilot.css';
 import '../../src/app/finance-pilot.css';
 import '../../src/app/everyday-pilot.css';
+import '../../src/app/feature-ui.css';
 import AppShell from '../../src/components/AppShell';
 import { Toaster } from '../../src/components/ui/toaster';
 import Categories from '../../src/app/settings/categories/page';

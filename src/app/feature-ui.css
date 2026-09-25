@@ -1,0 +1,155 @@
+/* Shared visual baseline. No visibility rules for controls or business data. */
+.family-content {
+  --ui-ink: #172554;
+  --ui-muted: #576180;
+  --ui-line: #ddd6f0;
+  --ui-purple: #8859d5;
+  --ui-table: #edf0f7;
+}
+.family-content .app-page { background: #fafaff !important; }
+.family-content .app-page-inner { gap: 14px; }
+.family-content .app-page :is(.app-panel, .card, .bg-card, [data-slot="card"]) {
+  border-radius: 8px !important;
+  border-color: var(--ui-line) !important;
+  background: #fff !important;
+  box-shadow: none !important;
+}
+.family-content .app-page :is(.input, .select, .textarea) {
+  border-radius: 6px !important;
+  border-color: var(--ui-line) !important;
+  background: #fff !important;
+  box-shadow: none !important;
+  min-width: 0;
+}
+.family-content .app-page .btn:not(.join-item) {
+  border-radius: 6px !important;
+  box-shadow: none !important;
+  min-height: 36px;
+  height: auto;
+  padding: 7px 12px;
+  line-height: 20px;
+}
+.family-content .app-page .btn:is(.btn-outline, .bg-white) {
+  border-color: #a383dc !important;
+  color: #7047c6 !important;
+}
+.family-content .app-page .btn:is(.bg-violet-600, .bg-sky-600, .bg-blue-600, .bg-indigo-600) {
+  background: var(--ui-purple) !important;
+  border-color: var(--ui-purple) !important;
+  color: #fff !important;
+}
+.family-content .app-page table :is(thead, thead tr) { background: var(--ui-table) !important; }
+.family-content .app-page table th {
+  color: var(--ui-muted) !important;
+  font-size: 12px;
+  font-weight: 700;
+}
+.family-content .app-page table :is(th, td) { border-color: #e5e8f1; padding-block: 9px; }
+.family-content .app-page .app-view-switch { padding: 0; gap: 4px; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.family-content .app-page .app-view-switch button { border: 1px solid #cfc5ed; border-radius: 6px 6px 0 0; padding: 8px 16px; min-height: 38px; background: #fff; }
+.family-content .app-page .app-view-switch button[aria-pressed="true"] { background: var(--ui-purple); border-color: var(--ui-purple); color: #fff; }
+.family-content .app-page :is(.ledger-settings-nav, .settings-navigation) {
+  gap: 4px;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.family-content .settings-navigation { display: flex; flex-wrap: wrap; align-items: stretch; }
+.family-content .settings-navigation .ledger-settings-nav { display: contents; }
+.family-content .app-page :is(.ledger-settings-nav a, .settings-secondary-link) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 38px;
+  margin: 0;
+  padding: 8px 16px;
+  border: 1px solid #cfc5ed;
+  border-radius: 6px 6px 0 0;
+  color: var(--ui-ink);
+  font-size: 14px;
+  font-weight: 700;
+  background: #fff;
+  text-decoration: none;
+}
+.family-content .app-page :is(.ledger-settings-nav a, .settings-secondary-link)[aria-current="page"] {
+  background: var(--ui-purple);
+  border-color: var(--ui-purple);
+  color: #fff;
+}
+.family-content main.app-page:has(.settings-navigation) :is(.settings-compact-row, .merchant-card) {
+  padding: 8px;
+  gap: 8px;
+  border-radius: 6px;
+  box-shadow: none;
+}
+.family-content main.app-page:has(.settings-navigation) :is(input, select) { border-radius: 5px; min-height: 34px; }
+.family-content main.app-page:has(.settings-navigation) .settings-inline-add {
+  border: 0;
+  padding: 0;
+  border-radius: 0;
+  background: transparent !important;
+}
+.family-content main.app-page:has(.settings-navigation) .bg-card > div {
+  border-radius: 0;
+  background: #fff !important;
+}
+.family-content main.app-page:has(.settings-navigation) .bg-card > div:first-child { padding: 12px 16px; }
+.family-content main.app-page:has(.settings-navigation) :is(.ledger-settings-nav a, .settings-secondary-link)[aria-current="page"] {
+  background: var(--ui-purple);
+  color: #fff;
+  border-color: var(--ui-purple);
+}
+.family-content main.app-page:has(.settings-navigation) button.bg-sky-500 {
+  border-radius: 5px;
+  background: var(--ui-purple) !important;
+  border-color: var(--ui-purple) !important;
+}
+.family-content main.app-page:has(.settings-navigation) :is(.settings-row-actions button, .merchant-actions button) {
+  border-radius: 5px;
+  min-height: 30px;
+}
+.family-content main.app-page:has(.settings-navigation) .merchant-status { border-radius: 4px; }
+.family-content main.app-page:has(.settings-navigation) button:is(.bg-violet-600, .bg-sky-600, .bg-blue-600, .bg-indigo-600) {
+  border-radius: 5px;
+  background: var(--ui-purple) !important;
+  border-color: var(--ui-purple) !important;
+}
+.family-content main.app-page:has(.settings-navigation) [role="tablist"] {
+  border-radius: 6px;
+  box-shadow: none;
+}
+.family-content main.app-page:has(.settings-navigation) [role="tab"] { border-radius: 4px; }
+.family-content main.app-page:has(.settings-navigation) [role="tab"][data-state="active"] {
+  background: var(--ui-purple);
+  color: #fff;
+}
+.family-content .ledger-pilot .choice-field { border-radius: 7px; box-shadow: none; }
+.family-content .ledger-pilot .choice-pill { border-radius: 5px; }
+.family-content .shopping-pilot :is(section, article) { border-radius: 8px; box-shadow: none; }
+.family-content .shopping-pilot [aria-label="採買頁面"] { padding: 0; border: 0; background: transparent; }
+.family-content .shopping-pilot [aria-label="採買頁面"] button {
+  border-radius: 6px 6px 0 0;
+  border: 1px solid #cfc5ed;
+  padding: 8px 16px;
+}
+.family-content .shopping-pilot [aria-label="採買頁面"] button[aria-pressed="true"] {
+  color: #fff; background: var(--ui-purple); border-color: var(--ui-purple);
+}
+body:has(.family-content .app-page) :is([role="dialog"], [role="alertdialog"]) {
+  border-radius: 10px;
+  border-color: #ddd6f0;
+}
+.family-content .app-page :is(button, a, input, select, textarea):focus-visible {
+  outline: 2px solid #7047c6;
+  outline-offset: 3px;
+}
+.family-content .app-page button:disabled { opacity: .5; cursor: not-allowed; }
+.family-content .app-page [aria-invalid="true"] { border-color: #d43f63 !important; }
+@media (max-width: 767px) {
+  .family-content .app-page .btn:not(.join-item) { min-height: 42px; }
+  .family-content .settings-navigation > a { flex: 1 1 calc(50% - 4px); }
+  .family-content .settings-navigation .ledger-settings-nav a { flex: 1 1 calc(50% - 4px); }
+}

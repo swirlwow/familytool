@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="zh-Hant"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FAMILYTOOL｜整批 UI 驗收</title>
+<style>
+body{margin:0;background:#fafaff;color:#172554;font:16px system-ui,sans-serif}header,main{max-width:1440px;margin:auto;padding:24px}h1{font-size:24px}p{color:#576180;line-height:1.7}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}article{background:white;border:1px solid #ddd6f0;border-radius:8px;overflow:hidden}article a{display:block;padding:14px;color:#7047c6;font-weight:700}img{width:100%;display:block}nav{display:flex;gap:12px;flex-wrap:wrap}nav a{color:#7047c6}button{padding:8px 16px;background:#8859d5;color:white;border:0;border-radius:6px;cursor:pointer}.wide{grid-template-columns:1fr}@media(max-width:800px){.grid{grid-template-columns:1fr}header,main{padding:16px}}
+</style>
+<header><h1>功能頁整批視覺驗收</h1><p>本機隔離預覽・全部為測試資料・未推送部署。共用側欄、字體與原有功能保留；本批整理分頁、按鈕、表格與卡片樣式。</p><p>本頁涵蓋已驗收的十個頁面。股票、行事曆、資料備份與儀表板尚未完成本批視覺驗收，不列為完成。</p><button onclick="document.querySelector('.grid').classList.toggle('wide')">切換大圖／雙欄</button></header>
+<main class="grid">
+<article><a href="/settings/categories">分類管理 → 開啟預覽</a><img src="review-assets/ui-v12-categories.png" alt="分類管理桌面畫面"></article>
+<article><a href="/settings/payment-methods">付款方式 → 開啟預覽</a><img loading="lazy" src="review-assets/ui-v12-settings-payment-methods.png" alt="付款方式桌面畫面"></article>
+<article><a href="/settings/merchants">店家管理 → 開啟預覽</a><img loading="lazy" src="review-assets/ui-v12-settings-merchants.png" alt="店家管理桌面畫面"></article>
+<article><a href="/settings/payers">付款人管理 → 開啟預覽</a><img loading="lazy" src="review-assets/ui-v12-settings-payers.png" alt="付款人管理桌面畫面"></article>
+<article><a href="/ledger">記帳 → 開啟預覽</a><img loading="lazy" src="review-assets/ui-v12-ledger.png" alt="記帳桌面畫面"></article>
+<article><a href="/bills">帳單管理 → 開啟預覽</a><img loading="lazy" src="review-assets/ui-v12-bills.png" alt="帳單管理桌面畫面"></article>
+<article><a href="/settlement">拆帳結算 → 開啟預覽</a><img loading="lazy" src="review-assets/ui-v12-settlement.png" alt="拆帳桌面畫面"></article>
+<article><a href="/settlement/history">結清紀錄 → 開啟預覽</a><img loading="lazy" src="review-assets/ui-v12-settlement-history.png" alt="結清紀錄桌面畫面"></article>
+<article><a href="/shopping">待購清單 → 開啟預覽</a><img loading="lazy" src="review-assets/ui-v12-shopping.png" alt="待購清單桌面畫面"></article>
+<article><a href="/stickies">便條紙 → 開啟預覽</a><img loading="lazy" src="review-assets/ui-v12-stickies.png" alt="便條紙桌面畫面"></article>
+</main></html>

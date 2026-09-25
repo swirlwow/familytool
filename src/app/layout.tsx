@@ -3,6 +3,7 @@ import "./family-theme.css";
 import "./settings-pilot.css";
 import "./finance-pilot.css";
 import "./everyday-pilot.css";
+import "./feature-ui.css";
 import AppShell from "@/components/AppShell";
 import { Toaster } from "@/components/ui/toaster";
 import { ViewportObserver } from "@/components/ViewportObserver";
