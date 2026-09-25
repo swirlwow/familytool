@@ -38,6 +38,7 @@
 .settlement-redesign .payer-profile-amounts > div > div { margin: 0; font-size: 12px; }
 .family-content .settlement-redesign .repayment-row {
   background: #fff !important;
+  border: 0 !important;
   padding: 8px 10px;
   border-radius: 5px;
 }
@@ -92,7 +93,26 @@
 }
 .settlement-redesign .settlement-overview > div:first-child > div { margin: 0; }
 .settlement-redesign .settlement-overview > div:first-child > div:last-child { gap: 16px; }
-.settlement-redesign .summary-grid { gap: 8px; padding: 8px; }
+.family-content .settlement-redesign .settlement-overview > div:last-child {
+  border: 0 !important;
+  background: transparent !important;
+}
+.settlement-redesign .summary-grid { gap: 8px; padding: 0; }
+@media (min-width: 1024px) {
+  .family-content .settlement-redesign .summary-grid > div:first-child {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    white-space: nowrap;
+  }
+  .settlement-redesign .summary-grid > div:first-child > div { margin: 0; }
+}
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .settlement-redesign .settlement-overview .summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
 .family-content .settlement-redesign .summary-grid > div {
   min-height: 80px;
   padding: 10px 12px;
@@ -111,6 +131,7 @@
 .settlement-redesign .card > :is(.px-6, .p-6) { padding: 12px; }
 .settlement-redesign .settlement-net > div:nth-child(2) { padding: 10px; }
 .settlement-redesign .settlement-net .grid > .border {
+  border: 0 !important;
   border-radius: 5px;
   background: #fff !important;
   padding: 10px;
