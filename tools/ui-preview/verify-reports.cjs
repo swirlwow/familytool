@@ -26,6 +26,9 @@ for (const path of ['src/app/investments/page.tsx', 'src/app/ledger/dashboard/pa
    await page.goto('http://127.0.0.1:4287/investments');
    await page.getByRole('tab', { name: '永豐-大美女' }).waitFor();
    await capture('holdings');
+   await page.getByRole('button', { name: '計算明細／對帳', exact: true }).filter({ visible: true }).click();
+   await capture('calculation');
+   await page.getByRole('button', { name: '收合明細', exact: true }).filter({ visible: true }).click();
    if (width >= 1024) {
     const tops = await page.locator('[class*="investmentActions"] > button').evaluateAll(nodes => nodes.map(n => Math.round(n.getBoundingClientRect().top)));
     assert.equal(new Set(tops).size, 1, 'Desktop actions must stay on one row');
@@ -44,12 +47,16 @@ for (const path of ['src/app/investments/page.tsx', 'src/app/ledger/dashboard/pa
    await page.goto('http://127.0.0.1:4287/ledger/dashboard');
    await page.getByText('總支出', { exact: true }).waitFor();
    await capture('dashboard');
+   if (width >= 1024) {
+    const positions = await page.locator('.dashboard-presets, [aria-label="明細匯出工具"]').evaluateAll(nodes => nodes.map(n => n.getBoundingClientRect().y + n.getBoundingClientRect().height / 2));
+    assert.ok(Math.abs(positions[0] - positions[1]) < 2, 'Dashboard actions must align on one row');
+   }
    if (width < 768) await page.getByRole('button', { name: '篩選條件' }).click();
    await page.getByPlaceholder('店家/消費內容/備註/分類/付款人…').fill('不存在的測試');
    await capture('dashboard-empty');
    assert.deepEqual(errors, []);
    assert.ok(await page.evaluate(() => window.__previewRequests.every(r => r.method === 'GET')));
-   results.push({ width, screenshots: 13, runtimeErrors: 0, noOverflow: true });
+   results.push({ width, screenshots: 14, runtimeErrors: 0, noOverflow: true });
    await context.close();
   }
   fs.writeFileSync(out + '/results.json', JSON.stringify(results, null, 2));

@@ -18,7 +18,7 @@ export function HoldingCalculation({ row }: { row: InvestmentHolding }) {
     { key: "cost" as const, label: "券商成本（未扣除息）", actual: row.cost_basis },
     { key: "net" as const, label: "券商現值（已扣預估費稅）", actual: row.estimated_sale_value },
   ];
-  return <div className="mt-2 w-full whitespace-normal rounded-lg border border-slate-200 bg-white p-4 text-left text-sm font-normal text-slate-700">
+  return <div className="holding-calculation mt-2 w-full whitespace-normal rounded-lg border border-slate-200 bg-white p-4 text-left text-sm font-normal text-slate-700">
     <div className="mt-3 space-y-3">
       <p className="font-bold">{row.account_name}・{row.symbol} {row.security_name}</p>
       <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,0.84fr)_minmax(0,1.16fr)_minmax(0,1fr)]">
