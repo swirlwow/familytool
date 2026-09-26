@@ -1,5 +1,6 @@
 // src/app/stickies/page.tsx
 "use client";
+import "./sticky-list-ui.css";
 
 import { useEffect, useMemo, useState } from "react";
 import { StickyNote, Plus, Search, Trash2, Pencil, Save, X, Filter } from "lucide-react";
@@ -239,7 +240,7 @@ export default function StickiesPage() {
         {/* Controls：手機版滿版無外框 */}
         <section className="app-panel">
           <div className="p-4 md:p-5">
-            <div className="flex flex-col gap-4">
+            <div className="sticky-list-toolbar flex flex-col gap-4">
               <div className="hidden justify-end md:flex">
                 <button type="button" className="btn bg-amber-500 px-4 font-bold" onClick={createNew}>
                   <Plus className="h-4 w-4" aria-hidden="true" /> 新增便條
@@ -338,7 +339,7 @@ export default function StickiesPage() {
                     {/* Header: Owner & Actions */}
                     <div className="flex items-center justify-between mb-3 relative z-10">
                       {!isEditing ? (
-                        <span className="px-2 py-0.5 rounded-sm text-[10px] font-black tracking-wide border border-black/5 bg-white/50 text-slate-600">
+                        <span data-owner={s.owner} className="sticky-owner-badge px-2 py-0.5 rounded-sm text-[10px] font-black tracking-wide border border-black/5 bg-white/50 text-slate-600">
                           {s.owner}
                         </span>
                       ) : (

@@ -1,0 +1,20 @@
+/* Owner identity colors match the approved sticky-note reference. */
+.stickies-pilot .sticky-owner-badge {
+  display:inline-flex;
+  padding:4px 12px;
+  border-radius:999px !important;
+  border:1px solid transparent !important;
+  font-size:12px;
+  line-height:1.4;
+}
+.stickies-pilot .sticky-owner-badge[data-owner="家庭"] { background:#e8d9ff !important; color:#593293 !important; border-color:#d4bced !important; }
+.stickies-pilot .sticky-owner-badge[data-owner="雅惠"] { background:#ffd8e5 !important; color:#942f58 !important; border-color:#f4b8cd !important; }
+.stickies-pilot .sticky-owner-badge[data-owner="昱元"] { background:#d8efbf !important; color:#365d26 !important; border-color:#bddba0 !important; }
+.stickies-pilot .sticky-owner-badge[data-owner="子逸"] { background:#cdeaff !important; color:#245b88 !important; border-color:#afd4ef !important; }
+.stickies-pilot .sticky-owner-badge[data-owner="英茵"] { background:#ffe0b5 !important; color:#89521a !important; border-color:#edc58e !important; }
+@media(min-width:1024px) {
+  .stickies-pilot .sticky-list-toolbar { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:16px; }
+  .stickies-pilot .sticky-list-toolbar > :nth-child(1) { grid-column:2; grid-row:1; }
+  .stickies-pilot .sticky-list-toolbar > :nth-child(2) { grid-column:1; grid-row:1; min-width:0; }
+  .stickies-pilot .sticky-list-toolbar > :nth-child(3) { grid-column:1 / -1; }
+}
