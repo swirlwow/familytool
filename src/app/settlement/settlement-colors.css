@@ -1,49 +1,29 @@
 /* Presentation only: preserve settlement amounts, fields and handlers. */
-@media(min-width:1024px) {
-  .family-content .settlement-redesign .settlement-overview .summary-grid > div {
-    display:grid !important;
-    grid-template-columns:minmax(0,1fr);
-    align-content:center;
-    align-items:center;
-    justify-content:center;
-    row-gap:3px;
-    padding:14px 12px 14px 72px !important;
-  }
-  .family-content .settlement-redesign .settlement-overview .summary-grid > div > div:first-child { grid-column:1; grid-row:1; min-width:0; }
-  .family-content .settlement-redesign .settlement-overview .summary-grid > div > .tabular-nums { grid-column:1; grid-row:2; justify-self:start; }
-  .family-content .settlement-redesign .settlement-overview .summary-grid > div > div:last-child { grid-column:1; grid-row:3; text-align:left; justify-self:start; }
-  .family-content .settlement-redesign .settlement-overview .summary-grid > div > div:first-child > span > .settlement-stat-icon,
-  .family-content .settlement-redesign .settlement-overview .summary-grid > div > div:first-child > span:not(:last-child):has(svg) {
-    left:18px; top:50%; transform:translateY(-50%); width:42px; height:42px; padding:10px;
-  }
-}
-@media(min-width:1400px) {
-  .family-content .settlement-redesign .settlement-overview .summary-grid > div { padding-left:calc(50% - 40px) !important; }
-  .family-content .settlement-redesign .settlement-overview .summary-grid > div > div:first-child > span > .settlement-stat-icon,
-  .family-content .settlement-redesign .settlement-overview .summary-grid > div > div:first-child > span:not(:last-child):has(svg) { left:calc(50% - 94px); }
-}
 .family-content .settlement-redesign .settlement-overview { grid-template-columns:minmax(0,1fr); }
-.family-content .settlement-redesign .settlement-overview .summary-grid > div { position:relative; padding-left:64px; min-height:90px; }
-.settlement-redesign .settlement-stat-icon,
-.family-content .settlement-redesign .summary-grid > div > div:first-child > span:has(svg):not(:last-child) {
-  display:flex; position:absolute; left:12px; top:20px; width:42px; height:42px; padding:10px;
-  border-radius:50%; background:#00ad94; color:white !important;
+.family-content .settlement-redesign .settlement-net > div:last-child { display:none; }
+.family-content .settlement-redesign .settlement-overview .summary-grid > div {
+  position:relative; display:grid; grid-template-columns:minmax(0,1fr);
+  align-content:center; align-items:center; gap:3px;
+  padding:14px 14px 14px 70px; min-height:104px;
+}
+.family-content .settlement-redesign .settlement-overview .summary-grid > div > div {
+  margin:0; min-width:0; text-align:left; justify-self:start;
 }
 .family-content .settlement-redesign .summary-grid > div > div:first-child > span:last-child:has(.settlement-stat-icon) {
-  display:inline; position:static; padding:0; width:auto; height:auto;
-  border-radius:0; background:transparent; color:#536384 !important;
+  position:static; display:inline; padding:0; background:transparent; color:#536384 !important;
 }
-.family-content .settlement-redesign .summary-grid > div > div:first-child > span:last-child > .settlement-stat-icon {
-  position:absolute; left:10px; top:24px; margin:0; width:38px; height:38px; padding:9px;
+.family-content .settlement-redesign .settlement-overview .summary-grid .settlement-stat-icon,
+.family-content .settlement-redesign .settlement-overview .summary-grid > div > div:first-child > span:not(:last-child):has(svg) {
+  display:flex; position:absolute; left:14px; top:50%; transform:translateY(-50%);
+  width:42px; height:42px; margin:0; padding:10px; border-radius:50%;
+  background:#00ad94; color:white !important;
 }
-.family-content .settlement-redesign .settlement-net > div:last-child { display:none; }
+.family-content .settlement-redesign .settlement-overview .summary-grid > div:nth-child(2) .settlement-stat-icon { background:#ff5269; }
+.family-content .settlement-redesign .settlement-overview .summary-grid > div:nth-child(3) > div:first-child > span:has(svg) { background:#9059ff; }
+.family-content .settlement-redesign .settlement-overview .summary-grid > div:nth-child(4) > div:first-child > span:has(svg) { background:#ff9c00; }
 @media(min-width:1024px) {
   .family-content .settlement-redesign .settlement-overview { grid-template-columns:220px minmax(0,1fr); }
-  .family-content .settlement-redesign .settlement-overview .summary-grid > div { padding-left:54px; padding-right:8px; }
 }
-.settlement-redesign .summary-grid > div:nth-child(2) .settlement-stat-icon { background:#ff5269; }
-.family-content .settlement-redesign .summary-grid > div:nth-child(3) > div:first-child > span:has(svg) { background:#9059ff; }
-.family-content .settlement-redesign .summary-grid > div:nth-child(4) > div:first-child > span:has(svg) { background:#ff9c00; }
 .settlement-redesign .repayment-row > div:first-child > div { display:flex; align-items:center; gap:6px; padding:0; }
 .settlement-redesign .repayment-row img,.settlement-redesign .repayment-row svg:not(.repayment-arrow) { width:36px; height:36px; flex-shrink:0; }
 .settlement-redesign .repayment-arrow { width:20px; height:20px; color:#0097a7; }
