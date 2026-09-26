@@ -2,9 +2,21 @@
 .family-content .settlement-redesign .settlement-overview { grid-template-columns:minmax(0,1fr); }
 .family-content .settlement-redesign .settlement-overview .summary-grid > div { position:relative; padding-left:64px; min-height:90px; }
 .settlement-redesign .settlement-stat-icon,
-.family-content .settlement-redesign .summary-grid > div > div:first-child > span:has(svg) {
+.family-content .settlement-redesign .summary-grid > div > div:first-child > span:has(svg):not(:last-child) {
   display:flex; position:absolute; left:12px; top:20px; width:42px; height:42px; padding:10px;
   border-radius:50%; background:#00ad94; color:white !important;
+}
+.family-content .settlement-redesign .summary-grid > div > div:first-child > span:last-child:has(.settlement-stat-icon) {
+  display:inline; position:static; padding:0; width:auto; height:auto;
+  border-radius:0; background:transparent; color:#536384 !important;
+}
+.family-content .settlement-redesign .summary-grid > div > div:first-child > span:last-child > .settlement-stat-icon {
+  position:absolute; left:10px; top:24px; margin:0; width:38px; height:38px; padding:9px;
+}
+.family-content .settlement-redesign .settlement-net > div:last-child { display:none; }
+@media(min-width:1024px) {
+  .family-content .settlement-redesign .settlement-overview { grid-template-columns:220px minmax(0,1fr); }
+  .family-content .settlement-redesign .settlement-overview .summary-grid > div { padding-left:54px; padding-right:8px; }
 }
 .settlement-redesign .summary-grid > div:nth-child(2) .settlement-stat-icon { background:#ff5269; }
 .family-content .settlement-redesign .summary-grid > div:nth-child(3) > div:first-child > span:has(svg) { background:#9059ff; }
