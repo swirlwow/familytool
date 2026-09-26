@@ -1,6 +1,7 @@
 // src/app/ledger/dashboard/page.tsx
 "use client";
 import "../../reports-ui.css";
+import "./dashboard-colors.css";
 import LedgerTabs from "@/components/LedgerTabs";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -654,7 +655,7 @@ export default function LedgerDashboardPage() {
         </button>
       </div>
 
-      <section className="app-panel overflow-hidden">
+      <section className="dashboard-filter-panel app-panel overflow-hidden">
         <button
           type="button"
           className="app-panel-header w-full text-left"
@@ -831,7 +832,7 @@ export default function LedgerDashboardPage() {
 
       <div className="space-y-6">
         {/* Group Summary Card */}
-        <div className="border border-slate-200 rounded-3xl p-6 bg-white shadow-sm space-y-4">
+        <div className="dashboard-category-panel border border-slate-200 rounded-3xl p-6 bg-white shadow-sm space-y-4">
           <div className="flex items-end justify-between gap-3 flex-wrap border-b border-slate-100 pb-3">
             <h2 className="text-lg font-black text-slate-900">
               {typeFilter === "income"
@@ -937,7 +938,7 @@ export default function LedgerDashboardPage() {
         </div>
 
         {/* Details List Card */}
-        <div className="border border-slate-200 rounded-3xl p-6 bg-white shadow-sm space-y-4">
+        <div className="dashboard-detail-panel border border-slate-200 rounded-3xl p-6 bg-white shadow-sm space-y-4">
           <div className="flex items-end justify-between gap-3 flex-wrap border-b border-slate-100 pb-3">
             <h2 className="text-lg font-black text-slate-900 tracking-tight">
               {typeFilter === "income"
