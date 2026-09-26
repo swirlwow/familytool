@@ -1,4 +1,18 @@
 /* Presentation only: preserve settlement amounts, fields and handlers. */
+@media(min-width:1024px) {
+  .family-content .settlement-redesign .settlement-overview .summary-grid > div {
+    display:grid !important;
+    grid-template-columns:minmax(0,1fr) auto;
+    align-content:center;
+    align-items:center;
+    column-gap:8px;
+    row-gap:8px;
+    padding-right:14px !important;
+  }
+  .family-content .settlement-redesign .settlement-overview .summary-grid > div > div:first-child { grid-column:1; grid-row:1; min-width:0; }
+  .family-content .settlement-redesign .settlement-overview .summary-grid > div > .tabular-nums { grid-column:2; grid-row:1; justify-self:end; }
+  .family-content .settlement-redesign .settlement-overview .summary-grid > div > div:last-child { grid-column:1 / -1; grid-row:2; text-align:right; justify-self:end; }
+}
 .family-content .settlement-redesign .settlement-overview { grid-template-columns:minmax(0,1fr); }
 .family-content .settlement-redesign .settlement-overview .summary-grid > div { position:relative; padding-left:64px; min-height:90px; }
 .settlement-redesign .settlement-stat-icon,
