@@ -32,4 +32,16 @@
 .family-content .bills-color-list table :is(th,td) { border-color:#d8ecfa !important; }
 @media(min-width:1024px) {
   .bills-color-summary { grid-template-columns:220px minmax(0,1fr); }
+  .family-content .bills-color-summary > section:first-child {
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto;
+    align-content:center;
+    align-items:center;
+    gap:6px;
+    min-height:104px;
+    padding:10px 12px;
+  }
+  .bills-color-summary > section:first-child > div:first-child { grid-column:1 / -1; margin:0; }
+  .bills-color-summary > section:first-child > div:last-child { margin:0; }
+  .family-content .bills-color-summary .summary-grid > div { min-height:104px; padding-block:14px; }
 }
