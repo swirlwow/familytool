@@ -1,5 +1,6 @@
 // src/app/bills/page.tsx
 "use client";
+import "./bills-colors.css";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { WORKSPACE_ID } from "@/lib/appConfig";
@@ -491,7 +492,7 @@ export default function BillsPage() {
 
         {view === "bills" ? (
           <>
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-[280px_minmax(0,1fr)]">
+        <div className="bills-color-summary grid grid-cols-1 gap-3 lg:grid-cols-[280px_minmax(0,1fr)]">
           <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
               <div className="mb-2 flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-rose-500" />
@@ -527,7 +528,7 @@ export default function BillsPage() {
           </section>
         </div>
 
-        <details className="group overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+        <details className="bills-color-entry group overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
           <summary className="flex cursor-pointer list-none items-center justify-between bg-slate-50/70 px-4 py-3 sm:px-5">
             <h2 className="flex items-center gap-2 text-sm font-black text-slate-800 sm:text-base">
               <Plus className="h-4 w-4 text-rose-500" />
@@ -575,7 +576,7 @@ export default function BillsPage() {
           </div>
         </details>
 
-        <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+        <section className="bills-color-list overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
           <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3 sm:px-5">
             <div className="flex items-center gap-2">
               <LayoutList className="h-4 w-4 text-slate-400" />
