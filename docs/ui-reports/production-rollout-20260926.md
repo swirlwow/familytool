@@ -21,7 +21,20 @@ Approved: user authorized push and deployment after local acceptance, requiring 
 - Build as production with --skip-domain; promote only after build and read-only checks.
 - No migration, data import, restore, mutation or environment change is part of this rollout.
 
-## Recovery
+## Completed rollout (2026-09-26)
+
+- Pushed release commit: 61b07cd on ui/settings-visual-pilot-20260925.
+- Production: https://familytool.vercel.app
+- New deployment: dpl_ESY1tqa9Lvz2Vi84iuhzPLaN37Li (READY).
+- Immutable URL: https://familytool-i4r6k04m6-swirlwows-projects.vercel.app
+- Production build passed; 47/47 static pages generated. Promotion succeeded.
+- Read-only production checks: /login 200; /ledger 307 to login; /api/ledger 401 without credentials.
+- Production CSS contains the accepted family theme and #fffdf7 canvas color.
+- Error-level log query after promotion returned no logs. This is a point-in-time check, not ongoing monitoring.
+- Signed-in production workflows were not exercised; no production data was written.
+- Original remote recovery tag was verified before rollout. No database or environment changes.
+
+## Recovery procedure
 
 Use Vercel rollback to dpl_ALCgmfpqcRUAD92wpfRHEAS4aBSK (or its immutable URL) after explicit authorization.
 The remote recovery tag preserves the original source. Do not force-push or reset shared branches.
