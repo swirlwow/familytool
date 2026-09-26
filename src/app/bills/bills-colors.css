@@ -1,4 +1,13 @@
 /* Bill presentation only; no changes to payment or template behavior. */
+.family-content .bills-color-summary .summary-grid > div { position:relative; padding-left:62px !important; }
+.bills-color-summary .bill-summary-icon { position:absolute; left:12px; top:50%; transform:translateY(-50%); width:40px; height:40px; padding:10px; color:white; border-radius:50%; background:linear-gradient(135deg,#b185ff,#7937ee); }
+.bills-color-summary .summary-grid > div:nth-child(2) .bill-summary-icon { background:linear-gradient(135deg,#1ec6a8,#009d80); }
+.bills-color-summary .summary-grid > div:nth-child(3) .bill-summary-icon { background:linear-gradient(135deg,#ff827e,#ff3555); }
+.bills-color-summary .summary-grid > div:nth-child(4) .bill-summary-icon { background:linear-gradient(135deg,#48bbff,#0086ef); }
+.family-content .bills-color-summary .summary-grid > div:nth-child(1) { --bill-bg:#f1eaff; --bill-line:#ded1ff; }
+.family-content .bills-color-summary .summary-grid > div:nth-child(2) { --bill-bg:#e2faf4; --bill-line:#baece2; }
+.family-content .bills-color-summary .summary-grid > div:nth-child(3) { --bill-bg:#fff0f1; --bill-line:#ffd4d9; }
+.family-content .bills-color-summary .summary-grid > div:nth-child(4) { --bill-bg:#e5f4ff; --bill-line:#bddfff; }
 .family-content .bills-color-summary { gap:8px; }
 .family-content .bills-color-summary > section:first-child { border-color:#b8defb !important; background:linear-gradient(120deg,#edf8ff,#dcefff) !important; padding:12px; border-radius:9px; box-shadow:none; }
 .family-content .bills-color-summary > section:last-child { border:0 !important; background:transparent !important; box-shadow:none; }
@@ -9,14 +18,15 @@
 .bills-color-summary .summary-grid > div:nth-child(3) { --bill-bg:#ffe6eb; --bill-line:#fac4d0; }
 .bills-color-summary .summary-grid > div:nth-child(4) { --bill-bg:#e1f1ff; --bill-line:#bcdcf8; }
 .family-content .bills-color-entry { border-color:#ffdab6 !important; background:#fffbf7 !important; border-radius:9px !important; box-shadow:none !important; }
-.family-content .bills-color-entry > summary { background:linear-gradient(100deg,#ff9c47,#ffb976) !important; padding:10px 14px; }
-.family-content .bills-color-entry > summary :is(h2,svg) { color:#713700 !important; }
+.family-content .bills-color-entry > summary { background:linear-gradient(100deg,#ffad68,#ffb67e) !important; padding:10px 14px; }
+.family-content .bills-color-entry > summary :is(h2,svg) { color:#fff !important; }
+.family-content .bills-color-entry > summary h2 svg { background:#fff; color:#ff943f !important; border-radius:50%; padding:2px; }
 .family-content .bills-color-entry > div { border-color:#ffe0c0 !important; padding:14px; }
 .family-content .bills-color-entry .collapse { background:#fff6eb !important; border-color:#ffdbb5 !important; }
 .family-content .bills-color-entry button { background:linear-gradient(#ffad49,#ff8615) !important; color:#fff !important; border-radius:6px !important; box-shadow:none !important; }
 .family-content .bills-color-entry input { border-color:#ccdcee !important; background:#fff !important; border-radius:6px !important; }
 .family-content .bills-color-list { border-color:#b9dffc !important; border-radius:9px !important; box-shadow:none !important; }
-.family-content .bills-color-list > div:first-child { background:linear-gradient(100deg,#b1dcff,#dbf1ff) !important; padding:10px 14px; border-color:#b9dffc !important; }
+.family-content .bills-color-list > div:first-child { background:linear-gradient(100deg,#b7dfff,#b3ddfb) !important; padding:10px 14px; border-color:#b9dffc !important; }
 .family-content .bills-color-list > div:first-child :is(h2,svg,span) { color:#075b9e !important; }
 .family-content .bills-color-list table thead { background:#e0f2ff !important; color:#145a93 !important; }
 .family-content .bills-color-list table :is(th,td) { border-color:#d8ecfa !important; }

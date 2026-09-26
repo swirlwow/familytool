@@ -509,19 +509,19 @@ export default function BillsPage() {
           <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
               <div className="summary-grid grid h-full grid-cols-2 sm:grid-cols-4">
                 <div className="flex min-h-20 flex-col justify-center px-4 py-3">
-                  <div className="mb-1 text-xs font-bold text-slate-400">應繳</div>
+                  <div className="mb-1 text-xs font-bold text-slate-400"><Receipt className="bill-summary-icon" aria-hidden="true" />應繳</div>
                   <div className="text-xl font-black tabular-nums text-slate-800">${summary.due.toLocaleString()}</div>
                 </div>
                 <div className="flex min-h-20 flex-col justify-center border-l border-slate-100 px-4 py-3">
-                  <div className="mb-1 text-xs font-bold text-emerald-600">已付</div>
+                  <div className="mb-1 text-xs font-bold text-emerald-600"><CheckCircle2 className="bill-summary-icon" aria-hidden="true" />已付</div>
                   <div className="text-xl font-black tabular-nums text-emerald-600">${summary.paid.toLocaleString()}</div>
                 </div>
                 <div className="flex min-h-20 flex-col justify-center border-t border-slate-100 px-4 py-3 sm:border-l sm:border-t-0">
-                  <div className="mb-1 text-xs font-bold text-rose-500">待付</div>
+                  <div className="mb-1 text-xs font-bold text-rose-500"><Clock className="bill-summary-icon" aria-hidden="true" />待付</div>
                   <div className="text-xl font-black tabular-nums text-rose-500">${summary.remain.toLocaleString()}</div>
                 </div>
                 <div className="flex min-h-20 flex-col justify-center border-l border-t border-slate-100 px-4 py-3 sm:border-t-0">
-                  <div className="mb-1 text-xs font-bold text-sky-600">待補資料</div>
+                  <div className="mb-1 text-xs font-bold text-sky-600"><FilePenLine className="bill-summary-icon" aria-hidden="true" />待補資料</div>
                   <div className="text-xl font-black tabular-nums text-sky-700">{summary.awaiting}</div>
                 </div>
               </div>
