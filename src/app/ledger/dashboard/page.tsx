@@ -1,6 +1,7 @@
 // src/app/ledger/dashboard/page.tsx
 "use client";
 import "../../reports-ui.css";
+import LedgerTabs from "@/components/LedgerTabs";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { WORKSPACE_ID } from "@/lib/appConfig";
@@ -558,6 +559,7 @@ export default function LedgerDashboardPage() {
   return (
     <main className="app-page reports-ui dashboard-ui">
       <div className="app-page-inner">
+      <LedgerTabs active="dashboard" />
       <header className="app-header flex-wrap">
         <div>
           <h1 className="text-lg font-black text-slate-900 sm:text-xl">

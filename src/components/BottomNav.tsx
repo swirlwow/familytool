@@ -6,7 +6,7 @@ import { CalendarDays, Home, LayoutDashboard, Menu, Shuffle } from "lucide-react
 
 const NAV_ITEMS = [
   { name: "首頁", href: "/", icon: Home },
-  { name: "記帳", href: "/ledger", icon: LayoutDashboard },
+  { name: "記帳管理", href: "/ledger", icon: LayoutDashboard },
   { name: "行事曆", href: "/calendar", icon: CalendarDays },
   { name: "拆帳", href: "/settlement", icon: Shuffle },
 ];

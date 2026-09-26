@@ -30,7 +30,7 @@ const NAV_GROUPS = [
     title: "帳務工具",
     icon: Wallet,
     items: [
-      { name: "記帳", href: "/ledger", icon: LayoutDashboard },
+      { name: "記帳管理", href: "/ledger", icon: LayoutDashboard },
       { name: "拆帳管理", href: "/settlement", icon: Calculator },
       { name: "帳單管理", href: "/bills", icon: Receipt },
       { name: "記帳設定", href: "/settings/categories", icon: Tags },

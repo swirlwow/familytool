@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useRef } from "react";
-import Link from "next/link";
+import LedgerTabs from "@/components/LedgerTabs";
 import { AppModal } from "@/components/ui/app-modal";
 import { WORKSPACE_ID } from "@/lib/appConfig";
 import {
@@ -488,22 +488,7 @@ export default function LedgerPage() {
     <main className="app-page everyday-pilot ledger-pilot">
       <div className="app-page-inner max-w-6xl">
         
-        {/* Sticky Header */}
-        <div className="app-header">
-          <div className="flex w-full flex-row items-center justify-between gap-3">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className="bg-sky-50 text-sky-600 p-1.5 sm:p-2 rounded-lg border border-sky-100">
-                <Wallet className="w-5 h-5" />
-              </div>
-              <h1 className="text-lg font-black text-slate-800">記帳本</h1>
-            </div>
-            <div className="flex gap-2">
-              <Link href="/ledger/dashboard" className="btn btn-outline btn-sm h-9 min-h-0 rounded-lg border-slate-300 px-3 text-xs font-bold text-slate-600 sm:px-4 sm:text-sm">
-                財務儀表板
-              </Link>
-            </div>
-          </div>
-        </div>
+        <LedgerTabs active="ledger" />
 
         {/* Stats */}
         <div className="grid grid-cols-2 gap-3 md:grid-cols-[260px_1fr_1fr]">

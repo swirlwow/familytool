@@ -1,0 +1,9 @@
+.app-page .ledger-tabs { display:flex; gap:5px; border-bottom:1px solid #d6c7ef; align-self:stretch; }
+.app-page .ledger-tabs a { display:inline-flex; align-items:center; justify-content:center; min-height:44px; padding:10px 22px; border:1px solid #d6c7ef; border-bottom:0; border-radius:7px 7px 0 0; background:#fff; color:#536080; font-weight:700; font-size:14px; text-decoration:none; }
+.app-page .ledger-tabs a[aria-current="page"] { background:#8859d5; color:#fff; border-color:#8859d5; }
+.app-page .ledger-tabs a:focus-visible { outline:2px solid #7047c6; outline-offset:3px; }
+@media(min-width:1024px) {
+  .dashboard-ui .app-page-inner > .ledger-tabs { grid-row:1; grid-column:1 / -1; }
+  .app-page.dashboard-ui .app-page-inner > .dashboard-presets,
+  .app-page.dashboard-ui .app-page-inner > [aria-label="明細匯出工具"] { grid-row:2; }
+}
