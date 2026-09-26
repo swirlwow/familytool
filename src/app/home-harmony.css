@@ -1,5 +1,5 @@
 /* Home-only presentation; shared navigation, data and feature pages are untouched. */
-.home-harmony .home-inner { width:100%; max-width:1440px; margin:auto; color:#172b55; }
+.home-harmony .home-inner { width:100%; max-width:1100px; margin:auto; color:#172b55; }
 .home-hero { position:relative; isolation:isolate; overflow:hidden; min-height:260px; aspect-ratio:3; border-radius:20px; background:#dff4fc; }
 .home-hero-art { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:center; z-index:-1; }
 .home-hero-copy { padding:38px 34px; width:53%; }
@@ -36,4 +36,34 @@
 @media (max-width:700px) {
   .home-hero { aspect-ratio:auto; min-height:390px; }
   .home-hero-art { width:200%; max-width:none; height:auto; top:auto; bottom:0; left:auto; right:0; object-fit:contain; }
+}
+/* Compact homepage: reduce visual height without scaling text or tap targets. */
+@media (min-width:701px) {
+  .home-hero { min-height:0; height:230px; aspect-ratio:auto; }
+  .home-hero-art { width:auto; min-width:63%; max-width:none; height:100%; left:auto; right:0; object-fit:contain; mask-image:linear-gradient(to right,transparent,#000 18%); }
+  .home-hero-copy { padding:24px; width:50%; }
+  .home-hero h1 { font-size:34px; }
+  .home-hero-copy p { font-size:14px; }
+  .home-prompt { margin-top:15px; padding:8px 14px; font-size:13px; }
+  .home-groups { gap:14px; margin-top:14px; }
+  .home-section-heading { padding:9px 15px; gap:9px; }
+  .home-section-heading h2 { font-size:19px; }
+  .home-section-heading > svg { width:24px; height:24px; }
+  .home-tools { padding:10px; gap:8px; }
+  .home-tool { min-height:120px; padding:10px 6px; }
+  .home-tool-icon { width:45px; height:45px; border-radius:13px; margin-bottom:8px; }
+  .home-tool-icon svg { width:29px; height:29px; }
+  .home-tool-name { font-size:15px; }
+  .home-tool-desc { margin-top:4px; }
+  .home-section--investment .home-tools,.home-section--settings .home-tools { height:calc(100% - 44px); }
+}
+@media (min-width:1000px) { .home-tools { grid-template-columns:repeat(4,minmax(0,1fr)); } }
+@media (max-width:700px) {
+  .home-hero { min-height:335px; }
+  .home-hero-copy { padding:17px; }
+  .home-hero h1 { font-size:26px; }
+  .home-hero-art { width:175%; }
+  .home-tool { min-height:124px; padding:12px 7px; }
+  .home-tool-icon { width:48px; height:48px; margin-bottom:8px; }
+  .home-tool-icon svg { width:30px; height:30px; }
 }

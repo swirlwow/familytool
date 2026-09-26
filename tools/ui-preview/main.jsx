@@ -1,4 +1,5 @@
 import './fixtures.mjs';
+import './preview-shell.css';
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import '../../src/app/globals.css';

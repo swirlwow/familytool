@@ -1,7 +1,7 @@
 "use client";
 import "@/app/family-harmony.css";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
@@ -61,11 +61,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const activeGroup = useMemo(() => NAV_GROUPS.find((group) => group.items.some((item) => {
-    if (item.href === "/settings/categories") return ["/settings/categories", "/settings/payment-methods", "/settings/merchants", "/settings/payers"].includes(pathname);
-    return pathname === item.href || pathname.startsWith(`${item.href}/`);
-  }))?.title ?? null, [pathname]);
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => new Set(NAV_GROUPS.map(group => group.title)));
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => new Set());
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => setUser(user));
@@ -79,10 +75,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     });
     return () => subscription.unsubscribe();
   }, [router]);
-
-  useEffect(() => {
-    if (activeGroup) setExpandedGroups((current) => current.has(activeGroup) ? current : new Set([...current, activeGroup]));
-  }, [activeGroup]);
 
   const handleLogout = async () => {
     try {
@@ -122,6 +114,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             <span><strong>FAMILYTOOL</strong></span>
           </Link>
 
+          <div className="family-sidebar-scroll">
           <Link href="https://shift-leave-manager.vercel.app/" target="_blank" rel="noreferrer" className="shift-shortcut">
             <House aria-hidden="true" />
             <span><strong>值班休假</strong><small>開啟管理工具</small></span>
@@ -155,6 +148,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               <button onClick={handleLogout}><Settings aria-hidden="true" />登出</button>
             </div>
           )}
+          </div>
           <div className="family-sidebar-garden" aria-hidden="true" />
         </aside>
       </div>

@@ -1,0 +1,4 @@
+/* Only the isolated preview has a 30px notice above the desktop shell. */
+@media (min-width:1024px) {
+  .family-shell .family-sidebar { height:calc(100dvh - 30px) !important; }
+}

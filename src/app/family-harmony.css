@@ -22,7 +22,19 @@
 .family-shell .family-content :is(.shopping-pilot,.stickies-pilot,.sticky-detail-ui,.calendar-ui) { --section-accent:#087c80; --section-soft:#e8faf7; --section-line:#c8e9e1; }
 .family-shell .family-content :is(.backup-ui,.app-page:has(.settings-navigation)) { --section-accent:#7252b1; --section-soft:#f3edff; --section-line:#e0d5f0; }
 
-/* Keep the garden/cat artwork untouched. */
+/* Sidebar reference refresh: keep navigation structure and actions unchanged. */
+.family-shell .family-sidebar { height:100dvh; min-height:0; overflow:hidden; padding-bottom:0; }
+.family-shell .family-sidebar > .family-brand { flex-shrink:0; }
+.family-shell .family-sidebar-scroll { flex:1 1 0%; min-height:0; overflow-y:auto; overflow-x:hidden; overscroll-behavior-y:contain; scrollbar-width:thin; padding:3px 4px 8px; margin:0 -4px; }
+.family-shell .family-sidebar > .family-sidebar-garden { flex:0 0 clamp(90px,23dvh,180px); height:clamp(90px,23dvh,180px); min-height:0; background-size:contain; background-position:center bottom; }
+.family-shell .family-sidebar .shift-shortcut > svg:first-child { color:#078bff; fill:none; stroke-width:2.2; }
+.family-shell .family-sidebar .family-nav-group:first-child .family-nav-group-label svg { color:#ffa400; fill:none; stroke-width:2.2; }
+.family-shell .family-sidebar .family-nav-group:nth-child(2) .family-nav-group-label svg { fill:none; stroke-width:5; stroke-linecap:round; }
+.family-shell .family-sidebar .family-nav-group:nth-child(2) .family-nav-group-label svg path:nth-child(1) { stroke:#13bb83; }
+.family-shell .family-sidebar .family-nav-group:nth-child(2) .family-nav-group-label svg path:nth-child(2) { stroke:#37cf9b; }
+.family-shell .family-sidebar .family-nav-group:nth-child(2) .family-nav-group-label svg path:nth-child(3) { stroke:#ffa321; }
+.family-shell .family-sidebar .family-nav-group:nth-child(3) .family-nav-group-label svg { color:#078bff; fill:none; stroke-width:2.2; }
+.family-shell .family-sidebar-garden { min-height:180px; background-image:url('/images/sidebar-garden-cat-soft.webp'); background-size:100% auto; }
 .family-shell .family-sidebar { background-color:#fffdf7 !important; border-right-color:#eee9df !important; }
 .family-shell .family-nav-link.active { background:#e0f1ff !important; color:#075dae !important; border-radius:10px !important; }
 .family-shell .family-nav-link:hover { background-color:#eef6fa; }

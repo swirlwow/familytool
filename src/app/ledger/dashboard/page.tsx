@@ -1090,10 +1090,10 @@ export default function LedgerDashboardPage() {
                       <th className="px-2 py-2 w-[20px]">類型</th>
                       <th className="px-2 py-2 w-[80px] text-right">金額</th>
                       <th className="px-2 py-2 w-[100px]">分類</th>
-                      <th className="px-2 py-2 w-[160px]">店家</th>
+                      <th className="px-2 py-2">店家</th>
                       <th className="px-2 py-2 w-[100px]">付款</th>
                       <th className="px-2 py-2 w-[90px]">結清狀態</th>
-                      <th className="px-2 py-2">備註</th>
+                      <th className="px-2 py-2 w-[160px]">備註</th>
                     </tr>
                   </thead>
 
