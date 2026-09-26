@@ -1,0 +1,7 @@
+# Local mock previews and visual acceptance evidence are not production inputs.
+tools/ui-preview/
+docs/
+.local-backups/
+.local-verification/
+.npm-cache/
+*.tsbuildinfo
