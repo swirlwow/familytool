@@ -1,0 +1,28 @@
+/* Detail-page presentation only. Existing save, check and sort behavior is unchanged. */
+.sticky-detail-ui { --ft-paper:#fff; --ft-ivory:#fff; --ft-line:#ddd6f0; --ft-plum:#172554; --ft-plum-soft:#576180; background:#fafaff !important; }
+.sticky-detail-ui .app-page-inner { max-width:1100px; gap:12px; }
+.sticky-detail-ui .app-actions { justify-content:flex-end; padding:0; background:transparent; border:0; box-shadow:none; }
+.sticky-detail-ui .app-actions > div:empty { display:none; }
+.sticky-detail-ui .app-panel { border:1px solid #ddd6f0 !important; border-radius:8px !important; box-shadow:none !important; background:#fff !important; }
+.sticky-detail-ui .btn { border-radius:6px !important; min-height:38px; box-shadow:none !important; }
+.app-page.sticky-detail-ui .app-actions .btn-primary { background:#8859d5 !important; border-color:#8859d5 !important; color:#fff !important; }
+.sticky-detail-ui .btn-outline { background:#f4effc !important; border-color:#cdb6ef !important; color:#7047c6 !important; }
+.sticky-detail-ui .app-actions .btn-outline { background:#fff1f4 !important; border-color:#ffc0d2 !important; color:#d8255e !important; }
+.sticky-detail-ui .app-panel > .flex.flex-wrap > button { border-radius:6px; min-height:36px; }
+.sticky-detail-ui :is(input,textarea) { min-width:0; border-radius:6px !important; border-color:#dcd5ef !important; }
+.sticky-detail-ui .app-panel > input { background:#f7f4fe !important; font-size:18px; min-height:48px; }
+.sticky-detail-ui textarea { padding:12px; line-height:1.8; min-height:180px; resize:vertical; }
+.sticky-detail-ui .app-panel > .flex.flex-col { padding:12px; border-radius:8px; background:#f2edfc; align-items:center; }
+.sticky-detail-ui .app-panel > .flex.flex-col > div { min-width:0; background:#fff !important; border-radius:6px; }
+.sticky-detail-ui .app-panel > .space-y-2 > div > .flex { border-radius:6px; padding:10px; border-color:#e1d9ef !important; }
+.sticky-detail-ui .app-panel > .space-y-2 > div > .flex:has(input:checked) { background:#f0faf6 !important; }
+.sticky-detail-ui .checkbox { accent-color:#8859d5; }
+.sticky-detail-ui :is(button,input,textarea):focus-visible { outline:2px solid #8859d5; outline-offset:3px; }
+.sticky-detail-ui button:disabled { opacity:.45; }
+@media(max-width:767px) {
+  .sticky-detail-ui .app-panel { padding:12px !important; }
+  .sticky-detail-ui .app-panel > .flex.flex-col { display:grid; grid-template-columns:minmax(0,1fr) auto; padding:10px; }
+  .sticky-detail-ui .app-panel > .flex.flex-col > div { grid-column:1 / -1; }
+  .sticky-detail-ui .app-panel > .flex.flex-col > span { justify-self:end; }
+  .sticky-detail-ui .app-panel > .space-y-2 > div > .flex { gap:5px; padding:7px; }
+}

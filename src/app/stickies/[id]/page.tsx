@@ -1,5 +1,6 @@
 // src/app/stickies/[id]/page.tsx
 "use client";
+import "../sticky-detail-ui.css";
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -322,7 +323,7 @@ export default function StickyDetailPage() {
   }
 
   return (
-    <main className="app-page">
+    <main className="app-page sticky-detail-ui">
       <div className="app-page-inner max-w-4xl">
         <div className="app-actions" role="group" aria-label="便條紙操作">
             <div className="flex items-center gap-2">

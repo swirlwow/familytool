@@ -30,6 +30,11 @@ window.fetch = async (input, options = {}) => {
   const url = new URL(typeof input === 'string' ? input : input.url, location.origin);
   const method = options.method || 'GET';
   window.__previewRequests.push({ path: url.pathname, method });
+  if (url.origin === location.origin && method === 'GET' && /^\/api\/stickies\/[^/]+$/.test(url.pathname)) return Response.json({ data: stores['/api/stickies'].find(row => row.id === decodeURIComponent(url.pathname.split('/').at(-1))) ?? null });
+  if (url.origin === location.origin && method === 'GET' && /^\/api\/stickies\/[^/]+\/items$/.test(url.pathname)) return Response.json({ data: [
+    { id: 'preview-item-1', sticky_id: 'note-0', text: '準備週末出遊用品', is_done: false, sort: 10 },
+    { id: 'preview-item-2', sticky_id: 'note-0', text: '確認交通安排', is_done: true, sort: 20 },
+  ] });
   if (url.origin === location.origin && method === 'GET' && url.pathname === '/api/investments') return Response.json({ data: investmentPreview });
   if (url.origin === location.origin && method === 'GET' && url.pathname === '/api/export') {
     const tables = Object.fromEntries(BACKUP_TABLES.family.map(name => [name, []]));
