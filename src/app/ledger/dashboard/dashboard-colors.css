@@ -1,6 +1,6 @@
 /* Scoped visual treatment only; existing data, calculations and actions remain. */
 .family-content .dashboard-ui .dashboard-filter-panel { border-color:#ffd2d8 !important; background:#fff5f5 !important; border-radius:10px !important; }
-.family-content .dashboard-ui .dashboard-filter-panel > .app-panel-header { background:linear-gradient(105deg,#ff6975,#ff8790) !important; padding:10px 14px; min-height:44px; }
+.family-content .dashboard-ui .dashboard-filter-panel > .app-panel-header { background:linear-gradient(105deg,#ff7c87,#ff8590) !important; padding:10px 14px; min-height:44px; }
 .family-content .dashboard-ui .dashboard-filter-panel > .app-panel-header :is(span,svg) { color:#fff !important; }
 .dashboard-ui .dashboard-filter-panel > div { padding:12px 14px; }
 .dashboard-ui .dashboard-filters > div > div { color:#263d71 !important; }
@@ -15,10 +15,10 @@
 .family-content .dashboard-ui .dashboard-category-panel { border-color:#f7d4ba !important; background:#fff8f3 !important; }
 .family-content .dashboard-ui .dashboard-detail-panel { border-color:#bce3fa !important; }
 .dashboard-ui :is(.dashboard-category-panel,.dashboard-detail-panel) > div:first-child { padding:10px 14px; align-items:center; min-height:44px; border:0; gap:10px; }
-.dashboard-ui .dashboard-category-panel > div:first-child { background:linear-gradient(100deg,#ffac71,#ffc091); }
-.dashboard-ui .dashboard-category-panel > div:first-child h2 { color:#713a14 !important; font-size:16px; }
+.dashboard-ui .dashboard-category-panel > div:first-child { background:linear-gradient(100deg,#ffb17c,#ffba8b); }
+.dashboard-ui .dashboard-category-panel > div:first-child h2 { color:#fff !important; font-size:16px; }
 .dashboard-ui .dashboard-category-panel > div:first-child > div { font-size:12px; color:#75482a; }
-.dashboard-ui .dashboard-detail-panel > div:first-child { background:linear-gradient(100deg,#b0dcff,#d7f0ff); }
+.dashboard-ui .dashboard-detail-panel > div:first-child { background:linear-gradient(100deg,#b7e0ff,#b4e0fc); }
 .dashboard-ui .dashboard-detail-panel > div:first-child h2 { color:#07559c !important; font-size:16px; }
 .dashboard-ui .dashboard-detail-panel > div:first-child > div { background:#eef9ff !important; color:#1464a7 !important; padding:4px 12px; border-radius:999px; font-size:12px; }
 .dashboard-ui :is(.dashboard-category-panel,.dashboard-detail-panel) > div:not(:first-child) { margin:0; padding:12px; }
