@@ -4,6 +4,8 @@ import "./settlement-colors.css";
 import { useEffect, useMemo, useState } from "react";
 import {
   Calculator,
+  Coins,
+  ArrowUpRight,
   RefreshCw,
   ArrowRight,
   History,
@@ -527,7 +529,7 @@ export default function SettlementPage() {
                 <div className="flex min-h-24 flex-col justify-center px-4 py-3">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-bold text-slate-400">
-                      拆帳總額
+                      <Coins className="settlement-stat-icon" aria-hidden="true" />拆帳總額
                     </span>
                   </div>
                   <div className="text-xl font-black tabular-nums text-slate-800">
@@ -539,7 +541,7 @@ export default function SettlementPage() {
                 <div className="flex min-h-24 flex-col justify-center border-l border-slate-100 px-4 py-3">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-bold text-blue-600">
-                      結算前淨欠款
+                      <ArrowUpRight className="settlement-stat-icon" aria-hidden="true" />結算前淨欠款
                     </span>
                   </div>
                   <div className="text-xl font-black tabular-nums text-blue-700">
@@ -734,10 +736,13 @@ export default function SettlementPage() {
                   >
                     <div className="flex items-center gap-3">
                       <div className="bg-rose-100 text-rose-700 font-bold px-3 py-1 rounded-xl text-sm">
+                        <PayerAvatar name={nameOf(sug.debtor_id)} />
                         {nameOf(sug.debtor_id)}
                       </div>
                       <div className="text-slate-400 font-medium text-xs">應還款給</div>
                       <div className="bg-emerald-100 text-emerald-700 font-bold px-3 py-1 rounded-xl text-sm">
+                        <ArrowRight className="repayment-arrow" aria-hidden="true" />
+                        <PayerAvatar name={nameOf(sug.creditor_id)} />
                         {nameOf(sug.creditor_id)}
                       </div>
                     </div>

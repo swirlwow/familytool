@@ -1,4 +1,22 @@
 /* Presentation only: preserve settlement amounts, fields and handlers. */
+.family-content .settlement-redesign .settlement-overview { grid-template-columns:minmax(0,1fr); }
+.family-content .settlement-redesign .settlement-overview .summary-grid > div { position:relative; padding-left:64px; min-height:90px; }
+.settlement-redesign .settlement-stat-icon,
+.family-content .settlement-redesign .summary-grid > div > div:first-child > span:has(svg) {
+  display:flex; position:absolute; left:12px; top:20px; width:42px; height:42px; padding:10px;
+  border-radius:50%; background:#00ad94; color:white !important;
+}
+.settlement-redesign .summary-grid > div:nth-child(2) .settlement-stat-icon { background:#ff5269; }
+.family-content .settlement-redesign .summary-grid > div:nth-child(3) > div:first-child > span:has(svg) { background:#9059ff; }
+.family-content .settlement-redesign .summary-grid > div:nth-child(4) > div:first-child > span:has(svg) { background:#ff9c00; }
+.settlement-redesign .repayment-row > div:first-child > div { display:flex; align-items:center; gap:6px; padding:0; }
+.settlement-redesign .repayment-row img,.settlement-redesign .repayment-row svg:not(.repayment-arrow) { width:36px; height:36px; flex-shrink:0; }
+.settlement-redesign .repayment-arrow { width:20px; height:20px; color:#0097a7; }
+.family-content .settlement-redesign .repayment-row { display:flex; flex-direction:column; align-items:stretch; padding:12px; gap:12px; }
+.settlement-redesign .repayment-row > div:first-child { flex-wrap:wrap; justify-content:center; gap:8px; }
+.settlement-redesign .repayment-row > div:last-child { display:flex; flex-wrap:wrap; justify-content:center; gap:10px; }
+.settlement-redesign .repayment-row > div:last-child > div { color:#ef184f; }
+.settlement-redesign .repayment-row > div:last-child > button { width:100%; min-height:40px; }
 .family-content .settlement-redesign .settlement-overview > div:first-child { border-color:#b8dcff !important; background:linear-gradient(#d4ecff,#f8fcff) !important; border-radius:9px !important; }
 .family-content .settlement-redesign .settlement-overview > div:first-child button { background:#1489f8; color:#fff; padding:7px 10px; border-radius:6px; }
 .family-content .settlement-redesign .settlement-overview .summary-grid > div { border-radius:9px; }
