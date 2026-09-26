@@ -25,6 +25,7 @@ for (const path of ['src/app/investments/page.tsx', 'src/app/ledger/dashboard/pa
    };
    await page.goto('http://127.0.0.1:4287/investments');
    await page.getByRole('tab', { name: '永豐-大美女' }).waitFor();
+   assert.equal(await page.locator('.investments-ui .app-header').isVisible(), false);
    await capture('holdings');
    await page.getByRole('button', { name: '計算明細／對帳', exact: true }).filter({ visible: true }).click();
    await capture('calculation');
@@ -39,7 +40,11 @@ for (const path of ['src/app/investments/page.tsx', 'src/app/ledger/dashboard/pa
     await capture(name);
    }
    for (const [label, name] of [['新增買進','buy'], ['新增賣出','sell'], ['新增股利','dividend'], ['新增減資','reduction'], ['帳戶','account'], ['股票','security']]) {
-    await page.getByRole('button', { name: label, exact: true }).first().click();
+    if (name === 'account' || name === 'security') {
+     await page.locator('.app-panel-header').filter({ hasText: name === 'account' ? '券商帳戶' : '股票基本資料' }).getByRole('button', { name: '新增', exact: true }).click();
+    } else {
+     await page.getByRole('button', { name: label, exact: true }).first().click();
+    }
     await page.getByRole('button', { name: '關閉', exact: true }).waitFor();
     await capture('modal-' + name);
     await page.getByRole('button', { name: '關閉', exact: true }).click();

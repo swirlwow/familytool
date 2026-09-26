@@ -113,9 +113,9 @@
 .reports-ui table th { font-size: 12px; }
 .reports-ui table td { font-size: 13px; }
 .reports-ui table tbody tr:hover { background: #faf8ff; }
-/* Keep existing header actions, but omit the page title on every viewport. */
+/* Omit the redundant upper toolbar; master-data actions remain in 基本資料. */
 .investments-ui .app-header {
-  display: flex !important;
+  display: none !important;
   justify-content: flex-end;
   padding: 0;
   border: 0;
