@@ -1,4 +1,5 @@
 "use client";
+import "./settlement-colors.css";
 
 import { useEffect, useMemo, useState } from "react";
 import {

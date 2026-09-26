@@ -1,0 +1,28 @@
+/* Presentation only: preserve settlement amounts, fields and handlers. */
+.family-content .settlement-redesign .settlement-overview > div:first-child { border-color:#b8dcff !important; background:linear-gradient(#d4ecff,#f8fcff) !important; border-radius:9px !important; }
+.family-content .settlement-redesign .settlement-overview > div:first-child button { background:#1489f8; color:#fff; padding:7px 10px; border-radius:6px; }
+.family-content .settlement-redesign .settlement-overview .summary-grid > div { border-radius:9px; }
+.family-content .settlement-redesign .settlement-overview .summary-grid > div:nth-child(1) { background:linear-gradient(110deg,#e4fbf5,#f4fffd) !important; border-color:#b4eadd; }
+.family-content .settlement-redesign .settlement-overview .summary-grid > div:nth-child(2) { background:linear-gradient(110deg,#ffedf0,#fff8f8) !important; border-color:#ffc7d3; }
+.family-content .settlement-redesign .settlement-overview .summary-grid > div:nth-child(3) { background:linear-gradient(110deg,#eee5ff,#f8f5ff) !important; border-color:#d6c4fa; }
+.family-content .settlement-redesign .settlement-overview .summary-grid > div:nth-child(4) { background:linear-gradient(110deg,#fff0d5,#fffaf1) !important; border-color:#f5d7a3; }
+.family-content .settlement-redesign .card { border-color:#bce5fa !important; border-radius:9px !important; }
+.family-content .settlement-redesign .card > div:first-child { background:linear-gradient(100deg,#b2dbff,#d2efff) !important; padding:10px 14px; min-height:42px; }
+.family-content .settlement-redesign .card > div:first-child h3 { color:#075a9f !important; font-size:16px; }
+.family-content .settlement-redesign .settlement-net { border-color:#afe7e1 !important; }
+.family-content .settlement-redesign .settlement-net > div:first-child { background:linear-gradient(100deg,#43c7c0,#87ddd4) !important; }
+.family-content .settlement-redesign .settlement-net > div:first-child h3 { color:#064c50 !important; }
+.family-content .settlement-redesign .settlement-net + .card { border-color:#ffdab5 !important; background:#fffbf6 !important; }
+.family-content .settlement-redesign .settlement-net + .card > div:first-child { background:linear-gradient(100deg,#ffa54a,#ffc186) !important; }
+.family-content .settlement-redesign .settlement-net + .card > div:first-child h3 { color:#743c07 !important; }
+.family-content .settlement-redesign .settlement-net + .card .btn { background:linear-gradient(#ffae35,#ff8a00) !important; border:1px solid #f48a00 !important; color:#fff !important; }
+.family-content .settlement-redesign .payer-profile { border:1px solid #c4e8fa !important; background:#f2fbff !important; border-radius:9px; }
+.family-content .settlement-redesign table thead tr { background:#e0f1ff !important; color:#235884 !important; }
+@media(min-width:1200px) {
+  .settlement-redesign > .app-page-inner { display:grid; grid-template-columns:minmax(0,1.2fr) minmax(0,1fr); gap:14px; align-items:start; }
+  .settlement-redesign > .app-page-inner > * { grid-column:1 / -1; min-width:0; }
+  .settlement-redesign > .app-page-inner > .settlement-net { grid-column:1; display:flex; flex-direction:column; height:100%; }
+  .settlement-redesign > .app-page-inner > .settlement-net + .card { grid-column:2; height:100%; }
+  .family-content .settlement-redesign .settlement-net > div:nth-child(2) { border-right:0; }
+  .settlement-redesign .settlement-net + .card .btn { white-space:normal; }
+}
