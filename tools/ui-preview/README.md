@@ -14,3 +14,7 @@ All records are synthetic and reset on full navigation/reload. Do not enter real
 This is UI verification, not backend/auth/production integration testing.
 Out-of-scope routes are not implemented in this harness.
 Nothing here is imported by the production Next app.
+
+Calendar and backup are now included. Calendar edits use resettable in-memory
+notes. Backup downloads a verified JSON made only from these synthetic fixtures.
+Review the latest two-page group at /review-calendar-backup.html.

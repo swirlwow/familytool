@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="zh-Hant">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>行事曆與資料備份｜UI 驗收</title>
+<link rel="stylesheet" href="/fonts/chiron-go-round/css/vf.css">
+<style>
+body{margin:0;background:#fafaff;color:#172554;font:16px "Chiron GoRound TC WS",sans-serif}header,main{max-width:1440px;margin:auto;padding:24px}h1{font-size:24px}h2{font-size:18px}p{line-height:1.8;color:#576180}nav{display:flex;gap:20px;flex-wrap:wrap}a{color:#7047c6}section{margin-bottom:28px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.phones{grid-template-columns:repeat(4,minmax(0,1fr))}figure{margin:0;border:1px solid #ddd6f0;border-radius:8px;background:#fff;overflow:hidden}figcaption{padding:12px;font-weight:700}img{display:block;width:100%;height:auto}figure a{display:block}button{padding:10px 16px;border:0;border-radius:6px;background:#8859d5;color:white;font:inherit;cursor:pointer}.wide .grid{grid-template-columns:1fr}.wide .phones{grid-template-columns:repeat(2,minmax(0,1fr))}@media(max-width:760px){header,main{padding:16px}.grid,.phones{grid-template-columns:1fr 1fr}section:first-child .grid{grid-template-columns:1fr}}
+</style>
+<header><h1>行事曆與資料備份｜整組 UI 驗收</h1><p>依核准稿調整。保留側欄、貓咪與字體，無 Banner、無頁面大標題。下方是本機假資料截圖；可點圖放大，或開啟互動預覽。未推送、未部署。</p><nav><a href="/calendar">開啟行事曆</a><a href="/settings/backup">開啟資料備份</a><a href="/review.html">其他已調整頁面</a><button onclick="document.body.classList.toggle('wide')">切換大圖</button></nav></header>
+<main id="gallery"></main>
+<script>
+const groups=[['桌面主要畫面',[['1440-month','行事曆・月'],['1440-week','行事曆・週'],['1440-backup','資料備份'],['1440-overflow','其他行程']]],['行程操作',[['1440-new','新增行程'],['1440-edit','編輯行程'],['1440-delete','刪除確認'],['1440-validation','欄位錯誤']]],['手機與平板',[['834-week','平板週檢視'],['390-month','手機月檢視'],['390-week','手機週檢視'],['390-edit','手機編輯'],['390-navigation','手機側欄'],['390-delete','手機刪除確認'],['390-backup','手機備份'],['360-edit','小手機編輯']]],['處理與提示狀態',[['1440-loading','行事曆載入中'],['1440-load-error','行事曆讀取失敗'],['1440-saving','行程儲存中'],['1440-save-error','行程儲存失敗'],['390-backup-busy','備份準備中'],['390-backup-success','備份下載成功'],['390-backup-error','備份下載失敗']]]];
+for(const [title,items] of groups){const section=document.createElement('section');const heading=document.createElement('h2');heading.textContent=title;section.append(heading);const grid=document.createElement('div');grid.className='grid';for(const [file,label] of items){const figure=document.createElement('figure');const caption=document.createElement('figcaption');caption.textContent=label;const link=document.createElement('a');link.href='/@fs/D:/@WORK/Shift%20Schedule/familytool-ui-pilot/docs/ui-calendar-backup/'+file+'.png';link.target='_blank';const img=document.createElement('img');img.src=link.href;img.alt=label;img.loading='lazy';link.append(img);figure.append(caption,link);grid.append(figure)}section.append(grid);document.getElementById('gallery').append(section)}
+</script>
+</html>

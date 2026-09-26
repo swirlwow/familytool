@@ -2,7 +2,9 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CalendarDays, ChevronLeft, ChevronRight, Plus, Trash2, X } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, LoaderCircle, Plus, Trash2, X } from "lucide-react";
+import "./calendar-ui.css";
+import "../calendar-backup-ui.css";
 import { useToast } from "@/hooks/use-toast";
 import { ConfirmActionDialog } from "@/components/ui/confirm-action-dialog";
 import { AppModal } from "@/components/ui/app-modal";
@@ -27,7 +29,7 @@ const OWNER_STYLE: Record<
   { chip: string; ring: string; itemBg: string; barBg: string }
 > = {
   家庭: {
-    chip: "bg-indigo-100 text-indigo-800",
+    chip: "bg-violet-100 text-violet-800",
     ring: "ring-indigo-300",
     itemBg: "bg-indigo-50 text-indigo-800 border-indigo-100",
     barBg: "bg-indigo-200/70 text-indigo-900 border-indigo-200",
@@ -520,33 +522,22 @@ export default function CalendarPage() {
 
   return (
     // ✅ 修正高度：確保能完美避開 AppShell 的底部導覽列 (pb-24 即 96px) 並完整顯示於螢幕中
-    <main className="family-calendar flex min-h-0 flex-col overflow-hidden border-t border-slate-200 bg-white lg:border-none">
+    <main className="family-calendar calendar-ui flex min-h-0 flex-col overflow-hidden border-t border-slate-200 bg-white lg:border-none" aria-label="行事曆">
       
       {/* ===== Header ===== */}
       <header className="shrink-0 border-b border-slate-200 bg-white">
         <div className="max-w-6xl mx-auto w-full px-2 sm:px-4">
           {/* ✅ 修正圖層與排版問題：改為 flex 排版確保「下一頁」按鈕不會被覆蓋 */}
-          <div className="h-16 flex items-center justify-between gap-1 sm:gap-3">
+          <div className="calendar-toolbar">
             
             {/* 左：標題 (使用 flex-1 推擠) */}
-            <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-              <div className="bg-orange-50 text-orange-600 p-1.5 sm:p-2 rounded-xl border border-orange-100 shrink-0">
-                <CalendarDays className="w-4 h-4 sm:w-5 sm:h-5" />
-              </div>
-              <div className="min-w-0 flex flex-col justify-center">
-                <div className="flex items-center gap-2">
-                  <h1 className="font-black text-[16px] sm:text-[20px] text-slate-900 truncate">行事曆</h1>
-                </div>
-                <p className="text-[10px] sm:text-[12px] font-medium text-slate-400 truncate -mt-0.5">
-                  {mode === "month" ? "月曆" : "本週行程"}
-                  {loading ? "（載入中…）" : ""}
-                </p>
-              </div>
-            </div>
+            <span className="calendar-loading" role="status">
+              {loading && <><LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" /><span className="sr-only">載入中…</span></>}
+            </span>
 
             {/* 中：模式與日期切換 */}
-            <div className="flex justify-center items-center gap-1 sm:gap-2 shrink-0">
-              <div className="hidden sm:inline-flex items-center bg-slate-50 border border-slate-200 rounded-full p-1 shadow-sm">
+            <div className="calendar-period-controls">
+              <div className="calendar-mode hidden sm:inline-flex" aria-label="檢視方式">
                 <button
                   type="button"
                   className={cn(
@@ -554,6 +545,7 @@ export default function CalendarPage() {
                     mode === "month" ? "bg-orange-600 text-white shadow-sm" : "text-slate-700 hover:bg-slate-100"
                   )}
                   onClick={() => setMode("month")}
+                  aria-pressed={mode === "month"}
                 >
                   月
                 </button>
@@ -564,13 +556,14 @@ export default function CalendarPage() {
                     mode === "week" ? "bg-orange-600 text-white shadow-sm" : "text-slate-700 hover:bg-slate-100"
                   )}
                   onClick={() => setMode("week")}
+                  aria-pressed={mode === "week"}
                 >
                   週
                 </button>
               </div>
 
               {/* 縮小手機版控制項的寬度避免覆蓋 */}
-              <div className="inline-flex items-center bg-slate-50 border border-slate-200 rounded-full px-1 sm:px-2 py-1 shadow-sm w-[150px] sm:w-auto">
+              <div className="calendar-period">
                 <button
                   className="shrink-0 h-7 w-7 sm:h-8 sm:w-8 rounded-full hover:bg-orange-100 hover:text-orange-600 text-slate-600 grid place-items-center transition-colors relative z-10"
                   onClick={prev}
@@ -598,7 +591,7 @@ export default function CalendarPage() {
             </div>
 
             {/* 右：新增 (使用 flex-1 確保右邊對齊) */}
-            <div className="flex justify-end flex-1 shrink-0">
+            <div className="calendar-toolbar-actions">
               {/* 手機版模式切換按鈕，節省空間 */}
               <button
                 type="button"
@@ -609,7 +602,7 @@ export default function CalendarPage() {
               </button>
               
               <button
-                className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-orange-600 hover:bg-orange-700 text-white grid place-items-center shadow-sm"
+                className="calendar-add"
                 onClick={() => openNew(ymd(new Date()))}
                 aria-label="新增行程"
                 type="button"
@@ -622,7 +615,7 @@ export default function CalendarPage() {
 
         {/* Weekday Row */}
         {mode === "month" && (
-          <div className="grid grid-cols-7 border-t border-slate-200 bg-slate-50 max-w-6xl mx-auto w-full">
+          <div className="calendar-weekdays grid grid-cols-7 border-t border-slate-200 bg-slate-50 max-w-6xl mx-auto w-full">
             {["日", "一", "二", "三", "四", "五", "六"].map((w) => (
               <div
                 key={w}
@@ -641,7 +634,7 @@ export default function CalendarPage() {
           
           {/* ===== Month view ===== */}
           {mode === "month" && (
-            <div className="flex-1 overflow-hidden bg-slate-200">
+            <div className="calendar-month flex-1 overflow-hidden bg-slate-200">
               <div className="grid grid-rows-6 h-full gap-px">
                 {monthWeeks.map((week, wi) => {
                   const weekDates = week.map((c) => c.date);
@@ -660,6 +653,8 @@ export default function CalendarPage() {
                             <div
                               key={c.date}
                               role="button"
+                              aria-label={`${c.date}，新增行程`}
+                              aria-current={isToday ? "date" : undefined}
                               tabIndex={0}
                               onClick={() => openNew(c.date!)}
                               onKeyDown={(e) => {
@@ -693,7 +688,7 @@ export default function CalendarPage() {
                         })}
                       </div>
 
-                      <div className="pointer-events-none absolute inset-x-0 top-1.5 grid grid-cols-7">
+                      <div className="calendar-overflow-triggers pointer-events-none absolute inset-x-0 top-1.5 grid grid-cols-7">
                         {week.map((c, di) => {
                           const hiddenNotes = c.date ? hiddenNotesByDate.get(c.date) || [] : [];
                           return (
@@ -717,7 +712,7 @@ export default function CalendarPage() {
                         })}
                       </div>
 
-                      <div className="pointer-events-none absolute inset-x-0 top-[34px] px-1">
+                      <div className="calendar-lanes pointer-events-none absolute inset-x-0 top-[34px] px-1">
                         <div className="grid grid-cols-7 gap-x-px">
                           {lanes.map((lane, li) => (
                             <div
@@ -744,7 +739,7 @@ export default function CalendarPage() {
                                     key={`${seg.id}-${seg.segFrom}-${seg.segTo}-${li}`}
                                     type="button"
                                     className={cn(
-                                      "pointer-events-auto h-[18px] border text-[9px] font-black truncate px-1.5 text-left leading-[18px] relative",
+                                      "calendar-event-bar pointer-events-auto h-[18px] border text-[9px] font-black truncate px-1.5 text-left leading-[18px] relative",
                                       st.barBg,
                                       continuesFromPrev && "rounded-r-md rounded-l-none pl-2.5",
                                       continuesToNext && "rounded-l-md rounded-r-none pr-2.5",
@@ -787,17 +782,17 @@ export default function CalendarPage() {
           {/* ===== Week view ===== */}
           {mode === "week" && (
             <div
-              className="relative flex-1 overflow-y-auto bg-slate-200 sm:overflow-x-auto sm:overflow-y-hidden"
+              className="calendar-week relative flex-1 overflow-y-auto bg-slate-200 sm:overflow-x-auto sm:overflow-y-hidden"
               onTouchStart={onWeekTouchStart}
               onTouchMove={onWeekTouchMove}
               onTouchEnd={onWeekTouchEnd}
             >
-              <div className="px-3 py-2 bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 flex items-center justify-between sticky top-0 z-10 shadow-sm">
+              <div className="calendar-swipe-hint px-3 py-2 bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 flex items-center justify-between sticky top-0 z-10 shadow-sm">
                 <span>左右滑動切換週</span>
                 <span className="tabular-nums">{weekLabelAuto(weekRange.from, weekRange.to, compact)}</span>
               </div>
 
-              <div className="grid grid-cols-1 gap-px sm:h-[calc(100%-36px)] sm:grid-cols-7">
+              <div className="calendar-week-grid grid grid-cols-1 gap-px sm:h-[calc(100%-36px)] sm:grid-cols-7">
                 {weekDays.map((d) => {
                   const isToday = d === ymd(new Date());
                   const todays = notes
@@ -814,6 +809,8 @@ export default function CalendarPage() {
                     <div
                       key={d}
                       id={`week-day-${d}`}
+                      aria-label={`${d}，新增行程`}
+                      aria-current={isToday ? "date" : undefined}
                       role="button"
                       tabIndex={0}
                       onClick={() => {
@@ -828,11 +825,11 @@ export default function CalendarPage() {
                         }
                       }}
                       className={cn(
-                        "min-h-24 bg-white p-3 flex flex-col outline-none hover:bg-orange-50/40 active:bg-orange-50/60 transition-colors sm:h-full sm:min-h-0 sm:p-2",
+                        "calendar-day min-h-24 bg-white p-3 flex flex-col outline-none hover:bg-orange-50/40 active:bg-orange-50/60 transition-colors sm:h-full sm:min-h-0 sm:p-2",
                         isToday && "bg-orange-50/70"
                       )}
                     >
-                      <div className="flex items-center justify-between mb-2">
+                      <div className="calendar-day-heading flex items-center justify-between mb-2">
                         <div
                           className={cn(
                             "text-[12px] font-black tabular-nums w-7 h-7 flex items-center justify-center rounded-full",
@@ -844,13 +841,12 @@ export default function CalendarPage() {
                           {d.slice(8, 10)}
                         </div>
                         <div className="text-[11px] font-bold text-slate-500">
-                          <span className="sm:hidden">週{["日", "一", "二", "三", "四", "五", "六"][new Date(`${d}T00:00:00`).getDay()]} · </span>
-                          {d.slice(5, 10)}
+                          週{["日", "一", "二", "三", "四", "五", "六"][new Date(`${d}T00:00:00`).getDay()]}
                         </div>
                       </div>
 
                       {/* ✅ 修正被遮擋：加入 pb-24 以確保能滑動超過下方的導覽列 / FAB */}
-                      <div className="flex-1 space-y-2 pr-1 pb-2 sm:overflow-y-auto sm:pb-24 scrollbar-hide">
+                      <div className="calendar-day-events flex-1 space-y-2 pr-1 pb-2 sm:overflow-y-auto sm:pb-24 scrollbar-hide">
                         {todays.length === 0 && (
                           <div className="text-[11px] font-bold text-slate-300 mt-4 text-center">
                             無
@@ -865,7 +861,7 @@ export default function CalendarPage() {
                               key={n.id}
                               type="button"
                               className={cn(
-                                "w-full text-left rounded-xl border p-1.5 transition-opacity active:opacity-80",
+                                "calendar-event-card w-full text-left rounded-xl border p-1.5 transition-opacity active:opacity-80",
                                 st.itemBg
                               )}
                               onClick={(e) => {
@@ -904,7 +900,7 @@ export default function CalendarPage() {
       {/* Mobile FAB */}
       <button
         type="button"
-        className="md:hidden fixed right-5 bottom-[calc(16px+env(safe-area-inset-bottom)+72px)] z-30 h-14 w-14 rounded-full bg-orange-600 hover:bg-orange-700 text-white shadow-xl shadow-orange-600/40 grid place-items-center transition-transform active:scale-95"
+        className="calendar-fab md:hidden fixed right-5 bottom-[calc(16px+env(safe-area-inset-bottom)+72px)] z-30 h-14 w-14 rounded-full bg-orange-600 hover:bg-orange-700 text-white shadow-xl shadow-orange-600/40 grid place-items-center transition-transform active:scale-95"
         onClick={() => openNew(ymd(new Date()))}
         aria-label="新增行程"
       >
@@ -918,7 +914,7 @@ export default function CalendarPage() {
           onClose={() => setOverflowNotes(null)}
           wide={false}
         >
-          <div className="bg-white p-5 sm:p-6">
+          <div className="calendar-overflow bg-white p-5 sm:p-6">
             <div className="mb-4 flex items-center justify-between gap-3 border-b border-slate-100 pb-3">
               <div>
                 <h2 className="text-base font-black text-slate-800">其他行程</h2>
@@ -959,7 +955,7 @@ export default function CalendarPage() {
 
       {draft && (
         <AppModal title={draft.mode === "new" ? "新增行程" : "編輯行程"} onClose={closeDraft}>
-          <div className="relative w-full bg-white">
+          <div className="calendar-editor relative w-full bg-white">
             <div className="w-full flex justify-center pt-3 pb-1 sm:hidden">
               <div className="w-12 h-1.5 bg-slate-200 rounded-full"></div>
             </div>
@@ -998,7 +994,9 @@ export default function CalendarPage() {
                 </div>
               </div>
 
+              <label htmlFor="calendar-title" className="calendar-field-label">行程標題</label>
               <input
+                id="calendar-title"
                 className="w-full h-12 px-4 rounded-2xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 outline-none text-slate-900 text-[16px] font-black placeholder:text-slate-400"
                 value={draft.title}
                 onChange={(e) => setDraft({ ...draft, title: e.target.value })}
@@ -1010,6 +1008,7 @@ export default function CalendarPage() {
                 <div className="space-y-1">
                   <div className="text-[11px] text-slate-500 font-bold ml-1">開始日期</div>
                   <input
+                    aria-label="開始日期"
                     type="date"
                     className="w-full h-11 px-3 rounded-2xl border border-slate-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 outline-none text-slate-900 text-sm font-medium bg-white"
                     value={draft.date_from ?? ""}
@@ -1022,6 +1021,7 @@ export default function CalendarPage() {
                 <div className="space-y-1">
                   <div className="text-[11px] text-slate-500 font-bold ml-1">結束日期</div>
                   <input
+                    aria-label="結束日期"
                     type="date"
                     className="w-full h-11 px-3 rounded-2xl border border-slate-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 outline-none text-slate-900 text-sm font-medium bg-white"
                     value={draft.date_to ?? ""}
@@ -1047,7 +1047,9 @@ export default function CalendarPage() {
                             : "bg-slate-50 text-slate-500 ring-1 ring-slate-200 hover:bg-slate-100"
                         )}
                         onClick={() => toggleOwner(o)}
+                        aria-pressed={active}
                       >
+                        {active && <Check className="h-4 w-4" aria-hidden="true" />}
                         {o}
                       </button>
                     );
@@ -1055,7 +1057,9 @@ export default function CalendarPage() {
                 </div>
               </div>
 
+              <label htmlFor="calendar-content" className="calendar-field-label">詳細內容</label>
               <textarea
+                id="calendar-content"
                 className="w-full min-h-[160px] rounded-2xl border border-slate-200 p-4 text-slate-900 text-sm leading-relaxed outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 resize-none bg-slate-50 focus:bg-white placeholder:text-slate-300"
                 value={draft.content}
                 onChange={(e) => setDraft({ ...draft, content: e.target.value })}

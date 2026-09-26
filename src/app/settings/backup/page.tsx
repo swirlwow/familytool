@@ -1,7 +1,9 @@
 // src/app/settings/backup/page.tsx
 "use client";
 
-import { DatabaseBackup, Download, ShieldCheck } from "lucide-react";
+import { Download, LoaderCircle, ShieldCheck } from "lucide-react";
+import "./backup-ui.css";
+import "../../calendar-backup-ui.css";
 import { WORKSPACE_ID } from "@/lib/appConfig";
 import { toast } from "@/hooks/use-toast";
 import { useRef, useState } from "react";
@@ -38,27 +40,15 @@ export default function BackupPage() {
   }
 
   return (
-    <main className="app-page relative">
-      <div className="app-page-inner max-w-4xl">
-
-        {/* Header */}
-        <div className="app-header justify-start">
-            <div className="bg-indigo-50 text-indigo-600 p-2 rounded-xl border border-indigo-100">
-              <DatabaseBackup className="w-5 h-5" />
-            </div>
-            <div>
-              <h1 className="text-lg font-black text-slate-800">資料備份</h1>
-              <p className="text-xs font-medium text-slate-400">下載完整資料</p>
-            </div>
-        </div>
-
-        <p className="text-sm text-slate-600">下載前自動驗證資料表筆數與校驗碼。不含登入密碼、平台金鑰及外部附件；檔案含私人資料，請妥善保存。還原請先在隔離環境驗證。</p>
+    <main className="app-page backup-ui relative" aria-label="資料備份">
+      <div className="app-page-inner backup-layout">
+        <p className="backup-notice">下載前自動驗證資料表筆數與校驗碼。不含登入密碼、平台金鑰及外部附件；檔案含私人資料，請妥善保存。還原請先在隔離環境驗證。</p>
         {/* 備份說明卡片 */}
-        <div className="card bg-white shadow-sm border border-slate-200 rounded-3xl overflow-hidden">
-          <div className="p-6 md:p-8 space-y-6">
-            <div className="flex items-start gap-4">
-              <div className="bg-emerald-100 text-emerald-600 p-3 rounded-2xl shrink-0">
-                <ShieldCheck className="w-8 h-8" />
+        <div className="backup-card card bg-white border overflow-hidden">
+          <div className="backup-card-inner">
+            <div className="backup-intro">
+              <div className="backup-shield">
+                <ShieldCheck className="w-6 h-6" aria-hidden="true" />
               </div>
               <div className="space-y-2">
                 <h2 className="text-lg font-black text-slate-800">完整業務資料備份</h2>
@@ -68,16 +58,16 @@ export default function BackupPage() {
               </div>
             </div>
 
-            <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="backup-action-row">
               <div className="text-sm font-bold text-slate-600">備份目前家庭空間（含待購比價、股票交易、股利與股權異動）</div>
 
               <button
                 onClick={handleDownload}
                 disabled={downloading}
                 aria-busy={downloading}
-                className="btn bg-indigo-600 hover:bg-indigo-700 text-white border-none rounded-2xl px-8 font-black shadow-md shadow-indigo-600/30 w-full sm:w-auto"
+                className="backup-download"
               >
-                <Download className="w-4 h-4 mr-1" />
+                {downloading ? <LoaderCircle className="w-4 h-4 animate-spin" aria-hidden="true" /> : <Download className="w-4 h-4" aria-hidden="true" />}
                 {downloading ? "準備備份中…" : "下載備份"}
               </button>
             </div>

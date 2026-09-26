@@ -1,0 +1,5 @@
+/* Shared visual states for these two routes only; imported by both entry points. */
+body:has(.calendar-ui, .backup-ui) .family-bottom-nav a.active { color: #7047c6; background: #eee6ff; border-top-color: transparent; border-radius: 6px; }
+body:has(.calendar-ui, .backup-ui) .family-bottom-nav a.active::before { display: none; }
+body:has(.calendar-ui, .backup-ui) .family-toast-viewport > li { background: #effbf5; color: #172554; border-color: #b8e4d0; border-radius: 8px; }
+body:has(.calendar-ui, .backup-ui) .family-toast-viewport > li.destructive { background: #fff0f3; color: #9f2445; border-color: #f4b8c6; }

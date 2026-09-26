@@ -1,0 +1,25 @@
+.backup-ui .backup-layout { max-width: none; gap: 20px; }
+.backup-ui .backup-notice { padding: 18px 20px; border: 1px solid #e4dcf6; border-radius: 7px; background: #f0ebfa; color: #576180; font-size: 14px; line-height: 1.8; }
+.backup-ui .backup-card { border-color: #ddd6f0; border-radius: 8px; }
+.backup-ui .backup-card-inner { padding: 24px; }
+.backup-ui .backup-intro { display: flex; align-items: flex-start; gap: 14px; padding-bottom: 24px; }
+.backup-ui .backup-shield { flex-shrink: 0; color: #10a77b; padding-top: 2px; }
+.backup-ui .backup-intro h2 { color: #172554; font-size: 18px; }
+.backup-ui .backup-intro p { color: #576180; line-height: 1.8; }
+.backup-ui .backup-action-row { display: flex; align-items: center; justify-content: space-between; gap: 24px; border-top: 1px solid #e7e3ef; padding-top: 20px; }
+.backup-ui .backup-action-row > div { color: #172554; line-height: 1.8; }
+.backup-ui .backup-download { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; gap: 8px; min-height: 44px; padding: 10px 24px; border: 1px solid #8859d5; border-radius: 6px; background: #8859d5; color: white; font-weight: 700; }
+.backup-ui .backup-download:hover:not(:disabled) { background: #7546c2; }
+.backup-ui .backup-download:focus-visible { outline: 3px solid #b69be9; outline-offset: 3px; }
+.backup-ui .backup-download:disabled { opacity: .5; cursor: not-allowed; }
+@media (max-width: 639px) {
+  .backup-ui .backup-layout { gap: 14px; }
+  .backup-ui .backup-notice { padding: 14px 16px; }
+  .backup-ui .backup-card-inner { padding: 18px 16px; }
+  .backup-ui .backup-intro { gap: 10px; padding-bottom: 18px; }
+  .backup-ui .backup-action-row { flex-direction: column; align-items: stretch; gap: 16px; padding-top: 18px; }
+  .backup-ui .backup-download { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .backup-ui .animate-spin { animation: none; }
+}
