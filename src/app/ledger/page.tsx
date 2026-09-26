@@ -1,5 +1,6 @@
 // src/app/ledger/page.tsx
 "use client";
+import "./ledger-entry-ui.css";
 
 import { useEffect, useMemo, useState, useRef } from "react";
 import LedgerTabs from "@/components/LedgerTabs";
@@ -522,7 +523,7 @@ export default function LedgerPage() {
         </div>
 
         {/* ===== New Entry Form ===== */}
-        <section className="overflow-visible rounded-lg border border-slate-200 bg-white shadow-sm sm:overflow-hidden">
+        <section className="ledger-entry-panel overflow-visible rounded-lg border border-slate-200 bg-white shadow-sm sm:overflow-hidden">
           <button
             type="button"
             className="flex w-full items-center justify-between bg-slate-50/70 px-4 py-3 text-left sm:px-5 md:cursor-default"
@@ -536,7 +537,7 @@ export default function LedgerPage() {
           </button>
 
           <div className={`${showEntryForm ? "block" : "hidden"} space-y-4 border-t border-slate-200 p-4 sm:p-5 md:block`}>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-x-3 gap-y-4 sm:gap-5 items-start [&>div]:min-w-0 max-md:[&>div]:col-span-full">
+            <div className="ledger-entry-fields grid grid-cols-1 md:grid-cols-4 gap-x-3 gap-y-4 sm:gap-5 items-start [&>div]:min-w-0 max-md:[&>div]:col-span-full">
               
               <div className="col-span-1 sm:col-span-1 md:col-span-1">
                 <label className="label py-0.5 sm:py-1 mb-0.5 sm:mb-0">
@@ -778,7 +779,7 @@ export default function LedgerPage() {
         </section>
 
         {/* ===== List ===== */}
-        <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+        <section className="ledger-records-panel overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
           <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3 sm:px-5">
             <div className="flex items-center gap-2.5 sm:gap-3">
               <h2 className="text-base font-black text-slate-800">記帳明細</h2>

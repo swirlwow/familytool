@@ -1,0 +1,45 @@
+/* Reference-inspired presentation; all fields, copy and handlers stay intact. */
+.app-page.ledger-pilot .app-page-inner { max-width:1500px; gap:12px; }
+.app-page.ledger-pilot .app-page-inner > .grid > div {
+  border-radius:12px !important; box-shadow:none !important;
+}
+.app-page.ledger-pilot .app-page-inner > .grid > div:first-child { background:linear-gradient(110deg,#f8fcff,#e8f6ff) !important; border-color:#cfe7f8 !important; }
+.app-page.ledger-pilot .app-page-inner > .grid > div:nth-child(2) { background:linear-gradient(110deg,#fff7f6,#ffe9eb) !important; border-color:#ffdbdf !important; }
+.app-page.ledger-pilot .app-page-inner > .grid > div:nth-child(3) { background:linear-gradient(110deg,#f1fff9,#def8ec) !important; border-color:#c4eedb !important; }
+.family-content .ledger-pilot .ledger-entry-panel { background:#fff3f3 !important; border:1px solid #ffd0d5 !important; border-radius:12px !important; box-shadow:none !important; }
+.family-content .ledger-pilot .ledger-entry-panel > button {
+  background:linear-gradient(100deg,#ff646c,#ff979b) !important;
+  padding:12px 18px; min-height:56px;
+}
+.family-content .ledger-pilot .ledger-entry-panel > button h2 { color:#fff !important; font-size:22px; }
+.family-content .ledger-pilot .ledger-entry-panel > button h2 svg { color:#fff !important; background:#ffb73e; border:2px solid #ffe88b; border-radius:50%; width:34px; height:34px; padding:5px; }
+.family-content .ledger-pilot .ledger-entry-panel > div { background:linear-gradient(120deg,#fff2f2,#fff8f6) !important; border-color:#ffdce0 !important; padding:16px; }
+.ledger-pilot .ledger-entry-fields { gap:12px; }
+.ledger-pilot .ledger-entry-fields .label-text { color:#26375d !important; font-size:12px; }
+.family-content .ledger-pilot .ledger-entry-fields :is(.input,.select) { border:1px solid #d8deed !important; border-radius:7px !important; background:#fff !important; min-height:40px; height:40px; font-size:14px; }
+.family-content .ledger-pilot .ledger-entry-fields .choice-field { background:#fff !important; border-color:#f5dce2 !important; padding:8px; }
+.family-content .ledger-pilot .ledger-entry-fields .choice-pill { border-radius:8px; background:#fff; font-size:12px; min-height:34px; }
+.family-content .ledger-pilot .ledger-entry-fields [role="radio"][aria-checked="true"] { background:#ff6b75 !important; border-color:#ff6b75 !important; color:#fff !important; }
+.family-content .ledger-pilot .ledger-entry-fields [aria-label="付款方式"] [aria-checked="true"] { background:#078af2 !important; border-color:#078af2 !important; }
+.family-content .ledger-pilot .ledger-entry-fields [aria-label="付款人"] [aria-checked="true"] { background:#8859ed !important; border-color:#8859ed !important; }
+.family-content .ledger-pilot .ledger-entry-fields > div:last-child > button { background:linear-gradient(110deg,#ff646c,#ff858c) !important; color:#fff !important; border:0 !important; border-radius:9px !important; min-height:46px; box-shadow:none !important; }
+.family-content .ledger-pilot .ledger-records-panel { border:1px solid #b9edf1 !important; border-radius:12px !important; box-shadow:none !important; background:#fff !important; }
+.family-content .ledger-pilot .ledger-records-panel > div:first-child { background:linear-gradient(100deg,#39d9df,#83ece8) !important; border-color:#b9edf1 !important; min-height:54px; }
+.family-content .ledger-pilot .ledger-records-panel h2 { color:#06496a !important; font-size:21px; }
+.ledger-pilot .ledger-records-panel > div:first-child span { color:#195575 !important; }
+.ledger-pilot .ledger-records-panel .group { padding:14px 18px; }
+.ledger-pilot .ledger-records-panel .group:hover { background:#f1fcfd !important; }
+@media(min-width:1200px) {
+  .ledger-pilot .ledger-entry-fields { grid-template-columns:repeat(12,minmax(0,1fr)); }
+  .ledger-pilot .ledger-entry-fields > div { grid-column:span 6; }
+  .ledger-pilot .ledger-entry-fields > div:nth-child(-n+3) { grid-column:span 2; }
+  .ledger-pilot .ledger-entry-fields > div:nth-child(4),
+  .ledger-pilot .ledger-entry-fields > div:nth-child(5) { grid-column:span 3; }
+  .ledger-pilot .ledger-entry-fields > div:nth-child(8),
+  .ledger-pilot .ledger-entry-fields > div:nth-last-child(2),
+  .ledger-pilot .ledger-entry-fields > div:last-child { grid-column:1 / -1; }
+}
+@media(max-width:767px) {
+  .family-content .ledger-pilot .ledger-entry-panel > button h2 { font-size:18px; }
+  .family-content .ledger-pilot .ledger-entry-panel > div { padding:12px; }
+}
