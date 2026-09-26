@@ -1,4 +1,16 @@
 /* Unified family visual language. Presentation only; preserve geometry and state colors. */
+/* Shared route edges. Inner form controls may remain narrow; page frames align. */
+.family-shell .family-content .app-page { padding-inline:var(--ft-page-gutter); }
+.family-shell .family-content .app-page > :is(.app-page-inner,.home-inner) { width:100%; max-width:var(--ft-content-max); margin-inline:auto; }
+.family-shell .family-content .family-calendar.calendar-ui { padding-inline:var(--ft-page-gutter); }
+.family-shell .family-content .family-calendar.calendar-ui > :is(header,div) { width:100%; max-width:var(--ft-content-max); margin-inline:auto; }
+/* Explicit hover/focus surfaces prevent older action CSS from darkening the fill. */
+.family-shell .family-content .reports-ui.investments-ui [class*="investmentActions"] > button:is(:hover,:focus-visible):not(:disabled) {
+  background:color-mix(in srgb,var(--action-bg),white 85%) !important;
+  color:#172b55 !important; filter:none !important;
+  border-color:color-mix(in srgb,var(--action-bg),#172b55 25%) !important;
+}
+.family-shell .family-content .reports-ui.investments-ui [class*="investmentActions"] > button:has(.lucide-plus):is(:hover,:focus-visible):not(:disabled) { background:#086b59 !important; color:#fff !important; }
 .family-shell {
   --family-canvas:#fffdf7;
   --family-ink:#172b55;
