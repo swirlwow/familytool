@@ -9,10 +9,10 @@
 .family-content .ledger-pilot .ledger-entry-panel { background:#fff3f3 !important; border:1px solid #ffd0d5 !important; border-radius:12px !important; box-shadow:none !important; }
 .family-content .ledger-pilot .ledger-entry-panel > button {
   background:linear-gradient(100deg,#ff646c,#ff979b) !important;
-  padding:12px 18px; min-height:56px;
+  padding:12px 16px; min-height:0;
 }
-.family-content .ledger-pilot .ledger-entry-panel > button h2 { color:#fff !important; font-size:22px; }
-.family-content .ledger-pilot .ledger-entry-panel > button h2 svg { color:#fff !important; background:#ffb73e; border:2px solid #ffe88b; border-radius:50%; width:34px; height:34px; padding:5px; }
+.family-content .ledger-pilot .ledger-entry-panel > button h2 { color:#fff !important; font-size:16px; }
+.family-content .ledger-pilot .ledger-entry-panel > button h2 svg { color:#fff !important; width:16px; height:16px; padding:0; }
 .family-content .ledger-pilot .ledger-entry-panel > div { background:linear-gradient(120deg,#fff2f2,#fff8f6) !important; border-color:#ffdce0 !important; padding:16px; }
 .ledger-pilot .ledger-entry-fields { gap:12px; }
 .ledger-pilot .ledger-entry-fields .label-text { color:#26375d !important; font-size:12px; }
@@ -24,8 +24,8 @@
 .family-content .ledger-pilot .ledger-entry-fields [aria-label="付款人"] [aria-checked="true"] { background:#8859ed !important; border-color:#8859ed !important; }
 .family-content .ledger-pilot .ledger-entry-fields > div:last-child > button { background:linear-gradient(110deg,#ff646c,#ff858c) !important; color:#fff !important; border:0 !important; border-radius:9px !important; min-height:46px; box-shadow:none !important; }
 .family-content .ledger-pilot .ledger-records-panel { border:1px solid #b9edf1 !important; border-radius:12px !important; box-shadow:none !important; background:#fff !important; }
-.family-content .ledger-pilot .ledger-records-panel > div:first-child { background:linear-gradient(100deg,#39d9df,#83ece8) !important; border-color:#b9edf1 !important; min-height:54px; }
-.family-content .ledger-pilot .ledger-records-panel h2 { color:#06496a !important; font-size:21px; }
+.family-content .ledger-pilot .ledger-records-panel > div:first-child { background:linear-gradient(100deg,#39d9df,#83ece8) !important; border-color:#b9edf1 !important; min-height:0; }
+.family-content .ledger-pilot .ledger-records-panel h2 { color:#06496a !important; font-size:16px; }
 .ledger-pilot .ledger-records-panel > div:first-child span { color:#195575 !important; }
 .ledger-pilot .ledger-records-panel .group { padding:14px 18px; }
 .ledger-pilot .ledger-records-panel .group:hover { background:#f1fcfd !important; }
@@ -41,6 +41,9 @@
   .ledger-pilot .ledger-entry-fields > div:last-child > button { width:100%; padding-inline:12px; min-height:60px; }
 }
 @media(max-width:767px) {
-  .family-content .ledger-pilot .ledger-entry-panel > button h2 { font-size:18px; }
   .family-content .ledger-pilot .ledger-entry-panel > div { padding:12px; }
+}
+@media(min-width:640px) {
+  .family-content .ledger-pilot .ledger-entry-panel > button { padding-inline:20px; }
+  .family-content .ledger-pilot .ledger-entry-panel > button h2 { font-size:18px; }
 }
