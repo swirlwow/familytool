@@ -16,6 +16,7 @@ import {
   X,
 } from "lucide-react";
 import controls from "@/components/ui/record-controls.module.css";
+import { ConfirmActionDialog } from "@/components/ui/confirm-action-dialog";
 import { isWishlistItem } from "@/lib/shopping-view";
 import { PurchaseRecords } from "@/components/shopping/PurchaseRecords";
 import { useToast } from "@/hooks/use-toast";
@@ -110,6 +111,8 @@ export default function ShoppingPage() {
   const [items, setItems] = useState<ShoppingItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<ShoppingItem | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [quickSaving, setQuickSaving] = useState(false);
   const [quickValue, setQuickValue] = useState("");
   const [query, setQuery] = useState("");
@@ -229,15 +232,23 @@ export default function ShoppingPage() {
   }
 
   async function removeItem(item: ShoppingItem) {
-    if (!window.confirm(`確定移除「${item.name}」及其比價來源？已成立的購買紀錄仍保留。`)) return;
+    setPendingDelete(item);
+  }
+
+  async function confirmRemoveItem(item: ShoppingItem) {
+    if (deleting) return;
+    setDeleting(true);
     try {
       const response = await fetch(`/api/shopping/${encodeURIComponent(item.id)}?workspace_id=${encodeURIComponent(WORKSPACE_ID)}`, { method: "DELETE" });
       const json = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(json.error || "刪除失敗");
       setItems((current) => current.filter((row) => row.id !== item.id));
       toast({ title: "已移除待購項目" });
+      setPendingDelete(null);
     } catch (error) {
       toast({ variant: "destructive", title: "移除失敗", description: error instanceof Error ? error.message : "請稍後再試" });
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -384,6 +395,16 @@ export default function ShoppingPage() {
           </div>
         </div>
       )}
+      <ConfirmActionDialog
+        open={pendingDelete !== null}
+        title="移除待購項目？"
+        description={pendingDelete ? `確定移除「${pendingDelete.name}」及其比價來源？已成立的購買紀錄仍保留。` : undefined}
+        confirmLabel="確認移除"
+        destructive
+        busy={deleting}
+        onConfirm={() => pendingDelete ? confirmRemoveItem(pendingDelete) : undefined}
+        onOpenChange={(open) => { if (!open) setPendingDelete(null); }}
+      />
     </div></main>
   );
 }
