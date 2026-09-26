@@ -1,0 +1,31 @@
+{
+  "viewports": [
+    {
+      "width": 1487,
+      "passed": true
+    },
+    {
+      "width": 834,
+      "passed": true
+    },
+    {
+      "width": 390,
+      "passed": true
+    }
+  ],
+  "links": [
+    "/bills",
+    "/calendar",
+    "/investments",
+    "/ledger",
+    "/ledger/dashboard",
+    "/settings/backup",
+    "/settings/categories",
+    "/settlement",
+    "/shopping",
+    "/stickies"
+  ],
+  "errors": [],
+  "externalRequests": [],
+  "mutations": []
+}

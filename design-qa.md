@@ -1,4 +1,47 @@
-# Calendar and backup UI — 2026-09-26
+# Home UI — 2026-09-26 (latest local-only review)
+
+final result: passed
+
+## Target and scope
+
+- Source: C:/Users/ASUS/.codex/generated_images/01a017fa-725e-7d92-be7e-9fe6383f84f8/exec-19ce051e-7d1e-49dc-9491-46b9701c4b3c.png (1487 x 1058).
+- Implementation: http://127.0.0.1:4287/; isolated fixtures, no production connection.
+- Evidence: docs/ui-reports/home-acceptance/{1487,834,390}.png and comparison.jpg.
+- Desktop CSS viewport: 1487 x 1058 at DPR 1; full-page captures. Source and desktop implementation normalized to 744 x 529 contain boxes in one comparison image. Tablet/mobile also visually reviewed.
+- Intentional constraints: preserve the accepted inner-page pastel palette, current sidebar and cat, existing 11 destinations and descriptions. No search feature, date feature, new backend, or fake availability status added. Reference's decorative section foliage and 3D icons are simplified to existing library icons to remain consistent with the approved inner pages.
+
+## Comparison history and fidelity
+
+- Initial P2: hero cropped heads and illustration was too realistic. Fixed hero to 3:1 desktop ratio, regenerated a round-faced storybook family illustration. Final comparison shows complete heads, family and cat. Mobile uses the right half without vertical cropping.
+- Fonts: existing Chiron GoRound rounded face retained; navy display heading, smaller descriptive captions. No unreadable truncation in reviewed widths.
+- Layout: wide hero above 2 x 2 category groups; desktop finance/life four-column links; tablet two-column links; phone stacked groups. All 11 links visible and no page-level horizontal overflow.
+- Colors: warm white #fffdf7; coral #ffd4d8, orange #ffe0b8, teal #b8eeea, lavender #e2d3ff match accepted inner-page harmony rather than the original saturated mock.
+- Image quality: built-in image_gen asset, no code-drawn substitute. WebP 1800 x 600, 148858 bytes. Existing sidebar cat unchanged. Image is decorative with empty alt.
+- Copy/content: tool names, descriptions, targets and external new-tab behavior retained; no new forms or business behavior.
+- Full-view and readable tablet/mobile review found no remaining actionable P0/P1/P2 issues. P3: generated illustration is not a pixel-identical copy of the supplied artwork; library icons intentionally match existing product UI.
+
+## Verification
+
+- TypeScript noEmit passed.
+- Automated browser: 1487, 834, 390 widths; 10 internal destination clicks render; external destination and target verified without navigating externally.
+- Existing source destinations compared with HEAD and identical. No page errors, external requests, or mutation requests.
+- Native in-app automation could not start (ACL error); used previously authorized local Playwright. Formal signed-in production workflows not tested or modified.
+- No push, commit, deployment or production data changes in this iteration.
+
+## Asset provenance
+
+- Final asset: public/images/home-family-garden.webp, generated from public/images/home-family-garden-v2.png using built-in image_gen, then compressed locally.
+- Prompt: 3:1 warm children's-storybook garden; simplified chibi family of four with oversized round heads, tiny black bean eyes, soft gouache, orange-white cat, red-roof house and rainbow; left half open sky for HTML title; no text, UI or logos; no Pixar or realistic faces; margin above and below subjects.
+
+## Implementation checklist
+
+- [x] Preserve feature destinations and cat sidebar.
+- [x] Validate desktop, tablet, mobile and link navigation.
+- [x] Keep local preview running for user style approval; do not deploy.
+
+---
+
+# Calendar and backup UI — 2026-09-26 (previous review)
 
 final result: passed
 

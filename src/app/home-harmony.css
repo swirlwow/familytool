@@ -1,0 +1,39 @@
+/* Home-only presentation; shared navigation, data and feature pages are untouched. */
+.home-harmony .home-inner { width:100%; max-width:1440px; margin:auto; color:#172b55; }
+.home-hero { position:relative; isolation:isolate; overflow:hidden; min-height:260px; aspect-ratio:3; border-radius:20px; background:#dff4fc; }
+.home-hero-art { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:center; z-index:-1; }
+.home-hero-copy { padding:38px 34px; width:53%; }
+.home-eyebrow { font-size:12px; font-weight:800; letter-spacing:.14em; color:#315c7d; }
+.home-hero h1 { margin:8px 0 10px; font-size:clamp(28px,3.4vw,48px); line-height:1.25; font-weight:900; letter-spacing:.015em; }
+.home-hero-copy p { margin:0; font-size:16px; line-height:1.6; font-weight:700; color:#405879; }
+.home-prompt { display:inline-block; margin-top:22px; padding:10px 18px; border-radius:12px; background:#ffffffed; color:#435c77; font-size:15px; font-weight:600; }
+.home-groups { display:grid; grid-template-columns:minmax(0,1.65fr) minmax(0,1fr); gap:18px; margin-top:20px; }
+.home-section { --home-accent:#843447; --home-band:#ffd4d8; --home-soft:#fff0f1; --home-line:#efd6da; background:var(--home-soft); border:1px solid var(--home-line); border-radius:16px; overflow:hidden; min-width:0; }
+.home-section--investment { --home-accent:#79501d; --home-band:#ffe0b8; --home-soft:#fff6e7; --home-line:#efdab6; }
+.home-section--life { --home-accent:#155f60; --home-band:#b8eeea; --home-soft:#e8faf7; --home-line:#c8e9e1; }
+.home-section--settings { --home-accent:#67469d; --home-band:#e2d3ff; --home-soft:#f3edff; --home-line:#e0d5f0; }
+.home-section-heading { display:flex; align-items:center; gap:12px; padding:13px 20px; background:var(--home-band); color:var(--home-accent); }
+.home-section-heading > svg { width:28px; height:28px; }
+.home-section-heading h2 { margin:0; font-size:22px; font-weight:850; line-height:1.3; }
+.home-tools { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; padding:14px; }
+.home-section--investment .home-tools { grid-template-columns:1fr; }
+.home-section--settings .home-tools { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.home-tool { display:flex; flex-direction:column; align-items:center; justify-content:center; min-width:0; min-height:164px; padding:16px 7px; border:1px solid #ffffff; border-radius:12px; background:#fffefc; color:#172b55; text-align:center; text-decoration:none; transition:transform .16s ease,box-shadow .16s ease; }
+.home-tool:hover { transform:translateY(-3px); box-shadow:0 5px 14px #172b5510; }
+.home-tool-icon { display:grid; place-items:center; width:62px; height:62px; border-radius:17px; margin-bottom:12px; }
+.home-tool-icon svg { width:39px; height:39px; }
+.home-tool-icon--blue { background:#e0f2ff; color:#0784da; }
+.home-tool-icon--teal { background:#d9f6ed; color:#009e89; }
+.home-tool-icon--orange { background:#fff0ce; color:#cc7b00; }
+.home-tool-icon--coral { background:#ffe5e5; color:#df5764; }
+.home-tool-icon--purple { background:#eee5ff; color:#8055bf; }
+.home-tool-name { display:flex; align-items:center; justify-content:center; gap:3px; font-size:17px; line-height:1.45; font-weight:800; }
+.home-tool-name > svg { width:13px; height:13px; flex-shrink:0; }
+.home-tool-desc { margin-top:6px; font-size:11px; line-height:1.65; color:#52627c; }
+@media (max-width:1150px) { .home-groups { grid-template-columns:minmax(0,1.4fr) minmax(0,1fr); } .home-tools { grid-template-columns:repeat(2,minmax(0,1fr)); } .home-tool { min-height:140px; } .home-section--investment .home-tools,.home-section--settings .home-tools { height:calc(100% - 55px); } }
+@media (max-width:700px) { .home-groups { grid-template-columns:1fr; gap:14px; margin-top:14px; } .home-hero { min-height:300px; } .home-hero-art { object-position:72% bottom; height:180px; top:auto; } .home-hero-copy { width:100%; padding:20px; } .home-hero h1 { font-size:29px; margin:4px 0; } .home-hero-copy p { font-size:13px; } .home-prompt { margin-top:12px; padding:6px 10px; font-size:12px; } .home-section-heading { padding:12px 16px; } .home-section-heading h2 { font-size:20px; } .home-tools { padding:12px; } .home-tool-desc { font-size:12px; } .home-section--investment .home-tools,.home-section--settings .home-tools { height:auto; } }
+@media (prefers-reduced-motion:reduce) { .home-tool { transition:none; } .home-tool:hover { transform:none; } }
+@media (max-width:700px) {
+  .home-hero { aspect-ratio:auto; min-height:390px; }
+  .home-hero-art { width:200%; max-width:none; height:auto; top:auto; bottom:0; left:auto; right:0; object-fit:contain; }
+}
