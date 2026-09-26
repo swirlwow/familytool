@@ -29,15 +29,16 @@
 .ledger-pilot .ledger-records-panel > div:first-child span { color:#195575 !important; }
 .ledger-pilot .ledger-records-panel .group { padding:14px 18px; }
 .ledger-pilot .ledger-records-panel .group:hover { background:#f1fcfd !important; }
-@media(min-width:1200px) {
+@media(min-width:768px) {
   .ledger-pilot .ledger-entry-fields { grid-template-columns:repeat(12,minmax(0,1fr)); }
   .ledger-pilot .ledger-entry-fields > div { grid-column:span 6; }
-  .ledger-pilot .ledger-entry-fields > div:nth-child(-n+3) { grid-column:span 2; }
+  .ledger-pilot .ledger-entry-fields > div:nth-child(-n+3) { grid-column:span 4; }
   .ledger-pilot .ledger-entry-fields > div:nth-child(4),
-  .ledger-pilot .ledger-entry-fields > div:nth-child(5) { grid-column:span 3; }
-  .ledger-pilot .ledger-entry-fields > div:nth-child(8),
-  .ledger-pilot .ledger-entry-fields > div:nth-last-child(2),
-  .ledger-pilot .ledger-entry-fields > div:last-child { grid-column:1 / -1; }
+  .ledger-pilot .ledger-entry-fields > div:nth-child(5) { grid-column:span 6; }
+  .ledger-pilot .ledger-entry-fields > div:nth-child(8) { grid-column:1 / -1; }
+  .ledger-pilot .ledger-entry-fields > div:nth-last-child(2) { grid-column:span 9; }
+  .ledger-pilot .ledger-entry-fields > div:last-child { grid-column:span 3; margin-top:0; align-self:start; }
+  .ledger-pilot .ledger-entry-fields > div:last-child > button { width:100%; padding-inline:12px; min-height:60px; }
 }
 @media(max-width:767px) {
   .family-content .ledger-pilot .ledger-entry-panel > button h2 { font-size:18px; }
