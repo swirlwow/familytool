@@ -1,5 +1,6 @@
 // src/app/ledger/dashboard/page.tsx
 "use client";
+import "../../reports-ui.css";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { WORKSPACE_ID } from "@/lib/appConfig";
@@ -555,7 +556,7 @@ export default function LedgerDashboardPage() {
   }
 
   return (
-    <main className="app-page">
+    <main className="app-page reports-ui dashboard-ui">
       <div className="app-page-inner">
       <header className="app-header flex-wrap">
         <div>
@@ -603,7 +604,7 @@ export default function LedgerDashboardPage() {
           </button>
         </div>
 
-      <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+      <div className="dashboard-presets -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
         <button
           onClick={() => setRange("thisMonth")}
           className="shrink-0 rounded-lg bg-slate-100 px-3 py-2 text-sm font-bold hover:bg-slate-200"
@@ -664,7 +665,7 @@ export default function LedgerDashboardPage() {
           <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform md:hidden ${showFilters ? "rotate-180" : ""}`} />
         </button>
         <div className={`${showFilters ? "block" : "hidden"} space-y-3 p-4 md:block`}>
-        <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
+        <div className="dashboard-filters grid grid-cols-1 md:grid-cols-6 gap-3">
           <div className="space-y-1">
             <div className="text-xs font-bold text-slate-500">起日</div>
             <input

@@ -1,0 +1,145 @@
+/* Presentation only; scoped to the investment and dashboard pages. */
+.reports-ui {
+  --ft-paper: #fff;
+  --ft-ivory: #fff;
+  --ft-line: #ddd6f0;
+  --ft-plum: #172554;
+  --ft-plum-soft: #576180;
+  background: #fafaff !important;
+}
+.reports-ui .app-page-inner { gap: 14px; }
+.reports-ui .app-panel,
+.dashboard-ui .rounded-3xl {
+  border: 1px solid #ddd6f0 !important;
+  border-radius: 8px !important;
+  background: #fff !important;
+  box-shadow: none !important;
+}
+.reports-ui .app-panel-header {
+  min-height: 44px;
+  padding: 10px 14px;
+  background: #f5f3fc !important;
+  border-bottom-color: #e6e0f2 !important;
+}
+.reports-ui :is(input, select, .input) {
+  min-width: 0;
+  max-width: 100%;
+  border-color: #dcd5ef !important;
+  border-radius: 6px !important;
+}
+.reports-ui :is(button, input, select):focus-visible {
+  outline: 2px solid #8859d5;
+  outline-offset: 3px;
+}
+.reports-ui button:disabled { opacity: .45; cursor: not-allowed; }
+.reports-ui .btn,
+.investments-ui :is(.app-header, [class*="investmentActions"]) button {
+  border-radius: 6px !important;
+  box-shadow: none !important;
+}
+.investments-ui :is(.app-header, [class*="investmentActions"]) button,
+.dashboard-ui [aria-label="明細匯出工具"] .btn {
+  border: 1px solid #9973db !important;
+  background: #fff !important;
+  color: #7047c6 !important;
+}
+.investments-ui :is(.app-header, [class*="investmentActions"]) button:hover:not(:disabled),
+.dashboard-ui [aria-label="明細匯出工具"] .btn:hover:not(:disabled) {
+  background: #f0e9fc !important;
+}
+.reports-ui table thead {
+  background: #edf0f7 !important;
+  color: #43577a !important;
+}
+.reports-ui table :is(th, td) { border-color: #e7e9f2 !important; }
+.reports-ui table th { font-size: 12px; }
+.reports-ui table td { font-size: 13px; }
+.reports-ui table tbody tr:hover { background: #faf8ff; }
+/* Keep existing header actions, but omit the page title on every viewport. */
+.investments-ui .app-header {
+  display: flex !important;
+  justify-content: flex-end;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.investments-ui .app-header > div:first-child,
+.dashboard-ui .app-header { display: none !important; }
+.investments-ui [role="tab"][aria-selected="true"] {
+  background: #8859d5 !important;
+  border-color: #8859d5 !important;
+  color: #fff !important;
+}
+.investments-ui [role="tab"] { border-radius: 6px !important; }
+.investments-ui [class*="investmentToolbar"] {
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 10px;
+}
+.investments-ui [class*="investmentTabs"] {
+  width: 100% !important;
+  gap: 4px;
+  border-radius: 0 !important;
+  background: #fff !important;
+  padding: 0;
+}
+.investments-ui [class*="investmentTabs"] > button {
+  flex: 1;
+  border: 1px solid #ddd6f0;
+  border-radius: 7px 7px 0 0;
+  background: #fff;
+  padding: 10px 8px;
+}
+.investments-ui [class*="investmentTabs"] > button.bg-white {
+  background: #e9dfff !important;
+  color: #5939ae !important;
+  border-color: #cbb9ee;
+  box-shadow: inset 0 -2px #8859d5 !important;
+}
+.investments-ui [class*="investmentActions"] {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+.investments-ui [class*="investmentActions"] > button {
+  min-width: 0;
+  justify-content: center;
+}
+.dashboard-ui .dashboard-presets { flex-wrap: wrap; overflow: visible; margin: 0; padding: 0; }
+.dashboard-ui .dashboard-presets > button {
+  border: 1px solid #d8cbed;
+  border-radius: 6px;
+  background: #eee7fb;
+  color: #6440ad;
+}
+.dashboard-ui .dashboard-presets > button:last-child { background: #fff1cd; color: #8b5400; }
+.dashboard-ui .summary-grid > div {
+  border-radius: 8px !important;
+  padding: 16px !important;
+  box-shadow: none !important;
+}
+.dashboard-ui .summary-grid > div:first-child { background: #fff1f3 !important; border-color: #ffd2db !important; }
+.dashboard-ui .summary-grid > div:nth-child(2) { background: #eafaf3 !important; border-color: #c0ecdc !important; }
+.dashboard-ui .summary-grid > div:last-child { background: #f0eafa !important; border-color: #d9caef !important; }
+.dashboard-ui .rounded-3xl { padding: 16px !important; }
+.dashboard-ui .dashboard-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.dashboard-ui .dashboard-filters > div { min-width: 0; }
+.dashboard-ui .dashboard-filters :is(input, select) { width: 100%; font-size: 13px; }
+@media (min-width: 1024px) {
+  .investments-ui [class*="investmentActions"] { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+  .investments-ui [class*="investmentActions"] > button { padding: 8px 3px; gap: 4px; font-size: 12px; white-space: nowrap; }
+  .investments-ui [class*="investmentActions"] svg { width: 14px; height: 14px; }
+}
+@media (min-width: 1440px) {
+  .investments-ui [class*="investmentActions"] > button { font-size: 14px; padding-inline: 8px; }
+  .dashboard-ui .dashboard-filters { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+}
+@media (max-width: 639px) {
+  .reports-ui .app-page-inner { gap: 10px; }
+  .investments-ui [class*="investmentTabs"] { flex-wrap: wrap; overflow: visible; }
+  .investments-ui [class*="investmentTabs"] > button { flex: 1 1 28%; font-size: 12px; padding: 8px 4px; }
+  .dashboard-ui .dashboard-filters { grid-template-columns: minmax(0, 1fr); }
+  .dashboard-ui .rounded-3xl { padding: 12px !important; }
+  .dashboard-ui [aria-label="明細匯出工具"] { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dashboard-ui [aria-label="明細匯出工具"] .btn { font-size: 12px; padding-inline: 6px; }
+}

@@ -1,5 +1,6 @@
 // No backend fallback: all app fetch calls terminate in this in-memory store.
 import { BACKUP_TABLES, makeBackup } from '../../src/lib/backup-format';
+import { investmentPreview } from './investment-fixture.mjs';
 const make = (names, prefix) => names.map((name, i) => ({ id: `${prefix}-${i}`, name, is_active: true, sort_order: (i + 1) * 10, type: 'expense' }));
 const stores = {
   '/api/notes': [
@@ -29,6 +30,7 @@ window.fetch = async (input, options = {}) => {
   const url = new URL(typeof input === 'string' ? input : input.url, location.origin);
   const method = options.method || 'GET';
   window.__previewRequests.push({ path: url.pathname, method });
+  if (url.origin === location.origin && method === 'GET' && url.pathname === '/api/investments') return Response.json({ data: investmentPreview });
   if (url.origin === location.origin && method === 'GET' && url.pathname === '/api/export') {
     const tables = Object.fromEntries(BACKUP_TABLES.family.map(name => [name, []]));
     tables.notes = stores['/api/notes'];

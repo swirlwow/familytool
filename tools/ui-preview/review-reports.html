@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="zh-Hant">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>股票管理與財務儀表板｜UI 預覽</title>
+<link rel="stylesheet" href="/fonts/chiron-go-round/css/vf.css">
+<style>
+body{margin:0;background:#fafaff;color:#172554;font:16px "Chiron GoRound TC WS",sans-serif}header,main{max-width:1440px;margin:auto;padding:24px}h1{font-size:24px}h2{font-size:18px}p{line-height:1.8;color:#576180}nav{display:flex;gap:20px;flex-wrap:wrap}a{color:#7047c6}section{margin-bottom:28px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}figure{margin:0;border:1px solid #ddd6f0;border-radius:8px;background:#fff;overflow:hidden}figcaption{padding:12px;font-weight:700}img{display:block;width:100%;height:auto}button{padding:10px 16px;border:0;border-radius:6px;background:#8859d5;color:white;font:inherit;cursor:pointer}.wide .grid{grid-template-columns:1fr}@media(max-width:760px){header,main{padding:16px}.grid{grid-template-columns:1fr}}
+</style>
+<header><h1>股票管理與財務儀表板｜整組預覽</h1><p>沿用統一側欄、貓咪、字體及紫色控制項。功能頁無 Banner、無頁面大標題。本次僅改呈現；以下均為隔離假資料，未推送、未部署。</p><nav><a href="/investments">互動預覽：股票管理</a><a href="/ledger/dashboard">互動預覽：財務儀表板</a><a href="/review-calendar-backup.html">上一批：行事曆與資料備份</a><button onclick="document.body.classList.toggle('wide')">切換大圖</button></nav></header>
+<main id="gallery"></main>
+<script>
+const groups=[
+['桌面各分頁',[['1440-holdings','現有持股'],['1440-transactions','交易紀錄'],['1440-dividends','股利紀錄'],['1440-actions','股權異動'],['1440-settings','基本資料'],['1440-dashboard','財務儀表板']]],
+['原有操作視窗',[['1440-modal-buy','新增買進'],['1440-modal-sell','新增賣出'],['1440-modal-dividend','新增股利'],['1440-modal-reduction','新增減資'],['1440-modal-account','帳戶'],['1440-modal-security','股票']]],
+['平板與較窄桌面',[['1024-transactions','1024px：操作列維持單排'],['834-holdings','平板持股'],['834-dashboard','平板儀表板'],['834-modal-buy','平板買進視窗']]],
+['手機與空資料',[['390-holdings','手機持股'],['390-dashboard','手機儀表板'],['390-modal-buy','手機買進視窗'],['390-modal-dividend','手機股利視窗'],['360-modal-reduction','360px 減資視窗'],['390-dashboard-empty','搜尋無結果']]]];
+for(const [title,items] of groups){const section=document.createElement('section');const h=document.createElement('h2');h.textContent=title;section.append(h);const grid=document.createElement('div');grid.className='grid';for(const [file,label] of items){const figure=document.createElement('figure');const caption=document.createElement('figcaption');caption.textContent=label;const link=document.createElement('a');link.href='/@fs/D:/@WORK/Shift%20Schedule/familytool-ui-pilot/docs/ui-reports/'+file+'.png';link.target='_blank';const img=document.createElement('img');img.src=link.href;img.alt=label;img.loading='lazy';link.append(img);figure.append(caption,link);grid.append(figure)}section.append(grid);document.getElementById('gallery').append(section)}
+</script>
+</html>

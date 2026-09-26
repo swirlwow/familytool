@@ -1,0 +1,9 @@
+// Synthetic UI data only. Never reads an account or a production API.
+import { calculateInvestmentSnapshot } from '../../src/lib/investments';
+const base = { workspace_id: 'ui-preview-only', currency: 'TWD', is_active: true, sort_order: 10, note: '隔離測試資料', created_at: '2026-09-01T00:00:00Z', updated_at: '2026-09-01T00:00:00Z' };
+const accounts = ['大帥哥', '大美女'].map((name, i) => ({ ...base, id: 'preview-account-' + i, name: '永豐-' + name, broker: '永豐' }));
+const securities = [{ ...base, id: 'preview-security', symbol: '00878', name: '國泰永續高股息', market: 'TWSE', current_price: 25, current_price_date: '2026-09-26', current_price_time: '13:30:00', current_price_source: 'manual' }];
+const transactions = accounts.map((account, i) => ({ ...base, id: 'preview-trade-' + i, account_id: account.id, security_id: securities[0].id, transaction_type: 'buy', trade_date: '2026-09-01', quantity: 1000, price: 20, fee: 28, tax: 0, cash_amount: 20000, settlement_amount: 20028, order_number: null, source: 'manual' }));
+const dividends = [{ ...base, id: 'preview-dividend', account_id: accounts[1].id, security_id: securities[0].id, dividend_type: 'cash', ex_dividend_date: '2026-09-10', eligible_quantity: 1000, dividend_per_share: .5, stock_dividend_rate: 0, payment_date: '2026-09-20', received_amount: 500, shares_received: null, deduction_type: null, status: 'received', source: 'manual', expected_amount: 500, expected_shares: 0, deduction_amount: 0 }];
+const corporate_actions = [{ ...base, id: 'preview-action', account_id: accounts[0].id, security_id: securities[0].id, action_type: 'capital_reduction', event_date: '2026-09-22', quantity_before: 1000, reduction_ratio: 20, quantity_after: 800, cash_return: 2000, cost_adjustment: 2000, source: 'manual' }];
+export const investmentPreview = { accounts, securities, transactions, dividends, corporate_actions, ...calculateInvestmentSnapshot(accounts, securities, transactions, dividends, corporate_actions) };
