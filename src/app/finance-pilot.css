@@ -84,6 +84,15 @@
   color: #fff;
 }
 .settlement-redesign .settlement-overview { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+@media (min-width: 1024px) {
+  .family-content .settlement-redesign .settlement-overview { grid-template-columns: 220px minmax(0, 1fr); align-items: stretch; }
+  .family-content .settlement-redesign .settlement-overview > div:first-child { display:grid; grid-template-columns:1fr; gap:4px; padding:10px; }
+  .family-content .settlement-redesign .settlement-overview > div:first-child > div:nth-child(2) { display:flex; flex-wrap:wrap; gap:4px 8px; padding:0; border:0; background:transparent; }
+  .family-content .settlement-redesign .settlement-overview > div:first-child > div:nth-child(2) > div { margin:0; }
+  .family-content .settlement-redesign .settlement-overview > div:first-child > div:last-child { gap:4px; font-size:9px; }
+  .family-content .settlement-redesign .settlement-overview .summary-grid > div { display:flex; flex-direction:column; align-items:flex-start; justify-content:center; gap:4px; padding:10px 8px; min-width:0; white-space:normal; }
+  .family-content .settlement-redesign .settlement-overview .summary-grid > div > div:last-child { text-align:left; font-size:11px; }
+}
 .settlement-redesign .settlement-overview > div:first-child {
   display: flex;
   flex-wrap: wrap;
