@@ -1,4 +1,18 @@
 /* Reference-inspired presentation; all fields, copy and handlers stay intact. */
+.family-content .ledger-pilot .ledger-summary-row > div:first-child {
+  display:flex; align-items:center; padding:10px 14px !important; min-height:64px;
+}
+.family-content .ledger-pilot .ledger-summary-row input[type="month"] { height:40px; min-height:40px; }
+.family-content .ledger-pilot .ledger-summary-row .stat-card > div {
+  display:flex; flex-direction:row; align-items:center; justify-content:space-between;
+  min-height:64px; gap:12px; padding:10px 16px !important;
+}
+.family-content .ledger-pilot .ledger-summary-row .stat-card > div > div { margin:0; }
+.family-content .ledger-pilot .ledger-summary-row .stat-card > div > div:last-child { margin-left:auto; text-align:right; min-width:0; }
+.family-content .ledger-pilot .ledger-summary-row .stat-value { overflow-wrap:anywhere; }
+@media(max-width:639px) {
+  .family-content .ledger-pilot .ledger-summary-row .stat-card > div { gap:6px; padding-inline:10px !important; flex-wrap:wrap; }
+}
 .app-page.ledger-pilot .app-page-inner { max-width:1500px; gap:12px; }
 .app-page.ledger-pilot .app-page-inner > .grid > div {
   border-radius:12px !important; box-shadow:none !important;
@@ -28,6 +42,8 @@
 .family-content .ledger-pilot .ledger-records-panel h2 { color:#06496a !important; font-size:16px; }
 .ledger-pilot .ledger-records-panel > div:first-child span { color:#195575 !important; }
 .ledger-pilot .ledger-records-panel .group { padding:14px 18px; }
+/* Swipe background must stay covered at rest; padding belongs to its content. */
+.ledger-pilot .ledger-records-panel .group.touch-pan-y { padding:0; }
 .ledger-pilot .ledger-records-panel .group:hover { background:#f1fcfd !important; }
 @media(min-width:768px) {
   .ledger-pilot .ledger-entry-fields { grid-template-columns:repeat(12,minmax(0,1fr)); }

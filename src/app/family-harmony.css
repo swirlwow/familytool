@@ -1,0 +1,103 @@
+/* Unified family visual language. Presentation only; preserve geometry and state colors. */
+.family-shell {
+  --family-canvas:#fffdf7;
+  --family-ink:#172b55;
+  --family-muted:#52627c;
+  background:var(--family-canvas) !important;
+}
+.family-shell .family-content { background:var(--family-canvas) !important; }
+.family-shell .family-content :is(.app-page,.family-calendar) {
+  --section-accent:#b94b60;
+  --section-soft:#fff0f1;
+  --section-line:#efd6da;
+  --ui-ink:var(--family-ink);
+  --ui-muted:var(--family-muted);
+  --ui-line:#dce3e8;
+  --ui-table:#e9f4fb;
+  --ui-purple:var(--section-accent);
+  background:var(--family-canvas) !important;
+  color:var(--family-ink);
+}
+.family-shell .family-content .investments-ui { --section-accent:#985600; --section-soft:#fff5df; --section-line:#efdab6; }
+.family-shell .family-content :is(.shopping-pilot,.stickies-pilot,.sticky-detail-ui,.calendar-ui) { --section-accent:#087c80; --section-soft:#e8faf7; --section-line:#c8e9e1; }
+.family-shell .family-content :is(.backup-ui,.app-page:has(.settings-navigation)) { --section-accent:#7252b1; --section-soft:#f3edff; --section-line:#e0d5f0; }
+
+/* Keep the garden/cat artwork untouched. */
+.family-shell .family-sidebar { background-color:#fffdf7 !important; border-right-color:#eee9df !important; }
+.family-shell .family-nav-link.active { background:#e0f1ff !important; color:#075dae !important; border-radius:10px !important; }
+.family-shell .family-nav-link:hover { background-color:#eef6fa; }
+.family-shell .family-content .app-page :is(.app-panel,.bg-card,[data-slot="card"]) {
+  border-color:var(--section-line) !important; border-radius:10px !important;
+  box-shadow:0 2px 6px #27365304 !important;
+}
+.family-shell .family-content .app-page :is(.input,.select,.textarea) { border-color:#d6e0ea !important; border-radius:8px !important; }
+.family-shell .family-content :is(button,a,input,select,textarea):focus-visible { outline:2px solid #176db2 !important; outline-offset:3px; }
+.family-shell .family-content .app-page .btn:not(.join-item) { border-radius:8px !important; }
+.family-shell .family-content .app-page .btn:is(.btn-outline,.bg-white) { background:#fff !important; color:var(--section-accent) !important; border-color:var(--section-line) !important; }
+
+/* One tab treatment, with a feature-family accent. */
+.family-shell .family-content .app-page :is(.ledger-tabs a,.app-view-switch button,.ledger-settings-nav a,.settings-secondary-link,[role="group"][aria-label="採買頁面"] button) {
+  background:#fff !important; color:var(--family-muted) !important;
+  border:1px solid var(--section-line) !important; border-radius:8px 8px 0 0 !important; box-shadow:none !important;
+}
+.family-shell .family-content .app-page :is(.ledger-tabs a,.app-view-switch button,.ledger-settings-nav a,.settings-secondary-link,[role="group"][aria-label="採買頁面"] button):is([aria-current="page"],[aria-pressed="true"]) {
+  background:var(--section-soft) !important; color:var(--section-accent) !important;
+  border-color:var(--section-line) !important; box-shadow:inset 0 -3px var(--section-accent) !important;
+}
+.family-shell .family-content .app-page .ledger-tabs { border-bottom-color:var(--section-line); }
+.family-shell .family-content .app-page table thead :is(tr,th) { background:#e7f3fb !important; color:#274f76 !important; }
+.family-shell .family-content .app-page table :is(th,td) { border-color:#dce9f1 !important; }
+
+/* Compact section headings: use dark ink for contrast on pastel bands. */
+.family-shell .family-content .ledger-pilot .ledger-entry-panel > button,
+.family-shell .family-content .dashboard-ui .dashboard-filter-panel > :first-child { background:linear-gradient(110deg,#ffd4d8,#ffe4e3) !important; }
+.family-shell .family-content .ledger-pilot .ledger-entry-panel > button h2,
+.family-shell .family-content .ledger-pilot .ledger-entry-panel > button h2 svg,
+.family-shell .family-content .dashboard-ui .dashboard-filter-panel > :first-child { color:#843447 !important; }
+.family-shell .family-content .ledger-pilot .ledger-records-panel > div:first-child { background:linear-gradient(110deg,#b8eeea,#ddf8f3) !important; }
+.family-shell .family-content :is(.bills-color-entry,.dashboard-category-panel) > :first-child { background:linear-gradient(110deg,#ffe0b8,#fff0d8) !important; color:#79501d !important; }
+.family-shell .family-content :is(.bills-color-entry,.dashboard-category-panel) > :first-child :is(h2,svg) { color:#79501d !important; }
+.family-shell .family-content :is(.bills-color-list,.dashboard-detail-panel) > :first-child { background:linear-gradient(110deg,#cdeaff,#e6f5ff) !important; }
+
+/* Calm secondary investment actions; transaction colors remain recognizable. */
+.family-shell .family-content .reports-ui.investments-ui [class*="investmentActions"] > button {
+  background:color-mix(in srgb,var(--action-bg),white 90%) !important;
+  color:color-mix(in srgb,var(--action-bg),#172b55 45%) !important;
+  border-color:color-mix(in srgb,var(--action-bg),white 65%) !important;
+}
+.family-shell .family-content .reports-ui.investments-ui [class*="investmentActions"] > button:has(.lucide-plus) { background:#087f68 !important; color:white !important; border-color:#087f68 !important; }
+.family-shell .family-content .reports-ui.investments-ui :is([role="tab"],[class*="investmentTabs"] > button) { background:#fffaf0 !important; color:#7c551c !important; border-color:#efdab6 !important; }
+.family-shell .family-content .reports-ui.investments-ui :is([role="tab"][aria-selected="true"],[class*="investmentTabs"] > button.bg-white) { background:#fff0ce !important; color:#794a0a !important; box-shadow:inset 0 -3px #b77817 !important; }
+
+/* Life tools retain event/category colors, sticky paper and tape variants. */
+.family-shell .family-content .calendar-ui { --cal-purple:#087c80; --cal-line:#d2e8e3; }
+.family-shell .family-content .calendar-ui > header { background:#effbf7 !important; }
+.family-shell .family-content .calendar-ui .calendar-weekdays { background:#e6f7f2 !important; }
+.family-shell .family-content .calendar-ui [aria-current="date"] { background:#effbf7 !important; }
+.family-shell .family-content .calendar-ui [aria-current="date"] > div:first-child > div:first-child { background:#087c80 !important; }
+.family-shell .family-content :is(.shopping-pilot,.stickies-pilot) .btn-primary { background:#087c80 !important; border-color:#087c80 !important; color:white !important; }
+.family-shell .family-content .backup-ui .backup-notice { background:#f6f1ff; border-color:#e3d8f1; color:#52627c; }
+.family-shell .family-content .backup-ui .backup-intro { background:linear-gradient(100deg,#f5efff,#fff); border-radius:8px; }
+.family-shell .family-content .backup-ui .backup-download { background:#7252b1; border-color:#7252b1; border-radius:8px; }
+.family-shell .family-content .dashboard-ui .dashboard-filter-panel > button :is(span,svg) { color:#843447 !important; }
+.family-shell .family-content .settlement-redesign .settlement-net > div:first-child { background:linear-gradient(110deg,#b8eeea,#ddf8f3) !important; }
+.family-shell .family-content .settlement-redesign .settlement-net > div:first-child h3 { color:#155f60 !important; }
+.family-shell .family-content .settlement-redesign .settlement-net + .card > div:first-child { background:linear-gradient(110deg,#ffe0b8,#fff0d8) !important; }
+.family-shell .family-content .settlement-redesign .settlement-net + .card > div:first-child h3 { color:#79501d !important; }
+.family-shell .family-content .stickies-pilot :is(.sticky-list-toolbar .bg-amber-500,button[aria-label="新增便條"]) { background:#087c80 !important; color:white !important; border-color:#087c80 !important; }
+.family-shell .family-content .shopping-pilot div:has(> label[for="quick-shopping"]) { background:#effbf7 !important; border-color:#b9ddd2 !important; }
+.family-shell .family-content .shopping-pilot div:has(> #quick-shopping) > button { background:#087c80 !important; color:white !important; border-color:#087c80 !important; }
+@media(prefers-reduced-motion:reduce) { .family-shell .family-content :is(button,a) { transition:none !important; } }
+/* Secondary life screens and mobile navigation. Keep destructive actions red. */
+.family-shell .family-content .sticky-detail-ui .app-actions .btn-primary { background:#087c80 !important; color:#fff !important; border-color:#087c80 !important; }
+.family-shell .family-content .sticky-detail-ui .app-actions .btn-outline { background:#fff1f4 !important; color:#b3264f !important; border-color:#f3c2cf !important; }
+.family-shell .family-content .sticky-detail-ui .app-panel > .flex.flex-col { background:#e8faf7 !important; }
+.family-shell .family-content .sticky-detail-ui .app-panel > input { background:#f5fcfa !important; }
+.family-shell .family-bottom-nav a.active { background:#e5f2ff !important; color:#075dae !important; border-top-color:transparent !important; }
+.family-shell .family-bottom-nav a.active::before { background:#075dae !important; }
+body:has(.calendar-ui) .family-bottom-nav a.active { background:#e8faf7 !important; color:#087c80 !important; }
+body:has(.calendar-ui) .family-bottom-nav a.active::before { background:#087c80 !important; }
+.family-dialog:has(.calendar-editor,.calendar-overflow) { background:#fffdf7 !important; border-color:#c8e9e1 !important; }
+.family-dialog .calendar-editor .bg-orange-600 { background:#087c80 !important; color:white !important; }
+.family-dialog .calendar-editor .bg-orange-100 { background:#e8faf7 !important; color:#146468 !important; }
+.family-dialog .calendar-editor :is(input,textarea):focus { border-color:#087c80 !important; box-shadow:0 0 0 2px #087c8026 !important; }

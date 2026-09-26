@@ -7,7 +7,6 @@ import LedgerTabs from "@/components/LedgerTabs";
 import { AppModal } from "@/components/ui/app-modal";
 import { WORKSPACE_ID } from "@/lib/appConfig";
 import {
-  Calendar,
   TrendingDown,
   TrendingUp,
   Plus,
@@ -492,14 +491,11 @@ export default function LedgerPage() {
         <LedgerTabs active="ledger" />
 
         {/* Stats */}
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-[260px_1fr_1fr]">
+        <div className="ledger-summary-row grid grid-cols-2 gap-3 md:grid-cols-[260px_1fr_1fr]">
           <div className="col-span-2 rounded-lg border border-slate-200 bg-white p-4 shadow-sm md:col-span-1">
-              <div className="mb-2 flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-sky-500" />
-                <span className="text-xs font-bold text-slate-500">查看月份</span>
-              </div>
               <input
                 type="month"
+                aria-label="查看月份"
                 className="input input-bordered h-10 min-h-0 w-full rounded-lg border-slate-200 bg-slate-50 font-bold focus:border-sky-500"
                 value={ym}
                 onChange={(e) => setYm(e.target.value)}

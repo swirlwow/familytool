@@ -1,0 +1,280 @@
+{
+  "base": "5c52539",
+  "viewports": [
+    {
+      "width": 1440,
+      "route": "ledger",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "route": "ledger/dashboard",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "route": "settlement",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "route": "bills",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "route": "investments",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "route": "calendar",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "route": "shopping",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "route": "stickies",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "route": "settings/backup",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "route": "settings/categories",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "route": "settlement/history",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "route": "settings/payment-methods",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "route": "settings/merchants",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "route": "settings/payers",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "route": "stickies/note-0",
+      "passed": true
+    },
+    {
+      "width": 834,
+      "route": "ledger",
+      "passed": true
+    },
+    {
+      "width": 834,
+      "route": "ledger/dashboard",
+      "passed": true
+    },
+    {
+      "width": 834,
+      "route": "settlement",
+      "passed": true
+    },
+    {
+      "width": 834,
+      "route": "bills",
+      "passed": true
+    },
+    {
+      "width": 834,
+      "route": "investments",
+      "passed": true
+    },
+    {
+      "width": 834,
+      "route": "calendar",
+      "passed": true
+    },
+    {
+      "width": 834,
+      "route": "shopping",
+      "passed": true
+    },
+    {
+      "width": 834,
+      "route": "stickies",
+      "passed": true
+    },
+    {
+      "width": 834,
+      "route": "settings/backup",
+      "passed": true
+    },
+    {
+      "width": 834,
+      "route": "settings/categories",
+      "passed": true
+    },
+    {
+      "width": 834,
+      "route": "settlement/history",
+      "passed": true
+    },
+    {
+      "width": 834,
+      "route": "settings/payment-methods",
+      "passed": true
+    },
+    {
+      "width": 834,
+      "route": "settings/merchants",
+      "passed": true
+    },
+    {
+      "width": 834,
+      "route": "settings/payers",
+      "passed": true
+    },
+    {
+      "width": 834,
+      "route": "stickies/note-0",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "route": "ledger",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "route": "ledger/dashboard",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "route": "settlement",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "route": "bills",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "route": "investments",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "route": "calendar",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "route": "shopping",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "route": "stickies",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "route": "settings/backup",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "route": "settings/categories",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "route": "settlement/history",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "route": "settings/payment-methods",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "route": "settings/merchants",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "route": "settings/payers",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "route": "stickies/note-0",
+      "passed": true
+    }
+  ],
+  "interactions": [
+    {
+      "width": 1440,
+      "name": "shopping tabs and delete cancellation",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "name": "investment tabs and editor cancellation",
+      "passed": true
+    },
+    {
+      "width": 1440,
+      "name": "calendar editor open and escape",
+      "passed": true
+    },
+    {
+      "width": 834,
+      "name": "shopping tabs and delete cancellation",
+      "passed": true
+    },
+    {
+      "width": 834,
+      "name": "investment tabs and editor cancellation",
+      "passed": true
+    },
+    {
+      "width": 834,
+      "name": "calendar editor open and escape",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "name": "shopping tabs and delete cancellation",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "name": "investment tabs and editor cancellation",
+      "passed": true
+    },
+    {
+      "width": 390,
+      "name": "calendar editor open and escape",
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "blockedRequests": [],
+  "mutations": []
+}
