@@ -799,17 +799,17 @@ export default function LedgerPage() {
                   <SwipeableRow key={r.id} onEdit={() => openEdit(r)} onDelete={() => setPendingDelete(r)}>
                     <div className="group relative px-4 py-3 md:px-8 md:py-5 hover:bg-slate-50 transition-colors">
                       
-                      {/* 💻 電腦版：懸停時才出現的操作按鈕 (手機版透過 SwipeableRow 隱藏) */}
-                      <div className="absolute right-3 top-3.5 sm:top-4 hidden sm:flex flex-row gap-1.5 opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                      {/* 💻 電腦版：固定顯示的操作按鈕 (手機版透過 SwipeableRow 隱藏) */}
+                      <div className="ledger-row-actions absolute right-3 top-3.5 sm:top-4 hidden sm:flex flex-row gap-2">
                         <button
-                          className="btn btn-ghost btn-xs h-8 w-8 p-0 min-h-0 rounded-lg text-slate-400 hover:text-sky-600 hover:bg-sky-50"
+                          className="btn h-11 w-11 p-0 min-h-11 rounded-lg border border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100"
                           onClick={() => openEdit(r)}
                           aria-label="編輯"
                         >
                           <Edit3 className="w-4 h-4" />
                         </button>
                         <button
-                          className="btn btn-ghost btn-xs h-8 w-8 p-0 min-h-0 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50"
+                          className="btn h-11 w-11 p-0 min-h-11 rounded-lg border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100"
                           onClick={() => setPendingDelete(r)}
                           aria-label="刪除"
                         >
@@ -818,7 +818,7 @@ export default function LedgerPage() {
                       </div>
 
                       {/* 📱 手機版：取消了原本右邊留白的 pr-8，因為現在不需要預留按鈕空間了，畫面更寬敞！ */}
-                      <div className="flex items-start gap-3 sm:gap-4 min-w-0 pr-0 sm:pr-16">
+                      <div className="flex items-start gap-3 sm:gap-4 min-w-0 pr-0 sm:pr-28">
                         <div
                           className={`w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl flex items-center justify-center font-black text-sm sm:text-base shrink-0 border-2 ${
                             isExp

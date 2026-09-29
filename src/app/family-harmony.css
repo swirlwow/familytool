@@ -1,4 +1,11 @@
 /* Unified family visual language. Presentation only; preserve geometry and state colors. */
+.family-shell .ledger-row-actions > button { width:44px !important; height:44px !important; min-height:44px !important; opacity:1; }
+.family-shell .ledger-row-actions > button > svg { width:20px; height:20px; }
+.holdings-account-help { display:flex; align-items:flex-start; justify-content:space-between; gap:8px 16px; flex-wrap:wrap; }
+.holdings-account-help > details { flex:1 1 260px; }
+.holdings-account-help > details > summary { margin-left:auto; }
+.holdings-account-help > .holdings-account-label { order:-1; }
+.holdings-account-label { display:flex; align-items:center; gap:8px; margin:8px 16px; padding:6px 12px; border:1px solid #efdab6; border-radius:8px; background:#fff6e7; color:#79501d; font-size:14px; font-weight:700; }
 /* Shared route edges. Inner form controls may remain narrow; page frames align. */
 .family-shell .family-content .app-page { padding-inline:var(--ft-page-gutter); }
 .family-shell .family-content .app-page > :is(.app-page-inner,.home-inner) { width:100%; max-width:var(--ft-content-max); margin-inline:auto; }
