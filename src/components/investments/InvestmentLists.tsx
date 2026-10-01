@@ -34,13 +34,13 @@ export function HoldingsList({ rows, onManage }: { rows: InvestmentHolding[]; on
   const toggle = (key: string) => setExpandedKey((current) => current === key ? null : key);
   if (!rows.length) return <div className="app-empty"><BriefcaseBusiness className="mx-auto mb-2 h-8 w-8 text-slate-300" /><p>尚無現有持股</p><p className="mt-1 text-xs">先建立券商帳戶與股票，再新增買進紀錄。</p></div>;
   return <><div className="holdings-account-help"><CalculationHelp /><p className="holdings-account-label"><Landmark aria-hidden="true" className="h-4 w-4 shrink-0" /><span>券商帳戶：{Array.from(new Set(rows.map(row => row.account_name))).join("、")}</span></p></div><div className="hidden w-full min-w-0 max-w-full overflow-x-auto md:block"><table className="table w-full min-w-0 table-fixed [&_th]:px-2 [&_td]:px-2">
-    <colgroup>{[23, 7, 10, 11, 10, 10, 11, 18].map((width, index) => <col key={index} style={{ width: `${width}%` }} />)}</colgroup>
+    <colgroup>{[17, 7, 16, 11, 10, 10, 11, 18].map((width, index) => <col key={index} style={{ width: `${width}%` }} />)}</colgroup>
     <thead><tr><th>股票</th><th className="text-right">持有股數</th><th className="text-right">目前股價</th><th className="text-right">市值</th><th className="text-right">持有成本</th><th className="text-right">未實現損益</th><th className="text-right">含股利總損益</th><th /></tr></thead>
     <tbody>{rows.map((row) => <Fragment key={row.key}><tr>
 
       <td><strong>{row.symbol} {row.security_name}</strong><div className="text-xs text-slate-400">{row.market}</div></td>
       <td className="text-right font-mono">{numberText(row.quantity)}</td>
-      <td className="text-right font-mono">{row.current_price === null ? "未更新" : priceMoney(row.current_price)}<QuoteProvenance row={row} /></td>
+      <td className="text-right font-mono">{row.current_price === null ? "未更新" : <strong className="holding-current-price" style={{color:"#7c3aed",fontSize:18,fontWeight:800}}>{priceMoney(row.current_price)}</strong>}<QuoteProvenance row={row} /></td>
       <td className="text-right"><b>{wholeMoney(row.market_value)}</b><div className="text-[11px] text-slate-400">預估賣出淨值 {wholeMoney(row.estimated_sale_value)}</div></td>
       <td className="text-right"><b>{wholeMoney(row.cost_basis)}</b><div className="text-[11px] text-slate-400">除息後 {wholeMoney(row.dividend_adjusted_cost_basis)}</div>{row.position_dividend_gross > 0 && <div className="text-[10px] text-emerald-600">累計除息 {wholeMoney(row.position_dividend_gross)}</div>}</td>
       <td className={`text-right font-black ${profitTone(row.unrealized_profit_after_sale_costs)}`}>{signedWholeMoney(row.unrealized_profit_after_sale_costs)}<div className="text-[11px] font-semibold">{signedPercent(row.unrealized_return)}</div></td>
