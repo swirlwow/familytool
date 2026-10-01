@@ -2,7 +2,11 @@
 "use client";
 import "./sticky-list-ui.css";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { DndContext, MouseSensor, TouchSensor, KeyboardSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
+import { SortableContext, arrayMove, rectSortingStrategy, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
+import { SortableSticky } from "./SortableSticky";
+import { applyStickyOrder, mergeStickyOrder, parseStickyOrder, stickyOrderKey } from "@/lib/sticky-order";
 import { StickyNote, Plus, Search, Trash2, Pencil, Save, X, Filter } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ConfirmActionDialog } from "@/components/ui/confirm-action-dialog";
@@ -41,6 +45,14 @@ export default function StickiesPage() {
   const [owner, setOwner] = useState<(typeof OWNERS)[number]>("全部");
   const [list, setList] = useState<StickyRow[]>([]);
   const [loading, setLoading] = useState(false);
+  const order = useRef<string[]>([]);
+  const papers = useRef(new Map<string, number>());
+  const request = useRef(0);
+  const sensors = useSensors(
+    useSensor(MouseSensor, {activationConstraint: {distance: 6}}),
+    useSensor(TouchSensor, {activationConstraint: {delay: 180, tolerance: 8}}),
+    useSensor(KeyboardSensor, {coordinateGetter: sortableKeyboardCoordinates}),
+  );
 
   // 同頁編輯狀態
   const [editingId, setEditingId] = useState<string>("");
@@ -54,6 +66,7 @@ export default function StickiesPage() {
   async function load() {
     if (!WORKSPACE_ID) return;
 
+    const requestId = ++request.current;
     setLoading(true);
     try {
       const usp = new URLSearchParams();
@@ -67,12 +80,17 @@ export default function StickiesPage() {
       if (!res.ok) throw new Error(j.error || "讀取失敗");
 
       const rows: StickyRow[] = Array.isArray(j.data) ? j.data : [];
-      setList(rows.filter((x) => String(x?.id || "").trim()));
+      if (requestId !== request.current) return;
+      try { order.current = parseStickyOrder(localStorage.getItem(stickyOrderKey(WORKSPACE_ID))); } catch { /* Keep session order if storage is blocked. */ }
+      const valid = rows.filter((x) => String(x?.id || "").trim());
+      valid.forEach((row, index) => { if (!papers.current.has(row.id)) papers.current.set(row.id, index % 6); });
+      setList(applyStickyOrder(valid, order.current));
     } catch {
+      if (requestId !== request.current) return;
       toast({ variant: "destructive", title: "便條紙暫時無法讀取", description: "請稍後重新整理。" });
       setList([]);
     } finally {
-      setLoading(false);
+      if (requestId === request.current) setLoading(false);
     }
   }
 
@@ -203,6 +221,18 @@ export default function StickiesPage() {
 
   const countText = useMemo(() => `共 ${list.length} 張`, [list]);
 
+  function finishDrag({active, over}: DragEndEvent) {
+    if (!over || active.id === over.id || editingId || loading || pendingDelete) return;
+    const from = list.findIndex(row => row.id === active.id);
+    const to = list.findIndex(row => row.id === over.id);
+    if (from < 0 || to < 0) return;
+    const next = arrayMove(list, from, to);
+    order.current = mergeStickyOrder(order.current, list.map(row => row.id), next.map(row => row.id));
+    setList(next);
+    try { localStorage.setItem(stickyOrderKey(WORKSPACE_ID), JSON.stringify(order.current)); }
+    catch { toast({variant: "destructive", title: "排列已調整，但無法記住", description: "瀏覽器儲存空間不可用，重新整理後可能恢復原順序。"}); }
+  }
+
   // 產生固定的隨機旋轉角度
   function getRotation(id: string) {
     const hash = id.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
@@ -311,15 +341,19 @@ export default function StickiesPage() {
 
         {!loading && list.length > 0 && (
           // ✅ 手機版 px-3 避免卡片直接貼緊螢幕邊緣
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={finishDrag}
+            accessibility={{screenReaderInstructions: {draggable: "按空白鍵開始移動，使用方向鍵調整位置，再按空白鍵放下；按 Escape 取消。"}}}>
+          <SortableContext items={list.map(row => row.id)} strategy={rectSortingStrategy}>
           <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {list.map((s) => {
               const isEditing = editingId === s.id;
               const rotationClass = isEditing ? "rotate-0 md:scale-105 z-20" : getRotation(s.id);
 
               return (
-                <div
+                <SortableSticky
                   key={s.id}
-                  data-editing={isEditing}
+                  id={s.id} title={s.title} editing={isEditing} paper={papers.current.get(s.id) ?? 0}
+                  disabled={!!editingId || !!pendingDelete || saving || deleting || list.length < 2}
                   className={`
                     sticky-card relative min-w-0 [overflow-wrap:anywhere] transition-all duration-300 group flex flex-col min-h-[200px] md:min-h-[220px]
                     ${rotationClass}
@@ -434,10 +468,12 @@ export default function StickiesPage() {
                       </div>
                     )}
                   </div>
-                </div>
+                </SortableSticky>
               );
             })}
           </div>
+          </SortableContext>
+          </DndContext>
         )}
       </div>
 
