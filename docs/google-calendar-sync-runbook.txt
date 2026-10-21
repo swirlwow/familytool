@@ -1,0 +1,94 @@
+家庭工具 Google 行事曆同步｜開發與接續說明
+更新：2026-10-21，Asia/Taipei
+
+狀態
+程式已接線並通過本機檢查；資料庫更新已正式套用，版本 20261021084101。
+本檔隨程式發布，推送與部署的最新結果請讀雲端「專案進度與接續說明」。
+真實 Google OAuth 與真實行程新增/修改/刪除，待使用者親自授權後驗收。
+所有本機檔案保留。既有保險預覽與其他未提交檔案未修改，不可混入此功能發布。
+
+功能範圍
+行事曆工具列新增「連結 Google」；授權後為「同步 Google」。每次按鈕同步所有月份，
+不是只同步目前顯示月份或某個成員。以 notes 為來源，僅有日期的行程同步為全天；
+不猜測標題中的時間。多日行程轉成 Google 的不含結束日格式。
+Google 中的手動修改會在下次同步被家庭工具內容覆蓋。
+每位家庭工具使用者／工作區各自綁定 Google 帳號與專用次要行事曆「家庭工具」。
+不採用 primary，不搜尋同名既有行事曆、不改共享權限、不讀寫其他行事曆。
+僅刪除持久化綁定、已確認建立且 Google 私有標記的 app/workspace/source 全吻合的行程。
+手動新增、非本工具行程與無法證明來源的項目不刪除、不覆蓋。
+
+技術邊界
+新增 /api/google-calendar/connect (POST)、callback (GET)、status (GET)、sync (POST)。
+connect/sync 要求同來源及設定中的正式 origin；伺服器驗證 Supabase getUser 與 user_workspaces。
+OAuth 使用一次性 state（10 分鐘）、HttpOnly/SameSite=Lax cookie、PKCE、固定回呼。
+scope 僅 openid、email、calendar.app.created。refresh token 不回傳前端或寫入日誌。
+google_calendar_connections 為獨立資料表，以 user_id + workspace_id 隔離，RLS 要求本人與工作區會員。
+整份同步狀態以 AES-256-GCM 加密、使用者/工作區作 AAD；HKDF 從伺服器 OAuth Client Secret
+導出專用加密金鑰。包括 refresh token、Google 身分、calendarId、事件綁定與待授權狀態。
+Client Secret 輪替前，必須由受控伺服器流程用舊金鑰解密並以新金鑰重加密；不能直接換掉後清空
+同步紀錄重建，否則會失去既有綁定。密鑰不放本文件、原始碼或雲端包。
+
+同步安全
+資料庫原子更新取得 10 分鐘 lease；API 上限 240 秒，內部 180 秒截止，單次 Google 請求 10 秒。
+每次寫入前檢查鎖，存檔及釋放鎖比對 lock_token，避免另一程序覆寫。
+來源用 security-invoker RPC 一次聚合完整快照，不使用 UI 的分頁／月份篩選。
+超過 5000 筆會拒絕處理，不截斷後誤刪。大量資料在時間預算內未完成時會提示重試，
+不能宣稱無上限同步；若單次掃描持續超時，需另增批次游標/背景工作後才能支援。
+先驗證全部日期，再新增/更新，全部成功才開始刪除。刪除前與結束時重讀快照確認未變。
+Google 更新/刪除帶 If-Match ETag；衝突、授權、資料讀取或來源變動即停止，不盲目重試刪除。
+跨服務無法做單一交易；同步期間發生的變動若在最後檢查才被偵測，需再次同步收斂。
+事件先保存穩定 ID 預留，成功後標確認。模糊回應下次讀取同 ID 可恢復；已確認的 Google
+刪除墓碑會改用新 generation，避免重用已刪 ID。刪除紀錄保留，來源恢復時可重建。
+若新增回應不明且來源接著被刪，因綁定尚未確認會保守停止，交管理者核對，不自動刪除。
+建立次要行事曆無冪等鍵：先保存 creationPending，若網路結果不明，不自動再建，需管理者
+確認已建立的行事曆 ID 並受控修復加密紀錄；不能只按名稱認領任意行事曆。
+明確 400/401/403 拒絕可安全清除建立中的標記後重試。既有專用行事曆消失則停止，不改用其他目標。
+
+設定及上線順序
+1. 既有 Google Cloud 專案 justtour-tool；確認 Calendar API 已啟用。
+2. 網頁 OAuth 用戶端已由使用者建立，External / Testing，使用者 Gmail 已加入測試名單。
+   重新導向 URI 必須精確等於 https://familytool.vercel.app/api/google-calendar/callback。
+   此流程不需要瀏覽器 JavaScript origin。Client ID 非秘密；Client Secret 不貼聊天。
+3. Vercel Production 已由使用者建立 GOOGLE_CALENDAR_CLIENT_ID、GOOGLE_CALENDAR_CLIENT_SECRET、
+   GOOGLE_CALENDAR_REDIRECT_URI。截圖只確認名稱/範圍存在，值未讀取核實；本機沒有此密鑰。
+   欄位範本在 config/google-calendar.env.example。原有 Supabase 公開設定及 workspace 仍需存在。
+4. 推送/部署前檢查 git diff，只選本功能檔案。先套用
+   supabase/migrations/20261021084101_google_calendar_sync.sql 到 family 專案 ztaapoeqqeqvofnyowdf；
+   不可套用到值班休假。新增表與兩函數，不變動既有 notes 或業務資料。
+   已正式套用；遠端 migration history 版本為 20261021084101，本機檔名已對齊。
+5. 套用後跑 security advisors 與 supabase/tests/google_calendar_sync.sql（BEGIN/ROLLBACK 包裹），
+   確認 RLS、匿名拒絕、會員快照、跨工作區拒絕及鎖競爭，然後部署網站。
+   本輪正式套用後測試通過、測試資料 ROLLBACK，整合表仍為 0 筆；RLS 已啟用。
+   security advisors 未發現此功能相關問題；既有帳號「洩漏密碼保護未啟用」提示保持原設定。
+6. 由使用者登入家庭工具，點「連結 Google」並親自同意，回到行事曆後點「同步 Google」。
+   External Testing 下授權可能 7 天到期，過期會提示重新連結；維持原 Google 帳號保留綁定。
+   不要求使用者在聊天提供帳密、refresh token 或 Client Secret。
+
+真實驗收（尚未完成）
+用使用者同意的測試行程確認首次建立、再次按無重複、跨月/多日、家庭修改覆蓋、Google 手動改動
+被覆蓋、家庭刪除只刪本工具行程。手動在專用行事曆新增對照行程，必須保留。
+再測 Google 端刪除後重建、取消授權、重新授權同帳號、另一帳號拒絕、兩分頁同時同步、部分失敗重試。
+不要拿真實既有重要行程當破壞性測試資料。此驗收必須在受控測試資料與使用者授權後進行。
+
+本機驗證
+Node 24；npm test、npx tsc --noEmit --incremental false、next build --webpack。
+已通過 239 項（33 檔）測試、型別檢查與正式模式建置；其中本功能 50 項測試。
+資料庫交易回滾測試：匿名無表/函數存取權、會員完整快照、跨工作區拒絕、第二把鎖拒絕、
+外來 token 不可釋放鎖、非會員看不到連結紀錄，全部通過。
+隔離 UI 預覽：http://127.0.0.1:4287/calendar
+tools/ui-preview/google-calendar-fixture.mjs 只回傳模擬資料，不呼叫 Google/正式 API。
+已用瀏覽器確認按鈕、處理中禁用、完成數量提示、授權失效後「重新連結 Google」、月份切換；無 console error。
+google_preview=reauthorize / failure / unconnected 可測試不同情境。預覽成功不代表真實 Google 已同步。
+
+雲端保存
+同一專案的家庭工具網站／開發中，更新原 google-calendar-sync-wip-20261021.zip，不取代正式版本包。
+包內保持原目錄並附逐檔 SHA256 manifest，另保存隔離預覽圖與本操作說明。
+不要上傳 filled env、node_modules、.next、憑證、Google token 或 google_calendar_connections 資料列。
+未來一般業務資料備份亦須排除此整合表（即使 ciphertext 已加密），以免把憑證帶到雲端備份。
+另一台電腦先還原正式 source 包，再比對套用此增量包，不覆蓋自己的未同步修改；本機不刪除。
+
+參考官方文件
+https://developers.google.com/identity/protocols/oauth2/web-server
+https://developers.google.com/workspace/calendar/api/auth
+https://developers.google.com/workspace/calendar/api/v3/reference/events/update
+https://supabase.com/docs/guides/auth/server-side/creating-a-client

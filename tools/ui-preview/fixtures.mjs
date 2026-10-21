@@ -1,6 +1,7 @@
 // No backend fallback: all app fetch calls terminate in this in-memory store.
 import { BACKUP_TABLES, makeBackup } from '../../src/lib/backup-format';
 import { investmentPreview } from './investment-fixture.mjs';
+import { googleCalendarPreview } from './google-calendar-fixture.mjs';
 const make = (names, prefix) => names.map((name, i) => ({ id: `${prefix}-${i}`, name, is_active: true, sort_order: (i + 1) * 10, type: 'expense' }));
 const stores = {
   '/api/notes': [
@@ -30,6 +31,8 @@ window.fetch = async (input, options = {}) => {
   const url = new URL(typeof input === 'string' ? input : input.url, location.origin);
   const method = options.method || 'GET';
   window.__previewRequests.push({ path: url.pathname, method });
+  const googleResponse = url.origin === location.origin ? googleCalendarPreview(url.pathname, method) : null;
+  if (googleResponse) return googleResponse;
   if (url.origin === location.origin && method === 'GET' && /^\/api\/stickies\/[^/]+$/.test(url.pathname)) return Response.json({ data: stores['/api/stickies'].find(row => row.id === decodeURIComponent(url.pathname.split('/').at(-1))) ?? null });
   if (url.origin === location.origin && method === 'GET' && /^\/api\/stickies\/[^/]+\/items$/.test(url.pathname)) return Response.json({ data: [
     { id: 'preview-item-1', sticky_id: 'note-0', text: '準備週末出遊用品', is_done: false, sort: 10 },

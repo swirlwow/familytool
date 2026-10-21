@@ -9,6 +9,7 @@ import "../calendar-backup-ui.css";
 import { useToast } from "@/hooks/use-toast";
 import { ConfirmActionDialog } from "@/components/ui/confirm-action-dialog";
 import { AppModal } from "@/components/ui/app-modal";
+import { GoogleCalendarSyncButton } from "@/components/google-calendar-sync-button";
 
 const WORKSPACE_ID = process.env.NEXT_PUBLIC_WORKSPACE_ID || "";
 
@@ -596,6 +597,7 @@ export default function CalendarPage() {
 
             {/* 右：新增 (使用 flex-1 確保右邊對齊) */}
             <div className="calendar-toolbar-actions">
+              <GoogleCalendarSyncButton />
               {mode === "month" && <button type="button" className="calendar-print-button" disabled={loading || loadedMonth !== ym} onClick={() => window.print()} aria-label={`列印 ${ym} 月份`} title="列印目前月份（可另存 PDF）"><Printer size={18} aria-hidden="true" /><span>列印月份</span></button>}
               {/* 手機版模式切換按鈕，節省空間 */}
               <button
