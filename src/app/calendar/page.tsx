@@ -2,7 +2,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Check, ChevronLeft, ChevronRight, LoaderCircle, Plus, Trash2, X } from "lucide-react";
+import { createPortal } from "react-dom";
+import { Check, ChevronLeft, ChevronRight, LoaderCircle, Plus, Printer, Trash2, X } from "lucide-react";
 import "./calendar-ui.css";
 import "../calendar-backup-ui.css";
 import { useToast } from "@/hooks/use-toast";
@@ -262,6 +263,7 @@ export default function CalendarPage() {
 
   const [notes, setNotes] = useState<NoteRow[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadedMonth, setLoadedMonth] = useState<string | null>(null);
 
   const [draft, setDraft] = useState<Draft | null>(null);
   const [saving, setSaving] = useState(false);
@@ -288,6 +290,7 @@ export default function CalendarPage() {
 
   async function load() {
     if (!WORKSPACE_ID) return;
+    setLoadedMonth(null);
     setLoading(true);
     try {
       const res = await fetch(
@@ -298,6 +301,7 @@ export default function CalendarPage() {
       if (!res.ok) throw new Error(j.error || "讀取失敗");
       const rows: NoteRow[] = Array.isArray(j.data) ? j.data : [];
       setNotes(rows.filter((x) => String(x?.id || "").trim()));
+      if (mode === "month") setLoadedMonth(ym);
     } catch {
       toast({ variant: "destructive", title: "行事曆暫時無法讀取", description: "請稍後重新整理。" });
       setNotes([]);
@@ -592,6 +596,7 @@ export default function CalendarPage() {
 
             {/* 右：新增 (使用 flex-1 確保右邊對齊) */}
             <div className="calendar-toolbar-actions">
+              {mode === "month" && <button type="button" className="calendar-print-button" disabled={loading || loadedMonth !== ym} onClick={() => window.print()} aria-label={`列印 ${ym} 月份`} title="列印目前月份（可另存 PDF）"><Printer size={18} aria-hidden="true" /><span>列印月份</span></button>}
               {/* 手機版模式切換按鈕，節省空間 */}
               <button
                 type="button"
@@ -1086,6 +1091,18 @@ export default function CalendarPage() {
         </AppModal>
       )}
 
+      {mode === "month" && loadedMonth === ym && typeof document !== "undefined" && createPortal(
+        <section className="calendar-print-sheet" aria-label={`${ym} 列印行事曆`}>
+          <h1>{ym.replace("-", " 年 ")} 月行事曆</h1>
+          <table><thead><tr>{["日", "一", "二", "三", "四", "五", "六"].map(day => <th key={day}>{day}</th>)}</tr></thead>
+            <tbody>{monthWeeks.filter(week => week.some(cell => cell.inMonth)).map((week, index) => <tr key={index}>
+              {week.map((cell, dayIndex) => <td key={dayIndex}><strong>{cell.day}</strong>
+                {cell.date && notes.filter(note => { const range = noteRange(note); return range.from && range.to && range.from <= cell.date! && range.to >= cell.date!; }).map(note => <div key={note.id} className={cn("calendar-print-event", OWNER_STYLE[primaryOwner(note.owner)]?.itemBg)}>{note.title}</div>)}
+              </td>)}
+            </tr>)}</tbody>
+          </table>
+        </section>, document.body
+      )}
       <ConfirmActionDialog
         open={deleteConfirmOpen}
         title="刪除行程？"

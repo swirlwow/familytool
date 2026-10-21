@@ -1,4 +1,21 @@
 /* Calendar visual layer only. Queries, dates, event lanes and mutations stay in page.tsx. */
+.calendar-print-sheet { display: none; }
+.calendar-toolbar-actions .calendar-print-button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 40px; margin-right: 8px; padding: 6px 10px; border: 1px solid #b8dedb; border-radius: 6px; background: #fff; color: #087f83; font-size: 14px; font-weight: 700; }
+.calendar-print-button:disabled { opacity: .45; cursor: not-allowed; }
+@media screen and (max-width: 639px) { .calendar-print-button span { display: none; } }
+@page calendar-month { size: A4 landscape; margin: 10mm; }
+@media print {
+  body:has(> .calendar-print-sheet) { height: auto !important; overflow: visible !important; background: white !important; }
+  body:has(> .calendar-print-sheet) > :not(.calendar-print-sheet) { display: none !important; }
+  body > .calendar-print-sheet { display: block !important; page: calendar-month; color: #172554; font-family: "Microsoft JhengHei", sans-serif; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  .calendar-print-sheet h1 { text-align: center; font-size: 18pt; margin: 0 0 5mm; }
+  .calendar-print-sheet table { width: 100%; table-layout: fixed; border-collapse: collapse; }
+  .calendar-print-sheet th, .calendar-print-sheet td { border: 1px solid #abbfc3; padding: 2mm; }
+  .calendar-print-sheet th { background: #e5f6f3; font-size: 11pt; }
+  .calendar-print-sheet td { height: 25mm; vertical-align: top; font-size: 10pt; }
+  .calendar-print-sheet tr { break-inside: avoid; }
+  .calendar-print-event { margin-top: 1mm; padding: 1mm; border-radius: 2mm; font-size: 9pt; line-height: 1.35; white-space: normal; overflow-wrap: anywhere; }
+}
 .family-calendar.calendar-ui {
   --ft-paper: #fff;
   --ft-ivory: #fff;
