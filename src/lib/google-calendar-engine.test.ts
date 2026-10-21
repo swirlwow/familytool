@@ -32,6 +32,37 @@ function setup(rows: CalendarSource[] = [source()]) {
     run: () => synchronize("w", state, db, google), restart: () => { state = structuredClone(saved); }, change: () => { revision = "r2"; } };
 }
 describe("durable one-way Google calendar sync", () => {
+  it("syncs 137 entries with bounded requests and batch persistence", async () => {
+    const t = setup(Array.from({ length: 137 }, (_, index) => source(`event-${index}`)));
+    let active = 0, maximum = 0;
+    vi.mocked(t.google.insert).mockImplementation(async (_, event) => {
+      active++; maximum = Math.max(maximum, active);
+      await new Promise(resolve => setTimeout(resolve, 1));
+      t.events.set(event.id, { ...event, etag: "e1" }); active--;
+    });
+    expect((await t.run()).created).toBe(137);
+    expect(maximum).toBe(4);
+    expect(t.db.save).toHaveBeenCalledTimes(71); // 35 reservations + 35 confirmations + final state.
+    expect((await t.run()).unchanged).toBe(137);
+    expect(t.google.insert).toHaveBeenCalledTimes(137);
+  });
+  it("saves successful batch siblings before propagating one failure, then resumes without duplicates", async () => {
+    const t = setup([source("a"), source("b"), source("c"), source("d")]); t.owned("removed");
+    vi.mocked(t.google.insert).mockImplementation(async (_, event) => {
+      const sourceId = event.extendedProperties.private.sourceId;
+      if (sourceId === "b") throw new Error("temporary quota");
+      t.events.set(event.id, { ...event, etag: "e1" });
+    });
+    await expect(t.run()).rejects.toThrow("temporary quota");
+    expect(t.saved.bindings.a.confirmed).toBe(true);
+    expect(t.saved.bindings.b.confirmed).toBe(false);
+    expect(t.saved.bindings.c.confirmed).toBe(true);
+    expect(t.saved.bindings.d.confirmed).toBe(true);
+    expect(t.google.remove).not.toHaveBeenCalled();
+    t.restart();
+    vi.mocked(t.google.insert).mockImplementation(async (_, event) => { t.events.set(event.id, { ...event, etag: "e1" }); });
+    expect(await t.run()).toEqual({ created: 1, updated: 0, deleted: 1, unchanged: 3 });
+  });
   it("creates all months, repeats without duplicates and restores Google-side edits", async () => {
     const t = setup([source(), { ...source("b"), note_date: "2027-02-01" }]);
     expect(await t.run()).toEqual({ created: 2, updated: 0, deleted: 0, unchanged: 0 });

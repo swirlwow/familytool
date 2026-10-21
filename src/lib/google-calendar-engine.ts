@@ -73,38 +73,73 @@ export async function synchronize(workspace: string, state: IntegrationState, db
   await db.guard();
   await google.checkCalendar(calendar); // A missing calendar must NOT look like missing events.
   const counts = { created: 0, updated: 0, deleted: 0, unchanged: 0 };
-  for (const [source, desiredEvent] of desired) {
+  const entries = [...desired];
+  // Bound Google requests to four at a time. Persist each batch once, rather than
+  // several database round trips per event. No parallel writes to encrypted state.
+  for (let offset = 0; offset < entries.length; offset += 4) {
     await db.guard();
-    let binding = state.bindings[source];
-    if (!binding) {
-      binding = { eventId: eventId(workspace, source, 0), generation: 0, confirmed: false };
-      state.bindings[source] = binding;
-      await db.save(state); // Reserve stable ID before insert; ambiguous responses are recoverable.
+    let dirty = false;
+    const batch = entries.slice(offset, offset + 4).map(([source, desiredEvent]) => {
+      if (!state.bindings[source]) {
+        state.bindings[source] = { eventId: eventId(workspace, source, 0), generation: 0, confirmed: false };
+        dirty = true;
+      }
+      return { source, desiredEvent, binding: state.bindings[source], remote: null as GoogleEvent | null, advanced: false };
+    });
+    if (dirty) await db.save(state); // Reserve ALL stable IDs before any Google insert.
+    const reads = await Promise.allSettled(batch.map(item => google.get(calendar, item.binding.eventId)));
+    for (let index = 0; index < reads.length; index++) {
+      const read = reads[index];
+      if (read.status === "rejected") throw read.reason;
+      batch[index].remote = read.value;
     }
-    let remote = await google.get(calendar, binding.eventId);
-    if (remote?.status === "cancelled" || (!remote && binding.fingerprint === "deleted")) {
-      // Only an existing durable confirmed binding may advance past a Google tombstone.
-      if (!binding.confirmed) throw new Error("EVENT_OWNERSHIP_CONFLICT");
-      binding = { eventId: eventId(workspace, source, binding.generation + 1), generation: binding.generation + 1, confirmed: false };
-      state.bindings[source] = binding;
-      await db.save(state);
-      remote = await google.get(calendar, binding.eventId);
+    dirty = false;
+    for (const item of batch) {
+      if (item.remote?.status !== "cancelled" && (item.remote || item.binding.fingerprint !== "deleted")) continue;
+      if (!item.binding.confirmed) throw new Error("EVENT_OWNERSHIP_CONFLICT");
+      item.binding = { eventId: eventId(workspace, item.source, item.binding.generation + 1), generation: item.binding.generation + 1, confirmed: false };
+      state.bindings[item.source] = item.binding;
+      item.advanced = true;
+      dirty = true;
     }
-    const event = { ...desiredEvent, id: binding.eventId };
+    if (dirty) {
+      await db.save(state); // New generations must also be durable before inserts.
+      const advanced = batch.filter(item => item.advanced);
+      const advancedReads = await Promise.allSettled(advanced.map(item => google.get(calendar, item.binding.eventId)));
+      for (let index = 0; index < advancedReads.length; index++) {
+        const read = advancedReads[index];
+        if (read.status === "rejected") throw read.reason;
+        advanced[index].remote = read.value;
+      }
+    }
+    for (const item of batch) {
+      if (item.remote && (item.remote.status === "cancelled" || !owns(item.remote, workspace, item.source, item.binding) || !item.remote.etag)) {
+        throw new Error("EVENT_OWNERSHIP_CONFLICT");
+      }
+    }
     await db.guard();
-    if (remote) {
-      if (remote.status === "cancelled" || !owns(remote, workspace, source, binding) || !remote.etag) throw new Error("EVENT_OWNERSHIP_CONFLICT");
-      if (same(remote, event)) counts.unchanged++;
-      else { await google.update(calendar, event, remote.etag); counts.updated++; }
-    } else {
-      await google.insert(calendar, event);
-      counts.created++;
+    const results = await Promise.allSettled(batch.map(async item => {
+      const event = { ...item.desiredEvent, id: item.binding.eventId };
+      if (!item.remote) { await google.insert(calendar, event); return "created" as const; }
+      if (same(item.remote, event)) return "unchanged" as const;
+      await google.update(calendar, event, item.remote.etag!);
+      return "updated" as const;
+    }));
+    dirty = false;
+    for (let index = 0; index < results.length; index++) {
+      const result = results[index];
+      if (result.status !== "fulfilled") continue;
+      counts[result.value]++;
+      const binding = batch[index].binding;
+      if (!binding.confirmed || binding.fingerprint === "deleted") {
+        binding.confirmed = true;
+        delete binding.fingerprint;
+        dirty = true;
+      }
     }
-    if (!binding.confirmed || binding.fingerprint === "deleted") {
-      binding.confirmed = true;
-      delete binding.fingerprint;
-      await db.save(state);
-    }
+    if (dirty) await db.save(state); // Persist successful siblings even if one request failed.
+    const failure = results.find(result => result.status === "rejected");
+    if (failure?.status === "rejected") throw failure.reason;
   }
   // Re-check the full source after the upsert phase, and again before EACH deletion.
   // Concurrent family edits abort this run; the next click reconciles from fresh data.
