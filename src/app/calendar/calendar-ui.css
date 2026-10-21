@@ -93,7 +93,7 @@
 .calendar-editor button:focus-visible, .calendar-overflow button:focus-visible { outline: 2px solid #8859d5; outline-offset: 3px; }
 .calendar-overflow > div:first-child { border: 0; }
 .calendar-overflow > div:last-child { border: 1px solid #ddd6f0; border-radius: 6px; overflow: hidden; }
-.calendar-overflow > div:last-child > button { background: white; border: 0; border-bottom: 1px solid #e8e3f2; border-radius: 0; margin: 0; padding: 16px; }
+.calendar-overflow > div:last-child > button { border: 0; border-bottom: 1px solid #e8e3f2; border-radius: 0; margin: 0; padding: 16px; }
 .calendar-overflow > div:last-child > button:last-child { border-bottom: 0; }
 body:has(.calendar-ui) [role="alertdialog"] { border: 1px solid #ddd6f0; border-radius: 10px !important; color: #172554; background: #fff !important; }
 body:has(.calendar-ui) [role="alertdialog"] > div:last-child { flex-direction: row; gap: 10px; }

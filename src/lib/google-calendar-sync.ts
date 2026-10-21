@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { CALENDAR_COLORS, calendarPrimaryOwner } from "./calendar-colors";
 
 /** Server-side planner only. No Google writes until a complete source snapshot is available. */
 export type CalendarSource = {
@@ -14,6 +15,7 @@ export type ManagedEvent = {
   id: string;
   summary: string;
   description: string;
+  eventLabelId: string;
   start: { date: string };
   end: { date: string };
   extendedProperties: { private: Record<string, string> };
@@ -21,6 +23,7 @@ export type ManagedEvent = {
 export type RemoteEvent = {
   id: string;
   summary?: string;
+  eventLabelId?: string;
   status?: string;
   extendedProperties?: { private?: Record<string, string> };
 };
@@ -58,6 +61,7 @@ export function toManagedEvent(workspaceId: string, row: CalendarSource): Manage
   return {
     id: googleEventId(workspaceId, row.id),
     summary: row.title,
+    eventLabelId: CALENDAR_COLORS[calendarPrimaryOwner(row.owner)].id,
     description: [row.content, `家庭工具｜${row.owner || "家庭"}`].filter(Boolean).join("\n\n"),
     start: { date: from },
     end: { date: end.toISOString().slice(0, 10) },

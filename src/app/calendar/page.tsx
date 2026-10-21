@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ConfirmActionDialog } from "@/components/ui/confirm-action-dialog";
 import { AppModal } from "@/components/ui/app-modal";
 import { GoogleCalendarSyncButton } from "@/components/google-calendar-sync-button";
+import { CALENDAR_COLORS, CALENDAR_OWNERS, calendarPrimaryOwner } from "@/lib/calendar-colors";
 
 const WORKSPACE_ID = process.env.NEXT_PUBLIC_WORKSPACE_ID || "";
 
@@ -24,49 +25,15 @@ type NoteRow = {
   updated_at?: string;
 };
 
-const OWNER_LIST = ["家庭", "爸媽", "雅惠", "昱元", "子逸", "英茵"] as const;
+const OWNER_LIST = CALENDAR_OWNERS;
 
 const OWNER_STYLE: Record<
   string,
   { chip: string; ring: string; itemBg: string; barBg: string }
-> = {
-  家庭: {
-    chip: "bg-violet-100 text-violet-800",
-    ring: "ring-indigo-300",
-    itemBg: "bg-indigo-50 text-indigo-800 border-indigo-100",
-    barBg: "bg-indigo-200/70 text-indigo-900 border-indigo-200",
-  },
-  爸媽: {
-    chip: "bg-orange-300 text-orange-800",
-    ring: "ring-orange-300",
-    itemBg: "bg-orange-50 text-orange-800 border-orange-100",
-    barBg: "bg-orange-200/70 text-orange-900 border-orange-200",
-  },
-  雅惠: {
-    chip: "bg-rose-100 text-rose-700",
-    ring: "ring-rose-200",
-    itemBg: "bg-rose-50 text-rose-700 border-rose-100",
-    barBg: "bg-rose-200/70 text-rose-900 border-rose-200",
-  },
-  昱元: {
-    chip: "bg-blue-200 text-blue-700",
-    ring: "ring-blue-200",
-    itemBg: "bg-blue-50 text-blue-700 border-blue-100",
-    barBg: "bg-blue-200/70 text-blue-900 border-blue-200",
-  },
-  子逸: {
-    chip: "bg-emerald-100 text-emerald-700",
-    ring: "ring-emerald-200",
-    itemBg: "bg-emerald-50 text-emerald-700 border-emerald-100",
-    barBg: "bg-emerald-200/70 text-emerald-900 border-emerald-200",
-  },
-  英茵: {
-    chip: "bg-amber-300 text-amber-800",
-    ring: "ring-amber-200",
-    itemBg: "bg-amber-50 text-amber-800 border-amber-100",
-    barBg: "bg-amber-200/70 text-amber-900 border-amber-200",
-  },
-};
+> = Object.fromEntries(OWNER_LIST.map(owner => {
+  const color = CALENDAR_COLORS[owner].className;
+  return [owner, { chip: color, ring: "ring-current", itemBg: color, barBg: color }];
+}));
 
 function cn(...xs: Array<string | false | null | undefined>) {
   return xs.filter(Boolean).join(" ");
@@ -113,8 +80,7 @@ function formatOwners(arr: string[]): string[] {
   return cleaned.length ? cleaned : ["家庭"];
 }
 function primaryOwner(rawOwner: string): string {
-  const arr = formatOwners(parseOwners(rawOwner));
-  return arr[0] || "家庭";
+  return calendarPrimaryOwner(rawOwner);
 }
 function noteRange(n: NoteRow) {
   const from = n.date_from || n.note_date;

@@ -1,6 +1,7 @@
 import "server-only";
 import type { CalendarGateway, GoogleEvent } from "./google-calendar-engine";
 import type { ManagedEvent } from "./google-calendar-sync";
+import { CALENDAR_EVENT_LABELS, mergeCalendarLabels, type EventLabel } from "./calendar-colors";
 
 export const CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar.app.created";
 export function googleConfig() {
@@ -57,19 +58,28 @@ export function calendarGateway(token: string): CalendarGateway {
   }
   return {
     async createCalendar() {
-      const response = await checked(await request(base, "POST", { summary: "家庭工具", description: "由 FAMILYTOOL 建立與同步；請以家庭工具中的行程為準。", timeZone: "Asia/Taipei" }));
+      const response = await checked(await request(`${base}?eventLabelVersion=1`, "POST", { summary: "家庭工具", description: "由 FAMILYTOOL 建立與同步；請以家庭工具中的行程為準。", timeZone: "Asia/Taipei", labelProperties: { eventLabels: CALENDAR_EVENT_LABELS } }));
       const data = await response.json() as { id?: string };
       if (!data.id || data.id === "primary") throw new Error("CALENDAR_CREATION_UNCERTAIN");
       return data.id;
     },
     async checkCalendar(id) {
       if (id === "primary") throw new Error("EVENT_OWNERSHIP_CONFLICT");
-      const response = await request(path(id));
+      const response = await request(`${path(id)}?eventLabelVersion=1`);
       if (response.status === 404 || response.status === 410) throw new Error("CALENDAR_MISSING");
       await checked(response);
+      const calendar = await response.json() as { id?: string; etag?: string; labelProperties?: { eventLabels?: EventLabel[] } };
+      if (calendar.id !== id) throw new Error("EVENT_OWNERSHIP_CONFLICT");
+      const existing = calendar.labelProperties?.eventLabels || [];
+      const labels = mergeCalendarLabels(existing);
+      if (JSON.stringify(labels) !== JSON.stringify(existing)) {
+        if (!calendar.etag) throw new Error("GOOGLE_CONFLICT");
+        // Read/merge/ETag prevents a concurrent label edit from being overwritten.
+        await checked(await request(`${path(id)}?eventLabelVersion=1`, "PATCH", { labelProperties: { eventLabels: labels } }, calendar.etag));
+      }
     },
     async get(calendar, id) {
-      const response = await request(path(calendar, id));
+      const response = await request(`${path(calendar, id)}?eventLabelVersion=1`);
       if (response.status === 404) return null;
       if (response.status === 410) return { id, status: "cancelled" };
       await checked(response);
@@ -78,13 +88,13 @@ export function calendarGateway(token: string): CalendarGateway {
       return data;
     },
     async insert(calendar, event) {
-      const response = await checked(await request(`${path(calendar)}/events?sendUpdates=none`, "POST", event));
+      const response = await checked(await request(`${path(calendar)}/events?sendUpdates=none&eventLabelVersion=1`, "POST", event));
       const data = await response.json() as GoogleEvent;
       if (data.id !== event.id) throw new Error("EVENT_OWNERSHIP_CONFLICT");
     },
     async update(calendar, event: ManagedEvent, etag) {
       // PUT restores all app-owned event fields, removing Google-side time/recurrence edits.
-      await checked(await request(`${path(calendar, event.id)}?sendUpdates=none`, "PUT", { ...event, status: "confirmed" }, etag));
+      await checked(await request(`${path(calendar, event.id)}?sendUpdates=none&eventLabelVersion=1`, "PUT", { ...event, status: "confirmed" }, etag));
     },
     async remove(calendar, id, etag) {
       const response = await request(`${path(calendar, id)}?sendUpdates=none`, "DELETE", undefined, etag);

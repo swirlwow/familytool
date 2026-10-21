@@ -32,6 +32,16 @@ function setup(rows: CalendarSource[] = [source()]) {
     run: () => synchronize("w", state, db, google), restart: () => { state = structuredClone(saved); }, change: () => { revision = "r2"; } };
 }
 describe("durable one-way Google calendar sync", () => {
+  it("updates color-only changes in place and converges without inserts or deletes", async () => {
+    const t = setup();
+    const id = t.owned("a");
+    delete t.events.get(id)!.eventLabelId; // Existing events from before color synchronization.
+    expect(await t.run()).toEqual({ created: 0, updated: 1, deleted: 0, unchanged: 0 });
+    expect(t.events.get(id)!.eventLabelId).toBe(toManagedEvent("w", source())!.eventLabelId);
+    expect(await t.run()).toEqual({ created: 0, updated: 0, deleted: 0, unchanged: 1 });
+    expect(t.google.insert).not.toHaveBeenCalled();
+    expect(t.google.remove).not.toHaveBeenCalled();
+  });
   it("syncs 137 entries with bounded requests and batch persistence", async () => {
     const t = setup(Array.from({ length: 137 }, (_, index) => source(`event-${index}`)));
     let active = 0, maximum = 0;

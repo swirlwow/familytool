@@ -39,7 +39,7 @@ function owns(event: GoogleEvent, workspace: string, source: string, binding: Bi
 const eventId = (workspace: string, source: string, generation: number) =>
   googleEventId(workspace, source) + (generation ? generation.toString(16) : "");
 function same(event: GoogleEvent, desired: ManagedEvent) {
-  return event.summary === desired.summary && event.description === desired.description &&
+  return event.summary === desired.summary && event.description === desired.description && event.eventLabelId === desired.eventLabelId &&
     JSON.stringify(event.start) === JSON.stringify(desired.start) && JSON.stringify(event.end) === JSON.stringify(desired.end) && !event.recurrence?.length;
 }
 

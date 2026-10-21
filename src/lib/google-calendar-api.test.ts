@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 import { calendarGateway, CALENDAR_SCOPE, googleConfig, googleIdentity, tokenRequest } from "./google-calendar-api";
 import { toManagedEvent } from "./google-calendar-sync";
+import { CALENDAR_EVENT_LABELS } from "./calendar-colors";
 const mockFetch = vi.fn();
 beforeEach(() => {
   vi.stubGlobal("fetch", mockFetch); mockFetch.mockReset();
@@ -12,6 +13,41 @@ beforeEach(() => {
 afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
 const json = (value: unknown, status = 200) => new Response(JSON.stringify(value), { status });
 describe("Google HTTP boundary", () => {
+  it("merges labels under the existing scope with ETag and preserves manual labels", async () => {
+    const api = calendarGateway("token");
+    const manual = { id: "manual", backgroundColor: "#123456", name: "private" };
+    mockFetch.mockResolvedValueOnce(json({ id: "secondary", etag: '"calendar-etag"', labelProperties: { eventLabels: [manual] } }))
+      .mockResolvedValueOnce(json({ id: "secondary" }));
+    await api.checkCalendar("secondary");
+    expect(mockFetch.mock.calls[0][0]).toContain("eventLabelVersion=1");
+    const request = mockFetch.mock.calls[1][1];
+    expect(request.method).toBe("PATCH");
+    expect(request.headers["If-Match"]).toBe('"calendar-etag"');
+    expect(JSON.parse(request.body).labelProperties.eventLabels).toEqual([manual, ...CALENDAR_EVENT_LABELS]);
+  });
+  it("does not write unchanged labels or overwrite concurrent label edits", async () => {
+    const api = calendarGateway("token");
+    mockFetch.mockResolvedValueOnce(json({ id: "secondary", etag: "e", labelProperties: { eventLabels: CALENDAR_EVENT_LABELS } }));
+    await api.checkCalendar("secondary");
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    mockFetch.mockResolvedValueOnce(json({ id: "secondary", etag: "e" }))
+      .mockResolvedValueOnce(new Response(null, { status: 412 }));
+    await expect(api.checkCalendar("secondary")).rejects.toThrow("GOOGLE_CONFLICT");
+  });
+  it("opts event reads and writes into exact label colors instead of legacy color IDs", async () => {
+    const api = calendarGateway("token");
+    const event = toManagedEvent("w", { id: "a", title: "title", content: "", owner: "爸媽", note_date: "2026-10-21", date_from: null, date_to: null })!;
+    mockFetch.mockResolvedValueOnce(json({ ...event, etag: "e" }));
+    expect((await api.get("secondary", event.id))!.eventLabelId).toBe(event.eventLabelId);
+    mockFetch.mockResolvedValueOnce(json({ id: event.id }));
+    await api.insert("secondary", event);
+    mockFetch.mockResolvedValueOnce(json({ id: event.id }));
+    await api.update("secondary", event, "e");
+    for (const [url, request] of mockFetch.mock.calls) {
+      expect(url).toContain("eventLabelVersion=1");
+      if (request.body) expect(JSON.parse(request.body).eventLabelId).toBe(event.eventLabelId);
+    }
+  });
   it("rejects missing secrets or unsafe redirect configuration", () => {
     vi.stubEnv("GOOGLE_CALENDAR_REDIRECT_URI", "https://familytool.vercel.app/api/google-calendar/callback?next=evil");
     expect(googleConfig).toThrow("GOOGLE_NOT_CONFIGURED");
