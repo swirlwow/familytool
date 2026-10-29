@@ -12,6 +12,7 @@ import { useLedgerMerchants } from "@/hooks/useLedgerMerchants";
 import { toast } from "@/hooks/use-toast";
 import { getErrorMessage } from "@/lib/client/feedback";
 import { validateSplits } from "@/lib/ledger/splits";
+import { parseBillAmount, billNeedsDetails, billNoPaymentDue, BILL_NOTE_MAX_LENGTH } from "@/lib/bills";
 import {
   Receipt,
   Calendar,
@@ -34,6 +35,7 @@ type BillInstance = {
   due_date: string | null;
   name_snapshot: string;
   amount_due: number | null;
+  note?: string | null;
   paid_total: number;
   status: "awaiting_details" | "unpaid" | "partial" | "paid" | string;
   source: "manual" | "template";
@@ -57,13 +59,14 @@ function ymNow() { const d = new Date(); return `${d.getFullYear()}-${String(d.g
 function todayStr() { const d = new Date(); const y = d.getFullYear(); const m = String(d.getMonth() + 1).padStart(2, "0"); const day = String(d.getDate()).padStart(2, "0"); return `${y}-${m}-${day}`; }
 function statusBadge(s: string) {
   const v = String(s || "");
-  if (v === "paid") return "badge bg-emerald-100 text-emerald-600 border-none font-bold";
+  if (v === "paid" || v === "no_payment_due") return "badge bg-emerald-100 text-emerald-600 border-none font-bold";
   if (v === "partial") return "badge bg-amber-100 text-amber-600 border-none font-bold";
   if (v === "awaiting_details") return "badge bg-sky-100 text-sky-700 border-none font-bold";
   return "badge bg-slate-100 text-slate-500 border-none font-bold";
 }
 
 function statusLabel(status: string) {
+  if (status === "no_payment_due") return "本期免繳";
   if (status === "paid") return "已繳";
   if (status === "partial") return "部分付款";
   if (status === "awaiting_details") return "待填資料";
@@ -80,7 +83,7 @@ export default function BillsPage() {
 
   const [rows, setRows] = useState<BillInstance[]>([]);
   const [detailing, setDetailing] = useState<BillInstance | null>(null);
-  const [detailForm, setDetailForm] = useState({ amount_due: "", due_date: "" });
+  const [detailForm, setDetailForm] = useState({ amount_due: "", due_date: "", note: "" });
   const [markingPaidId, setMarkingPaidId] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<BillConfirmAction | null>(null);
   const [confirmBusy, setConfirmBusy] = useState(false);
@@ -104,7 +107,8 @@ export default function BillsPage() {
   const [newBill, setNewBill] = useState({
     name_snapshot: "",
     due_date: todayStr(),
-    amount_due: 0,
+    amount_due: "",
+    note: "",
     billing_start: "",
     billing_end: "",
   });
@@ -189,9 +193,9 @@ export default function BillsPage() {
       toast({ variant: "destructive", title: "請輸入帳單名稱" });
       return;
     }
-    const amt = round2(n(newBill.amount_due));
-    if (!amt || amt <= 0) {
-      toast({ variant: "destructive", title: "金額需大於 0" });
+    const amt = parseBillAmount(newBill.amount_due);
+    if (amt === null) {
+      toast({ variant: "destructive", title: "請填寫 0 或正數的金額" });
       return;
     }
     if (!newBill.due_date) {
@@ -209,6 +213,7 @@ export default function BillsPage() {
         name_snapshot: newBill.name_snapshot.trim(),
         due_date: newBill.due_date,
         amount_due: amt,
+        note: newBill.note,
         billing_start: newBill.billing_start || null,
         billing_end: newBill.billing_end || null,
       }),
@@ -219,7 +224,7 @@ export default function BillsPage() {
       return;
     }
     const createdName = newBill.name_snapshot.trim();
-    setNewBill({ name_snapshot: "", due_date: todayStr(), amount_due: 0, billing_start: "", billing_end: "" });
+    setNewBill({ name_snapshot: "", due_date: todayStr(), amount_due: "", note: "", billing_start: "", billing_end: "" });
     await loadBills();
     toast({ title: "帳單已新增", description: createdName });
   }
@@ -238,17 +243,18 @@ export default function BillsPage() {
     setDetailForm({
       amount_due: b.amount_due == null ? "" : String(b.amount_due),
       due_date: b.due_date || "",
+      note: b.note || "",
     });
   }
 
   async function saveDetails() {
     if (!WORKSPACE_ID || !detailing) return;
-    const amount = round2(n(detailForm.amount_due));
-    if (amount <= 0) {
-      toast({ variant: "destructive", title: "請填寫大於 0 的金額" });
+    const amount = parseBillAmount(detailForm.amount_due);
+    if (amount === null && detailing.status !== "paid") {
+      toast({ variant: "destructive", title: "請填寫 0 或正數的金額" });
       return;
     }
-    if (!detailForm.due_date) {
+    if (!detailForm.due_date && detailing.status !== "paid") {
       toast({ variant: "destructive", title: "請選擇到期日" });
       return;
     }
@@ -259,8 +265,8 @@ export default function BillsPage() {
       body: JSON.stringify({
         workspace_id: WORKSPACE_ID,
         id: detailing.id,
-        amount_due: amount,
-        due_date: detailForm.due_date,
+        ...(detailing.status === "paid" ? {} : { amount_due: amount, due_date: detailForm.due_date }),
+        note: detailForm.note,
       }),
     });
     const payload = await response.json().catch(() => ({}));
@@ -275,7 +281,8 @@ export default function BillsPage() {
 
   async function markPaid(b: BillInstance) {
     if (!WORKSPACE_ID) return;
-    if (!b.amount_due || b.amount_due <= 0) return openDetails(b);
+    if (billNeedsDetails(b)) return openDetails(b);
+    if (billNoPaymentDue(b)) return;
 
     setMarkingPaidId(b.id);
     try {
@@ -395,7 +402,7 @@ export default function BillsPage() {
     const due = rows.reduce((a, r) => a + n(r.amount_due), 0);
     const paid = rows.reduce((a, r) => a + n(r.paid_total), 0);
     const remain = round2(due - paid);
-    const awaiting = rows.filter((row) => row.status === "awaiting_details").length;
+    const awaiting = rows.filter(billNeedsDetails).length;
     return { due, paid, remain, awaiting };
   }, [rows]);
 
@@ -408,7 +415,8 @@ export default function BillsPage() {
     const due = round2(n(b.amount_due));
     const paid = round2(n(b.paid_total));
     const remain = round2(due - paid);
-    const needsDetails = b.status === "awaiting_details" || !b.due_date || due <= 0;
+    const needsDetails = billNeedsDetails(b);
+    const noPaymentDue = billNoPaymentDue(b);
 
     return (
       <div className="flex flex-wrap items-center justify-end gap-1.5">
@@ -417,17 +425,10 @@ export default function BillsPage() {
             <FilePenLine className="h-4 w-4" />
             填寫資料
           </button>
+        ) : noPaymentDue ? (
+          <span className="text-xs font-bold text-emerald-700">無需付款</span>
         ) : b.payment_mode === "status_only" ? (
           <>
-            {b.status !== "paid" ? (
-              <button
-                className="btn btn-sm h-8 min-h-8 rounded-full border border-violet-200 bg-violet-50 px-3 text-xs font-bold text-violet-700 shadow-none hover:border-violet-300 hover:bg-violet-100"
-                onClick={() => openDetails(b)}
-              >
-                <FilePenLine className="h-4 w-4" />
-                修改金額
-              </button>
-            ) : null}
             <button
               className="btn btn-sm h-8 min-h-8 rounded-full border border-emerald-200 bg-emerald-50 px-3 text-xs font-bold text-emerald-700 shadow-none hover:border-emerald-300 hover:bg-emerald-100"
               onClick={() => setPendingAction({ kind: "markPaid", bill: b })}
@@ -441,6 +442,11 @@ export default function BillsPage() {
           <button className="btn btn-sm h-8 min-h-8 rounded-full border border-rose-200 bg-rose-50 px-3 text-xs font-bold text-rose-600 shadow-none hover:border-rose-300 hover:bg-rose-100" onClick={() => openPay(b)} disabled={remain <= 0}>
             <CreditCard className="h-4 w-4" />
             付款
+          </button>
+        )}
+        {!needsDetails && (
+          <button className="btn btn-sm h-8 min-h-8 rounded-full border border-violet-200 bg-violet-50 px-3 text-xs font-bold text-violet-700 shadow-none hover:border-violet-300 hover:bg-violet-100" onClick={() => openDetails(b)}>
+            <FilePenLine className="h-4 w-4" />{b.status === "paid" ? "查看明細" : "修改資料"}
           </button>
         )}
         <button className="btn btn-ghost btn-sm btn-square h-8 min-h-8 w-8 rounded-full text-slate-400 hover:bg-rose-50 hover:text-rose-500" onClick={() => setPendingAction({ kind: "delete", bill: b })} title="刪除" aria-label={`刪除帳單「${b.name_snapshot}」`}>
@@ -549,7 +555,7 @@ export default function BillsPage() {
               </div>
               <div>
                 <label className="label py-1"><span className="label-text text-xs font-bold text-slate-500">金額</span></label>
-                <input type="number" className="input input-bordered h-10 min-h-0 w-full rounded-lg font-bold focus:border-rose-500" value={newBill.amount_due || ""} onChange={(e) => setNewBill((p) => ({ ...p, amount_due: Number(e.target.value) }))} />
+                <input type="number" min="0" step="0.01" aria-label="新增帳單應繳金額" className="input input-bordered h-10 min-h-0 w-full rounded-lg font-bold focus:border-rose-500" value={newBill.amount_due} onChange={(e) => setNewBill((p) => ({ ...p, amount_due: e.target.value }))} />
               </div>
               <div className="flex items-end">
                 <button className="btn h-10 min-h-0 w-full rounded-lg border-none bg-rose-500 font-black text-white hover:bg-rose-600" onClick={createBill} disabled={loading}>
@@ -558,6 +564,10 @@ export default function BillsPage() {
               </div>
             </div>
 
+            <label className="form-control">
+              <span className="label-text mb-1 text-xs font-bold text-slate-500">帳單備註（選填）</span>
+              <textarea className="textarea textarea-bordered w-full rounded-lg" rows={2} maxLength={BILL_NOTE_MAX_LENGTH} value={newBill.note} onChange={(event) => setNewBill(current => ({ ...current, note: event.target.value }))} placeholder="例如：上期溢繳，本期免繳；應繳、未繳等資訊" />
+            </label>
             <details className="collapse collapse-arrow rounded-lg border border-slate-100 bg-slate-50">
               <summary className="collapse-title min-h-10 py-3 text-xs font-bold text-slate-500">帳期區間（選填）</summary>
               <div className="collapse-content">
@@ -598,13 +608,13 @@ export default function BillsPage() {
                     <article key={b.id} className="space-y-2.5 px-4 py-3">
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                          <h3 className="truncate font-bold text-slate-800">{b.name_snapshot}</h3>
+                          <h3 className="truncate font-bold text-slate-800"><button type="button" className="text-left hover:underline focus-visible:underline" onClick={() => openDetails(b)} aria-label={`查看帳單「${b.name_snapshot}」明細`}>{b.name_snapshot}</button></h3>
                           <div className="mt-1 flex items-center gap-1.5 text-xs text-slate-400">
                             <Clock className="h-3.5 w-3.5" />
                             {b.due_date || "待填到期日"}
                           </div>
                         </div>
-                        <span className={statusBadge(b.status)}>{statusLabel(b.status)}</span>
+                        <span className={statusBadge(billNoPaymentDue(b) ? "no_payment_due" : b.status)}>{statusLabel(billNoPaymentDue(b) ? "no_payment_due" : b.status)}</span>
                       </div>
                       <div className="grid grid-cols-3 divide-x divide-slate-200 rounded-lg bg-slate-50 py-2">
                         <div>
@@ -620,6 +630,7 @@ export default function BillsPage() {
                           <div className="mt-1 px-3 font-mono text-sm font-black text-rose-500">${remain.toLocaleString()}</div>
                         </div>
                       </div>
+                      {b.note && <p className="whitespace-pre-wrap break-words text-sm text-slate-600">備註：{b.note}</p>}
                       {billActions(b)}
                     </article>
                   );
@@ -650,13 +661,14 @@ export default function BillsPage() {
                           <div className="flex items-center gap-2"><Clock className="w-3.5 h-3.5 text-slate-300" />{b.due_date || "待填"}</div>
                         </td>
                         <td className="py-2.5 font-bold text-slate-700 text-base">
-                          <div>{b.name_snapshot}</div>
+                          <button type="button" className="text-left hover:underline focus-visible:underline" onClick={() => openDetails(b)} aria-label={`查看帳單「${b.name_snapshot}」明細`}>{b.name_snapshot}</button>
+                          {b.note && <div className="mt-1 max-w-sm whitespace-pre-wrap break-words text-sm font-normal text-slate-600">備註：{b.note}</div>}
                           {(b.billing_start || b.billing_end) && <div className="text-[10px] text-slate-400 font-normal mt-0.5">{b.billing_start || "—"} ~ {b.billing_end || "—"}</div>}
                         </td>
                         <td className="py-2.5 text-right font-black font-mono text-slate-800 text-base">{b.amount_due == null ? "待填" : `$${due.toLocaleString()}`}</td>
                         <td className="py-2.5 text-right font-mono font-medium text-emerald-600">${paid.toLocaleString()}</td>
                         <td className={`py-2.5 text-right font-mono font-black ${remain > 0 ? "text-rose-500" : "text-slate-300"}`}>${remain.toLocaleString()}</td>
-                        <td className="py-2.5"><span className={statusBadge(b.status)}>{statusLabel(b.status)}</span></td>
+                        <td className="py-2.5"><span className={statusBadge(billNoPaymentDue(b) ? "no_payment_due" : b.status)}>{statusLabel(billNoPaymentDue(b) ? "no_payment_due" : b.status)}</span></td>
                         <td className="py-2.5 pr-5 text-right">
                           {billActions(b)}
                         </td>
@@ -741,35 +753,54 @@ export default function BillsPage() {
             <div className="modal-box max-w-md rounded-lg p-0">
               <div className="border-b border-slate-200 px-5 py-4">
                 <h3 className="font-black text-slate-800">
-                  {detailing.status === "awaiting_details" ? "填寫帳單資料" : "修改帳單資料"}
+                  {detailing.status === "paid" ? "已繳帳單明細" : detailing.status === "awaiting_details" ? "填寫帳單資料" : "修改帳單資料"}
                 </h3>
                 <p className="mt-1 text-sm font-medium text-slate-500">{detailing.name_snapshot}</p>
               </div>
               <div className="space-y-4 p-5">
-                <label className="form-control">
+                {detailing.status === "paid" && <dl className="grid grid-cols-2 gap-3 rounded-lg bg-slate-50 p-3 text-sm">
+                  <div><dt className="text-xs text-slate-500">帳單月份</dt><dd className="mt-1 font-bold">{detailing.period}</dd></div>
+                  <div><dt className="text-xs text-slate-500">狀態</dt><dd className="mt-1 font-bold">{statusLabel(billNoPaymentDue(detailing) ? "no_payment_due" : detailing.status)}</dd></div>
+                  <div><dt className="text-xs text-slate-500">已繳金額</dt><dd className="mt-1 font-bold">${n(detailing.paid_total).toLocaleString()}</dd></div>
+                  <div><dt className="text-xs text-slate-500">待繳金額</dt><dd className="mt-1 font-bold">{detailing.amount_due == null ? "待填" : `$${round2(n(detailing.amount_due) - n(detailing.paid_total)).toLocaleString()}`}</dd></div>
+                  <div><dt className="text-xs text-slate-500">應繳金額</dt><dd className="mt-1 font-bold">{detailing.amount_due == null ? "未記錄" : `$${n(detailing.amount_due).toLocaleString()}`}</dd></div>
+                  <div><dt className="text-xs text-slate-500">到期日</dt><dd className="mt-1">{detailing.due_date || "未記錄"}</dd></div>
+                  <div className="col-span-2"><dt className="text-xs text-slate-500">帳期區間</dt><dd className="mt-1">{detailing.billing_start || "未記錄"} ～ {detailing.billing_end || "未記錄"}</dd></div>
+                  <div className="col-span-2"><dt className="text-xs text-slate-500">繳費日期</dt><dd className="mt-1">{detailing.paid_at && Number.isFinite(Date.parse(detailing.paid_at)) ? new Date(detailing.paid_at).toLocaleString("zh-TW", { timeZone: "Asia/Taipei" }) : "未記錄"}</dd></div>
+                  <div className="col-span-2"><dt className="text-xs text-slate-500">繳款方式</dt><dd className="mt-1">{detailing.payment_mode === "status_only" ? "僅標記已繳（不重複記帳）" : "付款並記帳"}</dd></div>
+                </dl>}
+                {detailing.status !== "paid" && <label className="form-control">
                   <span className="label-text mb-1 text-xs font-bold text-slate-500">應繳金額</span>
                   <input
                     type="number"
                     min="0"
+                    step="0.01"
+                    disabled={detailing.status === "paid"}
                     className="input input-bordered w-full rounded-lg font-mono text-lg font-bold"
                     value={detailForm.amount_due}
                     onChange={(event) => setDetailForm((current) => ({ ...current, amount_due: event.target.value }))}
                   />
-                </label>
-                <label className="form-control">
+                </label>}
+                <p className="text-xs text-slate-500">{detailing.status === "paid" ? "已繳帳單的金額與到期日僅供查看，下方備註可以修改。" : "本期不需繳款可填 0；不會建立付款或記帳紀錄。"}</p>
+                {detailing.status !== "paid" && <label className="form-control">
                   <span className="label-text mb-1 text-xs font-bold text-slate-500">到期日</span>
                   <input
                     type="date"
+                    disabled={detailing.status === "paid"}
                     className="input input-bordered w-full rounded-lg"
                     value={detailForm.due_date}
                     onChange={(event) => setDetailForm((current) => ({ ...current, due_date: event.target.value }))}
                   />
+                </label>}
+                <label className="form-control">
+                  <span className="label-text mb-1 text-xs font-bold text-slate-500">帳單備註（選填）</span>
+                  <textarea className="textarea textarea-bordered w-full rounded-lg" rows={3} maxLength={BILL_NOTE_MAX_LENGTH} value={detailForm.note} onChange={(event) => setDetailForm(current => ({ ...current, note: event.target.value }))} placeholder="例如：上期溢繳，本期免繳；應繳、未繳等資訊" />
                 </label>
               </div>
               <div className="flex justify-end gap-2 border-t border-slate-200 bg-slate-50 px-5 py-4">
-                <button type="button" className="btn btn-ghost rounded-lg" onClick={() => setDetailing(null)}>取消</button>
+                <button type="button" className="btn btn-ghost rounded-lg" onClick={() => setDetailing(null)}>{detailing.status === "paid" ? "關閉" : "取消"}</button>
                 <button type="button" className="btn rounded-lg border-none bg-sky-600 px-6 text-white hover:bg-sky-700" onClick={() => void saveDetails()}>
-                  儲存
+                  {detailing.status === "paid" ? "儲存備註" : "儲存"}
                 </button>
               </div>
             </div>

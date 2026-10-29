@@ -3,6 +3,7 @@ import { readAllPages } from '@/lib/read-all-pages';
 import { NextResponse } from "next/server";
 import { apiError, apiInternalError, apiOperationError, parseJson } from "@/lib/api/http";
 import { supabase } from "@/lib/supabaseClient";
+import { parseBillAmount, validBillNote } from "@/lib/bills";
 
 
 function toNum(v: any) {
@@ -30,6 +31,7 @@ const billSelect = `
   due_date,
   name_snapshot,
   amount_due,
+  note,
   status,
   paid_total,
   billing_start,
@@ -131,13 +133,14 @@ export async function POST(req: Request) {
     const action = String(body?.action || "create");
 
     if (action === "create") {
-      const { workspace_id, period, name_snapshot, amount_due, due_date, billing_start, billing_end } = body || {};
+      const { workspace_id, period, name_snapshot, amount_due, due_date, billing_start, billing_end, note } = body || {};
 
       if (!workspace_id) return apiError("缺少 workspace_id");
       if (!period) return apiError("缺少 period（YYYY-MM）");
       if (!name_snapshot) return apiError("缺少 name_snapshot");
-      const amt = round2(toNum(amount_due));
-      if (!amt || amt <= 0) return apiError("amount_due 必須大於 0");
+      const amt = parseBillAmount(amount_due);
+      if (amt === null) return apiError("應繳金額須為 0 或正數，不能留空");
+      if (!validBillNote(note)) return apiError("帳單備註須為文字，最多 2000 字");
       if (!due_date) return apiError("缺少 due_date");
 
       const { data, error } = await supabase
@@ -150,6 +153,7 @@ export async function POST(req: Request) {
             due_date: String(due_date),
             name_snapshot: String(name_snapshot),
             amount_due: amt,
+            note: typeof note === "string" ? note.trim() || null : null,
             status: "unpaid",
             paid_total: 0,
             billing_start: billing_start ? String(billing_start) : null,
@@ -233,7 +237,8 @@ export async function POST(req: Request) {
       if (bill.payment_mode !== "status_only") return apiError("此帳單需透過付款流程寫入記帳");
 
       const amountDue = round2(toNum(bill.amount_due));
-      if (amountDue <= 0) return apiError("請先填寫帳單金額");
+      if (bill.amount_due == null) return apiError("請先填寫帳單金額");
+      if (amountDue <= 0) return apiError("本期應繳 0 元，無需標記付款");
       if (bill.status === "paid") return NextResponse.json({ success: true, already_paid: true });
 
       const paidAt = paid_at ? new Date(String(paid_at)) : new Date();
@@ -296,10 +301,14 @@ export async function PATCH(req: Request) {
     if (body.due_date !== undefined) patch.due_date = body.due_date ? String(body.due_date) : null;
     if (body.billing_start !== undefined) patch.billing_start = body.billing_start ? String(body.billing_start) : null;
     if (body.billing_end !== undefined) patch.billing_end = body.billing_end ? String(body.billing_end) : null;
+    if (body.note !== undefined) {
+      if (!validBillNote(body.note)) return apiError("帳單備註須為文字，最多 2000 字");
+      patch.note = typeof body.note === "string" ? body.note.trim() || null : null;
+    }
 
     if (body.amount_due !== undefined) {
-      const amt = round2(toNum(body.amount_due));
-      if (!amt || amt <= 0) return apiError("amount_due 必須大於 0");
+      const amt = parseBillAmount(body.amount_due);
+      if (amt === null) return apiError("應繳金額須為 0 或正數，不能留空");
       patch.amount_due = amt;
     }
     if (body.paid_total !== undefined || body.status !== undefined) {
@@ -309,11 +318,12 @@ export async function PATCH(req: Request) {
     if (current.status === "awaiting_details") {
       const nextAmount = patch.amount_due ?? current.amount_due;
       const nextDueDate = patch.due_date !== undefined ? patch.due_date : current.due_date;
-      if (nextAmount != null && toNum(nextAmount) > 0 && nextDueDate) patch.status = "unpaid";
+      if (parseBillAmount(nextAmount) !== null && nextDueDate) patch.status = "unpaid";
     }
 
-    const { error } = await supabase.from("bill_instances").update(patch).eq("workspace_id", workspace_id).eq("id", id);
+    const { data: updated, error } = await supabase.from("bill_instances").update(patch).eq("workspace_id", workspace_id).eq("id", id).select("id").single();
     if (error) return apiInternalError(error, { context: "Update bill" });
+    if (!updated) return apiError("帳單未更新，請重新整理後再試");
 
     return NextResponse.json({ success: true });
   } catch (error) {

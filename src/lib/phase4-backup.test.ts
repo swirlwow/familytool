@@ -2,6 +2,12 @@ import { describe,it,expect } from 'vitest';
 import { BACKUP_TABLES,makeBackup,verifyBackup } from '@/lib/backup-format';
 import { readAllPages } from '@/lib/read-all-pages';
 describe('phase 4 backup and pagination',()=>{
+ it('preserves zero-due bill notes in backup verification',async()=>{
+   const tables=Object.fromEntries(BACKUP_TABLES.family.map(t=>[t,[] as Record<string,unknown>[]]));
+   tables.bill_instances=[{id:'bill',amount_due:'0',note:'上期溢繳\n本期免繳'}];
+   const backup=await makeBackup('family','scope',tables);
+   expect((await verifyBackup(backup,'family','scope')).tables.bill_instances[0]).toEqual(tables.bill_instances[0]);
+ });
  for(const kind of ['family','shift'] as const) {
   it(kind+' validates every table and rejects corruption',async()=>{
    const tables=Object.fromEntries(BACKUP_TABLES[kind].map(t=>[t,[]]));
