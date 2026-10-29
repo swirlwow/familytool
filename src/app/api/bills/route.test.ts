@@ -62,6 +62,17 @@ describe("bill API zero amount and bill-only notes", () => {
     expect((await POST(request({ ...input, action: "mark_paid", bill_instance_id: "bill" }))).status).toBe(400);
     expect(mocks.rpc).not.toHaveBeenCalled(); expect(chain.update).not.toHaveBeenCalled();
   });
+  it("rejects direct edits to every paid bill field except note", async () => {
+    chain.single.mockResolvedValue({ data: { amount_due: 500, due_date: "2026-11-08", status: "paid" }, error: null });
+    for (const change of [{ amount_due: 0 }, { due_date: "2026-12-01" }, { billing_start: null }, { billing_end: null }, { name_snapshot: "changed" }, { paid_at: null }, { status: "unpaid" }, { paid_total: 0 }]) {
+      expect((await PATCH(request({ workspace_id: "workspace", id: "bill", note: "不得部分寫入", ...change }))).status).toBe(400);
+    }
+    expect(chain.update).not.toHaveBeenCalled();
+  });
+  it("guards updates against a payment completing after the initial read", async () => {
+    await PATCH(request(input));
+    expect(chain.eq).toHaveBeenCalledWith("status", "awaiting_details");
+  });
   it("does not claim success if an update affected no bill", async () => {
     chain.single.mockResolvedValueOnce({ data: { amount_due: 0, due_date: "2026-11-09", status: "unpaid" }, error: null })
       .mockResolvedValueOnce({ data: null, error: null });

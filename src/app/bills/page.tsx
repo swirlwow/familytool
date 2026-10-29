@@ -12,7 +12,7 @@ import { useLedgerMerchants } from "@/hooks/useLedgerMerchants";
 import { toast } from "@/hooks/use-toast";
 import { getErrorMessage } from "@/lib/client/feedback";
 import { validateSplits } from "@/lib/ledger/splits";
-import { parseBillAmount, billNeedsDetails, billNoPaymentDue, BILL_NOTE_MAX_LENGTH } from "@/lib/bills";
+import { parseBillAmount, billNeedsDetails, billNoPaymentDue, BILL_NOTE_MAX_LENGTH, BILL_FILTERS, matchesBillFilter, type BillFilter } from "@/lib/bills";
 import {
   Receipt,
   Calendar,
@@ -82,6 +82,8 @@ export default function BillsPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [rows, setRows] = useState<BillInstance[]>([]);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<BillFilter>("all");
   const [detailing, setDetailing] = useState<BillInstance | null>(null);
   const [detailForm, setDetailForm] = useState({ amount_due: "", due_date: "", note: "" });
   const [markingPaidId, setMarkingPaidId] = useState<string | null>(null);
@@ -407,8 +409,8 @@ export default function BillsPage() {
   }, [rows]);
 
   const displayRows = useMemo(
-    () => [...rows].sort((a, b) => Number(a.status === "paid") - Number(b.status === "paid")),
-    [rows],
+    () => rows.filter(b => matchesBillFilter(b, search, statusFilter, todayStr())).sort((a, b) => Number(a.status === "paid") - Number(b.status === "paid")),
+    [rows, search, statusFilter],
   );
 
   function billActions(b: BillInstance) {
@@ -592,11 +594,23 @@ export default function BillsPage() {
               <LayoutList className="h-4 w-4 text-slate-400" />
               <h2 className="text-base font-black text-slate-800">帳單明細</h2>
             </div>
-            <span className="text-xs font-bold text-slate-400">{rows.length} 筆</span>
+            <span className="text-xs font-bold text-slate-500" role="status">顯示 {displayRows.length}／{rows.length} 筆</span>
           </div>
 
-          {rows.length === 0 ? (
-            <div className="px-4 py-10 text-center text-sm font-bold text-slate-400">這個月份沒有帳單</div>
+          <div className="flex flex-wrap items-end gap-3 border-b border-slate-100 bg-white px-4 py-3">
+            <label className="min-w-48 flex-1 text-xs font-bold text-slate-600">搜尋帳單
+              <input type="search" className="input input-bordered mt-1 h-10 min-h-0 w-full rounded-lg text-sm" placeholder="搜尋帳單名稱或備註" value={search} onChange={e => setSearch(e.target.value)} />
+            </label>
+            <label className="text-xs font-bold text-slate-600">狀態篩選
+              <select className="select select-bordered mt-1 h-10 min-h-0 w-full rounded-lg text-sm" value={statusFilter} onChange={e => setStatusFilter(e.target.value as BillFilter)}>
+                {BILL_FILTERS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+              </select>
+            </label>
+            <button type="button" className="btn btn-ghost h-10 min-h-0 text-sm" disabled={!search && statusFilter === "all"} onClick={() => { setSearch(""); setStatusFilter("all"); }}>清除條件</button>
+            <p className="w-full text-xs text-slate-500">搜尋與篩選僅影響下方清單，上方金額仍為整個月份合計。待繳包含部分付款；逾期未繳不含待補資料與免繳帳單。</p>
+          </div>
+          {displayRows.length === 0 ? (
+            <div className="px-4 py-10 text-center text-sm font-bold text-slate-500">{rows.length === 0 ? "這個月份沒有帳單" : "沒有符合搜尋與篩選條件的帳單"}</div>
           ) : (
             <>
               <div className="divide-y divide-slate-100 md:hidden">

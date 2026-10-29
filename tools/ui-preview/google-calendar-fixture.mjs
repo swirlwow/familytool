@@ -2,7 +2,7 @@
 export function googleCalendarPreview(path, method) {
   if (!path.startsWith('/api/google-calendar/')) return null;
   const scenario = new URL(location.href).searchParams.get('google_preview') || 'connected';
-  if (path.endsWith('/status') && method === 'GET') return Response.json({ connected: scenario !== 'unconnected', email: 'preview@example.invalid', lastSync: null });
+  if (path.endsWith('/status') && method === 'GET') return Response.json({ connected: scenario !== 'unconnected', email: 'preview@example.invalid', lastSync: scenario === 'never' ? null : '2026-10-29T03:00:00Z' });
   if (path.endsWith('/sync') && method === 'POST') {
     if (scenario === 'reauthorize') return Response.json({ code: 'GOOGLE_REAUTHORIZE', error: '模擬：Google 授權已失效，請重新連結原本帳號。' }, { status: 400 });
     if (scenario === 'failure') return Response.json({ code: 'SOURCE_CHANGED', error: '模擬：同步期間家庭行程有變動，請再次同步。' }, { status: 400 });

@@ -296,6 +296,12 @@ export async function PATCH(req: Request) {
     if (currentError) return apiInternalError(currentError, { context: "Load bill for update" });
     if (!current) return apiError("找不到帳單");
 
+    // Paid bills are immutable except for their independent note, even for direct API requests.
+    if (current.status === "paid" && Object.keys(body).some(key => !["workspace_id", "id", "note"].includes(key))) {
+      return apiError("已繳帳單只能修改備註，金額與日期不可更動");
+    }
+    if (body.paid_at !== undefined) return apiError("繳費日期只能透過付款或標記已繳流程更新");
+
     const patch: Record<string, string | number | null> = {};
     if (body.name_snapshot != null) patch.name_snapshot = String(body.name_snapshot);
     if (body.due_date !== undefined) patch.due_date = body.due_date ? String(body.due_date) : null;
@@ -321,7 +327,8 @@ export async function PATCH(req: Request) {
       if (parseBillAmount(nextAmount) !== null && nextDueDate) patch.status = "unpaid";
     }
 
-    const { data: updated, error } = await supabase.from("bill_instances").update(patch).eq("workspace_id", workspace_id).eq("id", id).select("id").single();
+    // Refuse a stale edit if payment completed after the read above.
+    const { data: updated, error } = await supabase.from("bill_instances").update(patch).eq("workspace_id", workspace_id).eq("id", id).eq("status", current.status).select("id").single();
     if (error) return apiInternalError(error, { context: "Update bill" });
     if (!updated) return apiError("帳單未更新，請重新整理後再試");
 

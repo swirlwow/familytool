@@ -1,5 +1,8 @@
 // Isolated test-only state, enabled explicitly by ?bills_preview=zero.
 const bills = [
+  { id: 'bill-exempt-test', period: '2026-11', due_date: '2026-11-09', name_snapshot: '測試免繳信用卡', amount_due: 0, paid_total: 0, status: 'unpaid', source: 'template', payment_mode: 'status_only', note: '上期溢繳，本期免繳' },
+  { id: 'bill-overdue-test', period: '2026-11', due_date: '2026-10-20', name_snapshot: '測試逾期帳單', amount_due: 800, paid_total: 0, status: 'unpaid', source: 'manual', payment_mode: 'ledger', note: '測試提醒資訊' },
+  { id: 'bill-partial-test', period: '2026-11', due_date: '2026-11-15', name_snapshot: '測試部分付款', amount_due: 1000, paid_total: 300, status: 'partial', source: 'manual', payment_mode: 'ledger', note: null },
   { id: 'bill-zero-test', period: '2026-11', due_date: '2026-11-09', name_snapshot: '測試信用卡－本期溢繳', amount_due: null, paid_total: 0, status: 'awaiting_details', source: 'template', payment_mode: 'status_only', note: null },
   { id: 'bill-positive-test', period: '2026-11', due_date: '2026-11-10', name_snapshot: '測試水費', amount_due: 600, paid_total: 0, status: 'unpaid', source: 'manual', payment_mode: 'ledger', note: '原有備註保留' },
   { id: 'bill-paid-test', period: '2026-11', due_date: '2026-11-08', name_snapshot: '測試已繳帳單', amount_due: 500, paid_total: 500, status: 'paid', paid_at: '2026-11-08T08:00:00.000Z', billing_start: '2026-11-01', billing_end: '2026-11-30', source: 'template', payment_mode: 'status_only', note: '已繳費，不更動金額' },

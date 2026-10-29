@@ -43,6 +43,18 @@
 .calendar-period > button { width: 40px; height: 40px; border-radius: 6px; color: var(--cal-ink); }
 .calendar-period > div > div { font-size: 18px; }
 .calendar-toolbar-actions { display: flex; align-items: center; }
+.calendar-google-control { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; max-width: 300px; padding: 8px 0; }
+.calendar-google-status { display: flex; flex-direction: column; gap: 2px; max-width: 100%; font-size: 11px; line-height: 1.5; color: #375b5e; overflow-wrap: anywhere; }
+.calendar-google-status strong { color: #087f83; }
+.calendar-google-status-error, .calendar-google-status-error strong { color: #b42318; }
+@media (max-width: 640px) {
+  .calendar-toolbar { flex-wrap: wrap; }
+  .calendar-toolbar-actions { display: grid; grid-template-columns: 1fr auto auto auto; gap: 6px; width: 100%; padding-block: 4px; }
+  .calendar-toolbar-actions > button, .calendar-google-sync { grid-row: 1; }
+  .calendar-google-sync { justify-self: start; }
+  .calendar-google-control { display: contents; }
+  .calendar-google-status { grid-column: 1 / -1; grid-row: 2; }
+}
 .calendar-add { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 6px; color: #fff; background: var(--cal-purple); }
 .calendar-loading { position: absolute; left: 50%; top: 2px; color: var(--cal-purple); }
 .calendar-ui .calendar-fab { background: var(--cal-purple); box-shadow: 0 4px 12px #8859d533; }
