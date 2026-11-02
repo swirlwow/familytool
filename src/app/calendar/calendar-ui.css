@@ -6,6 +6,21 @@
 .calendar-owner-filter[aria-pressed="true"] { outline: 2px solid #172554; outline-offset: 1px; }
 .calendar-owner-filter:focus-visible { outline: 3px solid #172554; outline-offset: 2px; }
 .calendar-filter-empty { flex: 0 0 auto; margin-left: 8px; color: #576180; font-size: 13px; white-space: nowrap; }
+.calendar-owner-menu { display: none; }
+@media (min-width: 1024px) {
+  .calendar-ui > header { position: relative; z-index: 20; }
+  .calendar-owner-filters { display: none; }
+  .calendar-owner-menu { display: block; position: relative; flex: 0 0 auto; }
+  .calendar-owner-menu > summary { display: inline-flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 40px; min-width: 122px; padding: 8px 12px; border: 1px solid #c4dfdb; border-radius: 8px; background: white; color: #087c80; font-size: 13px; font-weight: 500; cursor: pointer; list-style: none; }
+  .calendar-owner-menu > summary::-webkit-details-marker { display: none; }
+  .calendar-owner-menu > summary:focus-visible { outline: 2px solid #087c80; outline-offset: 2px; }
+  .calendar-owner-menu-panel { position: absolute; top: calc(100% + 8px); left: 0; width: 256px; padding: 14px; border: 1px solid #d2e8e3; border-radius: 10px; background: white; box-shadow: 0 8px 24px #172b551a; z-index: 30; }
+  .calendar-owner-menu-panel > p { margin: 0 0 10px; font-size: 12px; color: #576180; }
+  .calendar-owner-menu-panel > p:last-child { margin: 10px 0 0; }
+  .calendar-owner-menu-panel > [role="group"] { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .calendar-owner-menu-panel .calendar-owner-filter { min-width: 0; padding-inline: 8px; }
+  .calendar-period-controls { gap: 12px; }
+}
 .calendar-toolbar-actions .calendar-print-button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 44px; min-height: 44px; margin: 0; padding: 8px 12px; border: 1px solid #c4dfdb; border-radius: 8px; background: #fff; color: #087f83; font-size: 14px; font-weight: 600; white-space: nowrap; }
 .calendar-print-button:disabled { opacity: .45; cursor: not-allowed; }
 @media screen and (max-width: 639px) { .calendar-print-button span { display: none; } }

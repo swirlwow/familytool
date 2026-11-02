@@ -3,7 +3,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Check, ChevronLeft, ChevronRight, LoaderCircle, Plus, Printer, Trash2, X } from "lucide-react";
+import { Check, ChevronDown, ChevronLeft, ChevronRight, LoaderCircle, Plus, Printer, Trash2, X } from "lucide-react";
 import "./calendar-ui.css";
 import "../calendar-backup-ui.css";
 import { useToast } from "@/hooks/use-toast";
@@ -12,6 +12,7 @@ import { AppModal } from "@/components/ui/app-modal";
 import { GoogleCalendarSyncButton } from "@/components/google-calendar-sync-button";
 import { CALENDAR_COLORS, CALENDAR_OWNERS, calendarPrimaryOwner } from "@/lib/calendar-colors";
 import { matchesCalendarOwner, toggleCalendarOwnerFilter, type CalendarOwnerFilter, type CalendarPerson } from "@/lib/calendar-filter";
+import { addCalendarOverflow } from "@/lib/calendar-overflow";
 
 const WORKSPACE_ID = process.env.NEXT_PUBLIC_WORKSPACE_ID || "";
 
@@ -198,7 +199,7 @@ function buildWeekSegments(weekDates: Array<string | null>, notes: NoteRow[], ma
     }
     if (!placed) {
       if (lanes.length < maxLanes) lanes.push([s]);
-      else hiddenNotesByDate.set(s.segFrom, [...(hiddenNotesByDate.get(s.segFrom) || []), s.note]);
+      else addCalendarOverflow(hiddenNotesByDate, weekDates, s.startIdx, s.endIdx, s.note);
     }
   }
 
@@ -244,6 +245,14 @@ export default function CalendarPage() {
 
   const [notes, setNotes] = useState<NoteRow[]>([]);
   const [ownerFilter, setOwnerFilter] = useState<CalendarPerson[]>([]);
+  const ownerMenuRef = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    const closeOutside = (event: PointerEvent) => {
+      if (ownerMenuRef.current && !ownerMenuRef.current.contains(event.target as Node)) ownerMenuRef.current.open = false;
+    };
+    document.addEventListener("pointerdown", closeOutside);
+    return () => document.removeEventListener("pointerdown", closeOutside);
+  }, []);
   const monthGridRef = useRef<HTMLDivElement>(null);
   const [monthLaneLimit, setMonthLaneLimit] = useState(3);
   const visibleNotes = useMemo(() => notes.filter(note => {
@@ -572,6 +581,21 @@ export default function CalendarPage() {
               </div>
 
               {/* 縮小手機版控制項的寬度避免覆蓋 */}
+              <details ref={ownerMenuRef} className="calendar-owner-menu" onKeyDown={event => { if (event.key === "Escape") { event.currentTarget.open = false; event.currentTarget.querySelector("summary")?.focus(); } }}>
+                <summary title={ownerFilter.length ? ownerFilter.join("、") : "全部人物"}>人物：{ownerFilter.length === 0 ? "全部" : ownerFilter.length === 1 ? ownerFilter[0] : `${ownerFilter.length} 人`}<ChevronDown size={15} aria-hidden="true" /></summary>
+                <div className="calendar-owner-menu-panel">
+                  <p>顯示人物（可多選）</p>
+                  <div role="group" aria-label="桌面人物篩選">
+                    {(["all", ...OWNER_LIST] as CalendarOwnerFilter[]).map(owner => <button key={owner} type="button"
+                      className={cn("calendar-owner-filter", owner !== "all" && OWNER_STYLE[owner].chip)}
+                      aria-pressed={owner === "all" ? ownerFilter.length === 0 : ownerFilter.includes(owner)}
+                      onClick={() => { setOwnerFilter(current => toggleCalendarOwnerFilter(current, owner)); setOverflowNotes(null); }}
+                    >{owner === "all" ? "全部" : owner}</button>)}
+                  </div>
+                  {!loading && ownerFilter.length > 0 && visibleNotes.length === 0 && <p role="status">{mode === "month" ? "本月" : "本週"}沒有所選人物的行程</p>}
+                </div>
+              </details>
+
               <div className="calendar-period">
                 <button
                   className="shrink-0 h-7 w-7 sm:h-8 sm:w-8 rounded-full hover:bg-orange-100 hover:text-orange-600 text-slate-600 grid place-items-center transition-colors relative z-10"

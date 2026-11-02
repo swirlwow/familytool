@@ -27,6 +27,30 @@ const stores = {
   '/api/ledger/merchants': make(['測試早餐店','測試超市','測試網路商店','測試交通公司'], 'merchant'),
   '/api/payers': make(['大帥哥','大美女'], 'payer'),
 };
+// Optional regression scenario: several overlapping multi-day events must remain accessible on every date.
+if (new URLSearchParams(location.search).get('calendar_preview') === 'overflow') {
+  stores['/api/notes'].push(...[
+    ['early-work', '昱元', '測試工作行程', '2026-09-02', '2026-09-04'],
+    ['early-class', '子逸', '測試課程', '2026-09-03', '2026-09-03'],
+    ['early-checkup', '雅惠', '測試回診', '2026-09-05', '2026-09-05'],
+    ['early-family', '家庭', '測試家庭行程', '2026-09-07', '2026-09-07'],
+    ['early-parents', '爸媽', '測試採買', '2026-09-10', '2026-09-10'],
+    ['early-activity', '英茵', '測試活動', '2026-09-12', '2026-09-12'],
+  ].map(([id, owner, title, date_from, date_to]) => ({ id, owner, title, date_from, date_to, note_date: date_from, content: '僅供確認版面及人物多選的假資料。', updated_at: '2026-09-26T08:00:00Z' })));
+  stores['/api/notes'].push(...Array.from({length:4}, (_, index) => ({
+    id: `overflow-trip-${index}`, owner: '家庭', title: `測試跨日行程${index + 1}`,
+    date_from: '2026-09-24', date_to: '2026-09-26', note_date: '2026-09-24',
+    content: '跨日行程溢位驗證，僅為假資料。', updated_at: '2026-09-26T08:00:00Z',
+  })));
+  // The page opens on the current month; put the synthetic examples there too.
+  const current = new Date();
+  const month = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}`;
+  for (const note of stores['/api/notes']) {
+    for (const key of ['date_from', 'date_to', 'note_date']) {
+      if (typeof note[key] === 'string') note[key] = note[key].replace(/^2026-09/, month);
+    }
+  }
+}
 window.__previewRequests = [];
 window.fetch = async (input, options = {}) => {
   const url = new URL(typeof input === 'string' ? input : input.url, location.origin);
