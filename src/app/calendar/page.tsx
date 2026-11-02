@@ -11,6 +11,7 @@ import { ConfirmActionDialog } from "@/components/ui/confirm-action-dialog";
 import { AppModal } from "@/components/ui/app-modal";
 import { GoogleCalendarSyncButton } from "@/components/google-calendar-sync-button";
 import { CALENDAR_COLORS, CALENDAR_OWNERS, calendarPrimaryOwner } from "@/lib/calendar-colors";
+import { matchesCalendarOwner, toggleCalendarOwnerFilter, type CalendarOwnerFilter, type CalendarPerson } from "@/lib/calendar-filter";
 
 const WORKSPACE_ID = process.env.NEXT_PUBLIC_WORKSPACE_ID || "";
 
@@ -147,7 +148,7 @@ type Seg = {
   segTo: string;
 };
 
-function buildWeekSegments(weekDates: Array<string | null>, notes: NoteRow[]) {
+function buildWeekSegments(weekDates: Array<string | null>, notes: NoteRow[], maxLanes = 3) {
   const dates = weekDates.filter(Boolean) as string[];
   if (dates.length === 0) return { lanes: [] as Seg[][], hiddenNotesByDate: new Map<string, NoteRow[]>() };
 
@@ -196,7 +197,7 @@ function buildWeekSegments(weekDates: Array<string | null>, notes: NoteRow[]) {
       }
     }
     if (!placed) {
-      if (lanes.length < 3) lanes.push([s]);
+      if (lanes.length < maxLanes) lanes.push([s]);
       else hiddenNotesByDate.set(s.segFrom, [...(hiddenNotesByDate.get(s.segFrom) || []), s.note]);
     }
   }
@@ -218,6 +219,19 @@ type Draft = {
 
 export default function CalendarPage() {
   const { toast } = useToast();
+  const calendarRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const updateTop = () => {
+      const calendar = calendarRef.current;
+      if (calendar) {
+        const shell = calendar.closest<HTMLElement>(".family-shell") || calendar;
+        shell.style.setProperty("--calendar-top-offset", `${Math.max(0, calendar.getBoundingClientRect().top + window.scrollY)}px`);
+      }
+    };
+    updateTop();
+    window.addEventListener("resize", updateTop);
+    return () => window.removeEventListener("resize", updateTop);
+  }, []);
 
   const [mode, setMode] = useState<"month" | "week">("month");
   const [ym, setYm] = useState(monthKey(new Date()));
@@ -229,6 +243,13 @@ export default function CalendarPage() {
   }, [mode, ym, weekAnchor]);
 
   const [notes, setNotes] = useState<NoteRow[]>([]);
+  const [ownerFilter, setOwnerFilter] = useState<CalendarPerson[]>([]);
+  const monthGridRef = useRef<HTMLDivElement>(null);
+  const [monthLaneLimit, setMonthLaneLimit] = useState(3);
+  const visibleNotes = useMemo(() => notes.filter(note => {
+    const range = noteRange(note);
+    return matchesCalendarOwner(note.owner, ownerFilter) && range.from && range.to && range.from <= queryRange.to && range.to >= queryRange.from;
+  }), [notes, ownerFilter, queryRange]);
   const [loading, setLoading] = useState(false);
   const [loadedMonth, setLoadedMonth] = useState<string | null>(null);
 
@@ -302,7 +323,7 @@ export default function CalendarPage() {
   function openNew(date: string) {
     setDraft({
       mode: "new",
-      owners: ["家庭"],
+      owners: ownerFilter.length ? [...ownerFilter] : ["家庭"],
       title: "",
       content: "",
       date_from: date,
@@ -419,7 +440,24 @@ export default function CalendarPage() {
     }
   }
 
-  const monthWeeks = useMemo(() => buildMonthWeeks(ym), [ym]);
+  const monthWeeks = useMemo(() => buildMonthWeeks(ym).filter(week => week.some(cell => cell.inMonth)), [ym]);
+  useEffect(() => {
+    const grid = monthGridRef.current;
+    if (mode !== "month" || !grid) return;
+    const updateLanes = () => {
+      const lane = grid.querySelector<HTMLElement>(".calendar-lanes");
+      const event = grid.querySelector<HTMLElement>(".calendar-event-bar");
+      const top = lane ? parseFloat(getComputedStyle(lane).top) : 38;
+      const eventHeight = event?.getBoundingClientRect().height || (compact || window.innerHeight <= 720 ? 18 : 24);
+      const rowHeight = (grid.getBoundingClientRect().height - monthWeeks.length + 1) / monthWeeks.length;
+      setMonthLaneLimit(Math.max(0, Math.min(3, Math.floor((rowHeight - top + 4) / (eventHeight + 4)))));
+    };
+    updateLanes();
+    const observer = new ResizeObserver(updateLanes);
+    observer.observe(grid);
+    window.addEventListener("resize", updateLanes);
+    return () => { observer.disconnect(); window.removeEventListener("resize", updateLanes); };
+  }, [mode, monthWeeks.length, compact]);
 
   const weekRange = useMemo(() => weekRangeByAnchor(weekAnchor), [weekAnchor]);
   const weekDays = useMemo(() => {
@@ -493,14 +531,14 @@ export default function CalendarPage() {
 
   return (
     // ✅ 修正高度：確保能完美避開 AppShell 的底部導覽列 (pb-24 即 96px) 並完整顯示於螢幕中
-    <main className="family-calendar calendar-ui flex min-h-0 flex-col overflow-hidden border-t border-slate-200 bg-white lg:border-none" aria-label="行事曆">
-      
+    <main ref={calendarRef} className="family-calendar calendar-ui flex min-h-0 flex-col overflow-hidden border-t border-slate-200 bg-white lg:border-none" aria-label="行事曆">
+
       {/* ===== Header ===== */}
       <header className="shrink-0 border-b border-slate-200 bg-white">
         <div className="max-w-6xl mx-auto w-full px-2 sm:px-4">
           {/* ✅ 修正圖層與排版問題：改為 flex 排版確保「下一頁」按鈕不會被覆蓋 */}
           <div className="calendar-toolbar">
-            
+
             {/* 左：標題 (使用 flex-1 推擠) */}
             <span className="calendar-loading" role="status">
               {loading && <><LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" /><span className="sr-only">載入中…</span></>}
@@ -564,7 +602,7 @@ export default function CalendarPage() {
             {/* 右：新增 (使用 flex-1 確保右邊對齊) */}
             <div className="calendar-toolbar-actions">
               <GoogleCalendarSyncButton />
-              {mode === "month" && <button type="button" className="calendar-print-button" disabled={loading || loadedMonth !== ym} onClick={() => window.print()} aria-label={`列印 ${ym} 月份`} title="列印目前月份（可另存 PDF）"><Printer size={18} aria-hidden="true" /><span>列印月份</span></button>}
+              {mode === "month" && <button type="button" className="calendar-print-button" disabled={loading || loadedMonth !== ym} onClick={() => window.print()} aria-label={`列印 ${ym} 月份`} title="列印目前篩選的月份（可另存 PDF）"><Printer size={18} aria-hidden="true" /><span>列印</span></button>}
               {/* 手機版模式切換按鈕，節省空間 */}
               <button
                 type="button"
@@ -573,7 +611,7 @@ export default function CalendarPage() {
               >
                 {mode === "month" ? "週" : "月"}
               </button>
-              
+
               <button
                 className="calendar-add"
                 onClick={() => openNew(ymd(new Date()))}
@@ -584,6 +622,15 @@ export default function CalendarPage() {
               </button>
             </div>
           </div>
+        </div>
+
+        <div className="calendar-owner-filters" role="group" aria-label="人物篩選">
+          {(["all", ...OWNER_LIST] as CalendarOwnerFilter[]).map(owner => <button
+            key={owner} type="button" aria-pressed={owner === "all" ? ownerFilter.length === 0 : ownerFilter.includes(owner)}
+            className={cn("calendar-owner-filter", owner !== "all" && OWNER_STYLE[owner].chip)}
+            onClick={() => { setOwnerFilter(current => toggleCalendarOwnerFilter(current, owner)); setOverflowNotes(null); }}
+          >{owner === "all" ? "全部" : owner}</button>)}
+          {!loading && ownerFilter.length > 0 && visibleNotes.length === 0 && <span className="calendar-filter-empty" role="status">{mode === "month" ? "本月" : "本週"}沒有「{ownerFilter.join("、")}」的行程</span>}
         </div>
 
         {/* Weekday Row */}
@@ -602,16 +649,16 @@ export default function CalendarPage() {
       </header>
 
       {/* ===== Body ===== */}
-      <section className="flex-1 overflow-hidden bg-white relative">
-        <div className="max-w-6xl mx-auto w-full h-full border-x border-slate-200 bg-slate-100/50 flex flex-col">
-          
+      <section className="min-h-0 flex-1 overflow-hidden bg-white relative">
+        <div className="max-w-6xl mx-auto w-full h-full min-h-0 border-x border-slate-200 bg-slate-100/50 flex flex-col">
+
           {/* ===== Month view ===== */}
           {mode === "month" && (
-            <div className="calendar-month flex-1 overflow-hidden bg-slate-200">
-              <div className="grid grid-rows-6 h-full gap-px">
+            <div className="calendar-month min-h-0 flex-1 overflow-hidden bg-slate-200">
+              <div ref={monthGridRef} className="grid h-full gap-px" style={{ gridTemplateRows: `repeat(${monthWeeks.length}, minmax(0, 1fr))` }}>
                 {monthWeeks.map((week, wi) => {
                   const weekDates = week.map((c) => c.date);
-                  const { lanes, hiddenNotesByDate } = buildWeekSegments(weekDates, notes);
+                  const { lanes, hiddenNotesByDate } = buildWeekSegments(weekDates, visibleNotes, monthLaneLimit);
 
                   return (
                     <div key={`wk-${wi}`} className="relative bg-white">
@@ -712,7 +759,7 @@ export default function CalendarPage() {
                                     key={`${seg.id}-${seg.segFrom}-${seg.segTo}-${li}`}
                                     type="button"
                                     className={cn(
-                                      "calendar-event-bar pointer-events-auto h-[18px] border text-[9px] font-black truncate px-1.5 text-left leading-[18px] relative",
+                                      "calendar-event-bar pointer-events-auto h-[18px] border text-[9px] font-medium truncate px-1.5 text-left leading-[18px] relative",
                                       st.barBg,
                                       continuesFromPrev && "rounded-r-md rounded-l-none pl-2.5",
                                       continuesToNext && "rounded-l-md rounded-r-none pr-2.5",
@@ -768,7 +815,7 @@ export default function CalendarPage() {
               <div className="calendar-week-grid grid grid-cols-1 gap-px sm:h-[calc(100%-36px)] sm:grid-cols-7">
                 {weekDays.map((d) => {
                   const isToday = d === ymd(new Date());
-                  const todays = notes
+                  const todays = visibleNotes
                     .filter((n) => {
                       const r = noteRange(n);
                       if (!r.from || !r.to) return false;
@@ -1061,11 +1108,11 @@ export default function CalendarPage() {
 
       {mode === "month" && loadedMonth === ym && typeof document !== "undefined" && createPortal(
         <section className="calendar-print-sheet" aria-label={`${ym} 列印行事曆`}>
-          <h1>{ym.replace("-", " 年 ")} 月行事曆</h1>
+          <h1>{ym.replace("-", " 年 ")} 月行事曆{ownerFilter.length ? `｜${ownerFilter.join("、")}` : ""}</h1>
           <table><thead><tr>{["日", "一", "二", "三", "四", "五", "六"].map(day => <th key={day}>{day}</th>)}</tr></thead>
             <tbody>{monthWeeks.filter(week => week.some(cell => cell.inMonth)).map((week, index) => <tr key={index}>
               {week.map((cell, dayIndex) => <td key={dayIndex}><strong>{cell.day}</strong>
-                {cell.date && notes.filter(note => { const range = noteRange(note); return range.from && range.to && range.from <= cell.date! && range.to >= cell.date!; }).map(note => <div key={note.id} className={cn("calendar-print-event", OWNER_STYLE[primaryOwner(note.owner)]?.itemBg)}>{note.title}</div>)}
+                {cell.date && visibleNotes.filter(note => { const range = noteRange(note); return range.from && range.to && range.from <= cell.date! && range.to >= cell.date!; }).map(note => <div key={note.id} className={cn("calendar-print-event", OWNER_STYLE[primaryOwner(note.owner)]?.itemBg)}>{note.title}</div>)}
               </td>)}
             </tr>)}</tbody>
           </table>

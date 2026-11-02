@@ -23,6 +23,8 @@ import {
   Tags,
   TrendingUp,
   User,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import BottomNav from "./BottomNav";
 
@@ -61,6 +63,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const canCollapseSidebar = pathname === "/calendar";
+  const isSidebarCollapsed = canCollapseSidebar && sidebarCollapsed;
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => new Set());
 
   useEffect(() => {
@@ -100,7 +105,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   if (pathname === "/login") return <>{children}</>;
 
   return (
-    <div className="drawer lg:drawer-open family-shell">
+    <div className={`drawer family-shell${isSidebarCollapsed ? " family-sidebar-collapsed" : " lg:drawer-open"}`}>
+      {canCollapseSidebar && <div className="family-sidebar-floating">
+        <button type="button" aria-label={isSidebarCollapsed ? "展開選單" : "收合選單"} title={isSidebarCollapsed ? "展開選單" : "收合選單"} aria-expanded={!isSidebarCollapsed} aria-controls="family-navigation" onClick={() => { setSidebarCollapsed(current => !current); setDrawerOpen(false); }}>
+          {isSidebarCollapsed ? <ChevronRight size={18} aria-hidden="true" /> : <ChevronLeft size={18} aria-hidden="true" />}
+        </button>
+      </div>}
       <input id="app-drawer" type="checkbox" className="drawer-toggle" checked={drawerOpen} onChange={event => setDrawerOpen(event.target.checked)} />
       <div className="drawer-content flex min-h-screen min-w-0 flex-col">
         <div className="family-content min-w-0 flex-1 pb-24 lg:pb-0">{children}</div>

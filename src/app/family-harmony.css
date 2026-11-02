@@ -25,6 +25,14 @@
   background:var(--family-canvas) !important;
 }
 .family-shell .family-content { background:var(--family-canvas) !important; }
+.family-sidebar-floating { display:none; }
+@media (min-width:1024px) {
+  .family-sidebar-floating { display:block; position:fixed; left:236px; top:96px; width:28px; height:48px; z-index:60; }
+  .family-sidebar-collapsed .family-sidebar-floating { left:0; }
+  .family-sidebar-floating button { display:grid; place-items:center; width:28px; height:48px; border:1px solid #d2e5df; border-left:0; border-radius:0 24px 24px 0; color:#68817b; background:#f5faf7; opacity:.8; box-shadow:2px 1px 5px #173c2910; }
+  .family-sidebar-floating button:hover, .family-sidebar-floating button:focus-visible { background:#e3f2ed; color:#087c80; opacity:1; }
+  .family-sidebar-floating button:focus-visible { outline:2px solid #087c80; outline-offset:2px; }
+}
 .family-shell .family-content :is(.app-page,.family-calendar) {
   --section-accent:#b94b60;
   --section-soft:#fff0f1;

@@ -13,7 +13,6 @@ export function GoogleCalendarSyncButton() {
   const [busy, setBusy] = useState(false);
   const [reauthorize, setReauthorize] = useState(false);
   const [message, setMessage] = useState("");
-  const [hasError, setHasError] = useState(false);
   const [checking, setChecking] = useState(true);
   const inFlight = useRef(false);
 
@@ -24,8 +23,8 @@ export function GoogleCalendarSyncButton() {
         const data = await response.json();
         if (controller.signal.aborted) return;
         if (response.ok) setStatus(data);
-        else { setMessage(data.error || "無法讀取 Google 連結狀態"); setHasError(true); }
-      }).catch(() => { if (!controller.signal.aborted) { setMessage("無法讀取 Google 連結狀態，點按可重試。"); setHasError(true); } })
+        else setMessage(data.error || "無法讀取 Google 連結狀態");
+      }).catch(() => { if (!controller.signal.aborted) setMessage("無法讀取 Google 連結狀態，點按可重試。"); })
       .finally(() => { if (!controller.signal.aborted) setChecking(false); });
     const url = new URL(window.location.href);
     const result = url.searchParams.get("google_calendar");
@@ -48,7 +47,6 @@ export function GoogleCalendarSyncButton() {
     if (inFlight.current) return;
     inFlight.current = true;
     setBusy(true);
-    setHasError(false);
     setMessage("");
     try {
       let current = status;
@@ -80,7 +78,6 @@ export function GoogleCalendarSyncButton() {
     } catch (error) {
       const text = error instanceof Error ? error.message : "同步未完成，請稍後重試。";
       setMessage(text);
-      setHasError(true);
       toast({ title: "Google 行事曆", description: text, variant: "destructive" });
     } finally { inFlight.current = false; setBusy(false); }
   }
@@ -90,11 +87,9 @@ export function GoogleCalendarSyncButton() {
     <button type="button" className="calendar-print-button calendar-google-sync" disabled={busy || checking} onClick={perform} title={message || detail} aria-label={label} aria-busy={busy}>
       <RefreshCw size={18} aria-hidden="true" className={busy ? "animate-spin motion-reduce:animate-none" : ""} /><span>{label}</span>
     </button>
-    <div className={`calendar-google-status${hasError ? " calendar-google-status-error" : ""}`} role="status" aria-live="polite" aria-atomic="true">
-      <strong>{busy ? "正在處理 Google 行事曆…" : checking ? "正在確認連結狀態…" : reauthorize ? "需要重新授權" : hasError ? "Google 處理未完成" : status?.connected ? "Google 已連結" : "尚未連結 Google"}</strong>
-      {status?.connected && <span>最後成功同步：{status.lastSync ? new Date(status.lastSync).toLocaleString("zh-TW") : "尚無成功紀錄"}</span>}
-      {message && !busy && <span>{message}</span>}
-      {!busy && status?.connected && <span>修改行程後請按同步；以家庭工具為準。</span>}
-    </div>
+    {status?.lastSync && <time className="calendar-google-status" dateTime={status.lastSync} aria-label={`最後成功同步：${new Date(status.lastSync).toLocaleString("zh-TW")}`}>
+      {new Date(status.lastSync).toLocaleString("sv-SE", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).replaceAll("-", "/")}
+    </time>}
+    <span className="sr-only" role="status" aria-live="polite">{busy ? "正在處理 Google 行事曆…" : message}</span>
   </div>;
 }
