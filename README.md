@@ -23,7 +23,7 @@ npm run dev
 
 ## 安全與驗收
 
-2026-11-03 套件修補在本機完成：Next.js／eslint-config-next 16.4.4、Vitest 4.1.12；其餘修補版本以鎖定檔為準。272 項測試、型別檢查與正式建置通過。正式依賴掃描為 0 項；完整掃描仍有開發用 minimatch 相依鏈的 16 項 moderate 警告，不代表所有依賴零漏洞。
+2026-11-03 套件修補在本機完成：Next.js／eslint-config-next 16.4.4、Vitest 4.1.12；其餘修補版本以鎖定檔為準。272 項測試、型別檢查與正式建置通過。正式依賴掃描為 0 項；定向修補後完整掃描仍有開發用 minimatch 相依鏈的 15 項 moderate 警告，不代表所有依賴零漏洞。
 此修補於 2026-11-03 獲授權推送部署；前版為 a21732f，發布完成狀態請核對目前 Git 提交與 Vercel production READY／正式 alias。詳細限制見 [安全交接](RLS_HANDOFF.md)。
 
 資料庫變更須比較現況與 migration；本機與正式部分版本編號不同，不可直接重跑。資料庫行為測試先使用獨立測試環境，不以正式資料進行寫入測試。
@@ -31,3 +31,5 @@ npm run dev
 ## 協作與發布
 
 功能包含行事曆、帳單與記帳、投資、購物及記事。任務範圍與發布權限依當次使用者指示；不自行合併 main、強制推送或部署。協作前先讀根目錄 AGENTS.md 與 docs/AI_HANDOFF.md。
+
+定向修補只涵蓋 TypeScript ESLint 的 minimatch 11.0.1；其餘外掛保留原因及驗收見 [minimatch 修補紀錄](docs/MINIMATCH_REVIEW.md)。

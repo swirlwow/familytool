@@ -2,9 +2,19 @@
 
 最後內容更新：2026-11-03（Asia/Taipei）。本文件與原始碼一起版本控制，請以所在提交及遠端分支狀態為準。
 
+## minimatch 定向修補（2026-11-03，已套回並獲授權發布）
+
+隔離副本位於工作區上層 output/minimatch-isolation-20261103，由正式提交 a8aaeef 的 git archive 建立，不含環境憑證或正式資料。僅在隔離 package.json 定向 override @typescript-eslint/typescript-estree → minimatch 11.0.1，並產生對應 package-lock.json；本次已將已驗收的定向 override 與鎖定檔套回主專案，保留原有平台 libc 設定，未變更應用程式或 ESLint 規則。使用者已授權推送 GitHub 並正式部署；Google Drive 不同步，本機保留。
+
+目前完整 audit 為 15 項 moderate（原 16），正式依賴仍無警告。39 檔／272 項測試、型別及正式建置通過；110 組 dot:true 路徑樣式比對與 TS parser smoke 通過。共同 185 個來源檔的 ESLint 診斷相同，仍有原先 1 error（useLedgerMonth.ts 的 react-hooks/refs）與 2 warnings；並非 lint 全通過。基準另含未提交的 insurance 型別檔，未加入隔離副本；比對排除絕對路徑和行尾差異造成的 byte fix offset。
+
+剩餘 15 項來自 minimatch 3.1.5 及 ESLint／外掛相依鏈；上游仍要求舊主版本。新版不再以模組本身作為可呼叫函式且移除 makeRe，現有外掛仍使用兩者，直接全域 override 不安全。未降版、停用規則、隱藏 audit 或自行改 node_modules。minimatch 3 缺少公告所述 optimizationLevel>=2 的處理程式，但公告版本範圍仍涵蓋它；僅標示目前未確認觸發，不視為已修補。
+
+證據在隔離目錄的 audit-candidate.json、baseline-eslint.json、candidate-eslint.json、lint-comparison.json、match-compatibility.json、global-override-incompatibility.json；完整結論見該目錄 REVIEW.md。主專案套回後 39 檔／272 項測試、型別與正式建置重新通過。保留原因及驗收詳見 docs/MINIMATCH_REVIEW.md。前版 a8aaeef 為回復基準；發布完成須核對本文件所在提交的 Vercel production READY 與正式 alias。後續等待上游外掛相容修補，不強制全域 override。
+
 ## 套件安全修補與本次發布
 
-2026-11-03：Next.js 與 eslint-config-next 更新至 16.4.4，Vitest 4.1.12，間接依賴安全修補詳見 package-lock.json 及 RLS_HANDOFF.md。39 檔／272 項測試、型別與正式建置通過；本機正式模式未登入保護通過。正式依賴 audit 為 0；完整 audit 仍有開發用 minimatch 相依鏈的 16 項 moderate，未強制跨大版本覆寫。無正式環境設定，未驗收登入後真實資料或 Google 同步。本次使用者已授權推送 GitHub 與正式部署；以前版 a21732f 作為回復基準。部署是否完成須核對本文件所在提交的 Vercel production READY 與 familytool.vercel.app alias，不以 Git 推送成功替代。正式驗收使用未登入 HTTP 與唯讀頁面，不修改正式資料或觸發 Google 同步。
+2026-11-03：Next.js 與 eslint-config-next 更新至 16.4.4，Vitest 4.1.12，間接依賴安全修補詳見 package-lock.json 及 RLS_HANDOFF.md。39 檔／272 項測試、型別與正式建置通過；本機正式模式未登入保護通過。正式依賴 audit 為 0；前次完整 audit 有開發用 minimatch 相依鏈的 16 項 moderate（本次定向修補後為 15 項），未強制跨大版本覆寫。無正式環境設定，未驗收登入後真實資料或 Google 同步。本次使用者已授權推送 GitHub 與正式部署；以前版 a21732f 作為回復基準。部署是否完成須核對本文件所在提交的 Vercel production READY 與 familytool.vercel.app alias，不以 Git 推送成功替代。正式驗收使用未登入 HTTP 與唯讀頁面，不修改正式資料或觸發 Google 同步。
 
 ## 本次已確認的發布修正
 

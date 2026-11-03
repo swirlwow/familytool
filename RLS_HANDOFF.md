@@ -34,7 +34,7 @@
 - sharp 0.35.5、source-map-js 1.2.2、postcss-selector-parser 6.1.5。
 - Vitest 4.1.12、Vite 8.3.5、brace-expansion 1.1.21（詳細多版本相依樹以 package-lock.json 為準）。
 - npm audit --omit=dev：0 項已知漏洞。
-- 完整 npm audit：仍有 16 項 moderate，根源為 minimatch <11.0.1，沿 ESLint 等開發依賴傳遞。沒有使用 audit fix --force 強制降版或跨大版本覆寫；需另評估工具相容性與上游修補。
+- 完整 npm audit：前次 16 項 moderate，本次定向更新 TypeScript ESLint 的 minimatch 至 11.0.1 後剩 15 項 moderate，根源為 minimatch <11.0.1，沿 ESLint 等開發依賴傳遞。沒有使用 audit fix --force 強制降版或跨大版本覆寫；需另評估工具相容性與上游修補。
 - 39 檔／272 項測試、tsc --noEmit、Next.js 正式建置通過。
 - 本機正式建置 4293：login 200、calendar 導向 login；feed、bills、Google status 未登入 401，CSP 標頭存在。
 - 本機沒有正式環境設定，未驗收登入後真實資料、Google 授權／寫入同步；未做入侵測試。
@@ -48,3 +48,7 @@
 - 實體列印與實際 PDF 分頁尚未完整驗收，屬功能驗收限制。
 
 發布驗收：本次已獲推送部署授權；發布後確認 commit、READY 及正式 alias，並唯讀檢查登入頁及 API 未登入 401。後續剩餘 minimatch、Auth 設定與 CSP 改造另行規劃，不混入本次。
+
+## 定向修補發布接續
+
+2026-11-03：已驗收的定向 override 套回主專案，重新測試及建置通過，本次獲授權推送部署。未修改資料庫、Auth、CSP、ESLint 規則或產品功能。剩餘 15 項原因詳見 docs/MINIMATCH_REVIEW.md。前版 a8aaeef；實際發布狀態請核對當前提交的 Vercel production READY／正式 alias。
