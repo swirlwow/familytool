@@ -6,41 +6,28 @@
 
 Google Drive 檔案同步已暫停；產品內的 Google 行事曆同步保留。本機檔案不自動刪除，秘密設定與私人資料不提交 GitHub。
 
-以下為 Next.js 基本執行說明；專案環境、功能狀態與協作規則以連結文件為準。
+## 環境與執行
 
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+使用 Node.js 24.x 與 npm，依 package-lock.json 安裝，避免重新解析出不同版本。
 
-## Getting Started
-
-First, run the development server:
-
-```bash
+```sh
+npm ci
+npm test
+npx tsc --noEmit
+npm run build
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+開發預設網址為 http://localhost:3000；正式模式使用 `npm run build` 後 `npm start`。
+本機需安全準備 Supabase 環境設定，設定鍵名及 Google 同步範本見 [接續說明](docs/AI_HANDOFF.md)。缺少設定時只能驗收登入畫面與未登入保護，不能宣稱完成資料整合驗收。
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 安全與驗收
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+2026-11-03 套件修補在本機完成：Next.js／eslint-config-next 16.4.4、Vitest 4.1.12；其餘修補版本以鎖定檔為準。272 項測試、型別檢查與正式建置通過。正式依賴掃描為 0 項；完整掃描仍有開發用 minimatch 相依鏈的 16 項 moderate 警告，不代表所有依賴零漏洞。
+此修補於 2026-11-03 獲授權推送部署；前版為 a21732f，發布完成狀態請核對目前 Git 提交與 Vercel production READY／正式 alias。詳細限制見 [安全交接](RLS_HANDOFF.md)。
 
-## Learn More
+資料庫變更須比較現況與 migration；本機與正式部分版本編號不同，不可直接重跑。資料庫行為測試先使用獨立測試環境，不以正式資料進行寫入測試。
 
-To learn more about Next.js, take a look at the following resources:
+## 協作與發布
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+功能包含行事曆、帳單與記帳、投資、購物及記事。任務範圍與發布權限依當次使用者指示；不自行合併 main、強制推送或部署。協作前先讀根目錄 AGENTS.md 與 docs/AI_HANDOFF.md。

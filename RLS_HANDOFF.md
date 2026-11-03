@@ -1,122 +1,50 @@
-# FamilyTool RLS 修正交接文件
+# FAMILYTOOL 安全與 RLS 接續說明
 
-更新日期：2026-07-16
+更新日期：2026-11-03（Asia/Taipei）。取代 2026-07-16 的過期操作指示；歷史內容可由 Git 查閱。
 
-## 目的
+## 目前版本及工作原則
 
-本次工作優先修正 Supabase 過度寬鬆的 Row Level Security（RLS）政策，避免匿名使用者或非工作區成員存取家庭、記事、行事曆及帳務資料。
+- 目前分支為 ui/settings-visual-pilot-20260925，正式站為 a21732f，Vercel production READY；main 並非最新正式功能。
+- 套件安全修補於本次獲授權推送部署；完成狀態須核對當前提交的 production READY 與正式 alias，不把本機驗收結果當正式環境驗收。
+- 不依賴固定本機路徑；由目前 checkout 接續，先讀 AGENTS.md 及 docs/AI_HANDOFF.md。
+- Google Drive 同步暫停，本機保留；秘密、私人備份及登入資料不得進 Git。
+- 本次只讀取正式中繼資料及未登入 HTTP 結果，未修改正式資料、Auth 設定、分享或部署。
 
-目前正式版已上線，請遵守以下原則：
+## 正式環境唯讀查核結果
 
-- 不直接修改或測試正式環境資料。
-- 所有程式與 migration 變更只在 `codex/receipt-import-mvp` Git branch 進行。
-- 資料庫先在 `familytool-dev` 驗證，未完成下方正式部署檢查前，不得套用至 production。
-- 不要把 Supabase API key、service role key、密碼、使用者 UUID 或電子郵件寫入 Git。
+目標 Supabase 專案為 life（ztaapoeqqeqvofnyowdf）。2026-11-03 查核：
 
-## Repository 狀態
+- public 32 張一般資料表全部啟用 RLS；anon 資料表授權為 0。
+- 未查到 qual／with_check 直接為 true 或指定 public 角色的政策；這只是基本篩查，不代表全部政策語意已完整驗證。
+- user_workspaces 有 1 筆 membership；SELECT 政策限制讀取自己的紀錄，沒有自行新增 membership 的政策。
+- migration 紀錄包含 harden_workspace_rls、google_calendar_sync、bill_notes_zero_due。
+- 部分正式與本機 migration 名稱相同但時間編號不同，須比對 SQL／實際 schema 後建立對照；不要重新套用或自行修改 migration history。
+- 正式未安裝 pgTAP。本次未在正式執行 pgTAP 或建立測試資料；舊文件的 13/13 僅為歷史開發環境結果，不能代表本次正式驗收。
+- 目前連線專案清單未列出舊 familytool-dev，不可直接假設它仍可用。
 
-- GitHub：<https://github.com/swirlwow/familytool>
-- 本機路徑：`C:\Users\ASUS\Documents\生活\familytool`
-- 工作 branch：`codex/receipt-import-mvp`
-- branch 與以下檔案目前仍只存在原電腦本機，尚未 commit、push。
-- 原有應用程式檔案沒有被修改。
+## 舊阻擋事項的目前狀態
 
-新增檔案：
+1. membership 已存在，舊「完全沒有 membership」描述不適用。
+2. src/proxy.ts 使用 getUser 驗證登入；正式 feed 與 bills 未登入實測回 401。feed 不再提供無 session 的外部 URL 訂閱；不要為恢復訂閱而直接公開。
+3. login 已無 signup 路徑，也無用戶自行寫入 membership 的流程；但尚未確認 Supabase Auth 是否關閉直接註冊，不能以移除按鈕代替服務端設定確認。
 
-- `supabase/migrations/20260716091526_harden_workspace_rls.sql`
-- `supabase/tests/workspace_rls_test.sql`
-- `RLS_HANDOFF.md`
+## 2026-11-03 本機套件修補
 
-## Supabase 環境
+- Next.js／eslint-config-next：16.3.4 → 16.4.4。
+- sharp 0.35.5、source-map-js 1.2.2、postcss-selector-parser 6.1.5。
+- Vitest 4.1.12、Vite 8.3.5、brace-expansion 1.1.21（詳細多版本相依樹以 package-lock.json 為準）。
+- npm audit --omit=dev：0 項已知漏洞。
+- 完整 npm audit：仍有 16 項 moderate，根源為 minimatch <11.0.1，沿 ESLint 等開發依賴傳遞。沒有使用 audit fix --force 強制降版或跨大版本覆寫；需另評估工具相容性與上游修補。
+- 39 檔／272 項測試、tsc --noEmit、Next.js 正式建置通過。
+- 本機正式建置 4293：login 200、calendar 導向 login；feed、bills、Google status 未登入 401，CSP 標頭存在。
+- 本機沒有正式環境設定，未驗收登入後真實資料、Google 授權／寫入同步；未做入侵測試。
 
-### Production
+## 待處理事項
 
-- Project name：`life`
-- Project ref：`ztaapoeqqeqvofnyowdf`
-- Region：`ap-south-1`
-- 本次工作未修改 production。
-- 稽核時有 1 位 active Auth user，但 `user_workspaces` 與 `members` 都沒有資料。
-- 帳務資料表已有正式資料，migration 內的防呆會阻止在尚未建立 membership 時部署。
+- Supabase Security Advisor 回報已外洩密碼防護未啟用；需確認方案支援後設定。這不代表現有密碼已外洩。
+- CSP 正式 script-src 含 unsafe-inline；nonce 改造需同步評估動態渲染與登入相容性。
+- 共用 Supabase Proxy／匿名 fallback 是維護風險；尚未證明可繞過 RLS，應另外分離 server／browser client。
+- 另備獨立測試資料庫驗證匿名、非成員、成員、跨 workspace 的讀寫與 RPC 權限。不在正式環境直接跑會寫入的測試。
+- 實體列印與實際 PDF 分頁尚未完整驗收，屬功能驗收限制。
 
-### Development
-
-- Project name：`familytool-dev`
-- Project ref：`iwbogfxdcnuheuqgxwjf`
-- Region：`ap-south-1`
-- 因目前 Supabase organization 是 Free plan，無法使用 Supabase Branching，因此建立獨立 development project。
-- development 只包含最小化測試 schema 與合成資料，沒有複製 production 使用者或正式資料。
-
-在新電腦請透過 Supabase/Codex OAuth 重新登入並選擇上述 project；不要傳遞或貼上 service role key。
-
-## 已完成的 RLS 修正
-
-Migration 會：
-
-- 在目標應用資料表啟用 RLS。
-- 移除舊有過度寬鬆、固定 workspace 或重複政策。
-- 撤銷 `anon` 對應用資料表的權限。
-- 僅授予 `authenticated` 必要的資料表權限。
-- 以 `user_workspaces` membership 限制 workspace 資料存取。
-- 讓 `sticky_items` 透過其 parent sticky 驗證 workspace membership。
-- 移除舊的公開 `is_workspace_member(uuid)` SECURITY DEFINER helper。
-- 在 production 已有 workspace、但沒有任何 `user_workspaces` membership 時主動中止 migration。
-
-涵蓋資料表包括 `notes`、`stickies`、`sticky_items`、`calendar_events`、`members`、workspace 資料及帳務相關資料表。
-
-## 驗證結果
-
-已在 `familytool-dev` 套用 migration 並執行 pgTAP：
-
-- 13/13 測試通過。
-- Security Advisor：`lints: []`。
-- Policy 數量：22。
-- `anon` table grants：0。
-- always-true policies：0。
-- public-role policies：0。
-- legacy helper：不存在。
-
-尚未完成應用程式 lint/build。原電腦未安裝 `node_modules`，執行 `npm run lint` 時找不到 ESLint；新電腦應先執行 `npm ci` 再驗證。
-
-## 正式部署前的阻擋事項
-
-以下三項未完成前，不得將 migration 套用到 `life`：
-
-1. **建立合法 membership**
-   確認唯一的 production Auth 帳號與目前 workspace 的擁有關係，再以經審核的 SQL 建立 `user_workspaces`。不要把 UUID 寫進 migration 或本文件。
-
-2. **修正公開 Calendar Feed**
-   `src/middleware.ts` 目前將 `/api/calendar/feed` 設為公開，而 feed 會讀取 notes。撤銷匿名存取後，外部 calendar feed 將失效。需先改為不可猜測且可撤銷的 feed token，或要求有效登入 session。
-
-3. **修正註冊與 workspace 指派流程**
-   `src/app/login/page.tsx` 目前允許 signup 後自行寫入 `user_workspaces`。新的 RLS 會禁止自行加入其他 workspace；需改成邀請制或管理者指派。
-
-## 新電腦接續步驟
-
-目前 branch 尚未 push。請先在原電腦 commit 並 push；完成後，在新電腦執行：
-
-```powershell
-git clone https://github.com/swirlwow/familytool.git
-cd familytool
-git fetch origin
-git switch codex/receipt-import-mvp
-git status --short --branch
-npm ci
-npm run lint
-npm run build
-```
-
-接著：
-
-1. 重新連接 GitHub 與 Supabase OAuth。
-2. 確認操作目標為 `familytool-dev`（`iwbogfxdcnuheuqgxwjf`），不要誤選 production。
-3. 檢查 migration 與 pgTAP 檔案。
-4. 優先處理 Calendar Feed 與 signup/workspace 指派相容性。
-5. 在 development 重跑 RLS 測試及 Security Advisor。
-6. 提交測試結果與 deployment SQL 供人工確認。
-7. 取得明確批准後，才可安排 production migration。
-
-## 給下一個 Codex 工作階段的指示
-
-可將以下文字作為新工作的開場：
-
-> 請先閱讀 `RLS_HANDOFF.md`，確認目前位於 `codex/receipt-import-mvp`。正式環境 `life` 不得修改。先檢查現有 migration 與測試，再處理公開 Calendar Feed 及 signup/workspace membership 的相容性；所有資料庫驗證只在 `familytool-dev` 執行。任何 production 操作都必須先向我說明 SQL、影響及回復方式，並取得明確確認。
+發布驗收：本次已獲推送部署授權；發布後確認 commit、READY 及正式 alias，並唯讀檢查登入頁及 API 未登入 401。後續剩餘 minimatch、Auth 設定與 CSP 改造另行規劃，不混入本次。
